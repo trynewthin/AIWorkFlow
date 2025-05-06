@@ -1,7 +1,7 @@
 const { ElectronEgg } = require('ee-core');
 const { Lifecycle } = require('./preload/lifecycle');
 const { preload } = require('./preload');
-const { SqlitedbService } = require('./service/sqlitedb');
+const { SqlitedbService } = require('./database/sqlitedb');
 const { app: electronApp } = require('electron');
 
 // new app
