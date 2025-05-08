@@ -1,7 +1,7 @@
 const { ElectronEgg } = require('ee-core');
 const { Lifecycle } = require('./preload/lifecycle');
 const { preload } = require('./preload');
-const { SqlitedbService } = require('./database/sqlitedb');
+const { getUserDb, getVectorDb } = require('./database/index');
 const { app: electronApp } = require('electron');
 
 // new app
@@ -20,10 +20,7 @@ eggApp.register("preload", preload);
 // run
 eggApp.run();
 
-// 在应用启动并完成初始化后再创建服务实例
-const sqlitedbService = new SqlitedbService();
+// 在应用启动并完成初始化后获取数据库服务实例
+const userDb = getUserDb();
+const vectorDb = getVectorDb();
 
-// 在应用关闭前关闭数据库连接
-electronApp.on('before-quit', () => {
-  sqlitedbService.close();
-});

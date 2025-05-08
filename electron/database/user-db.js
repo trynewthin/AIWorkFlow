@@ -1,27 +1,34 @@
 'use strict';
 
-const { BasedbService } = require('./basedb');
+const { ModuleDbBase } = require('./module-db-base');
 
 /**
- * SQLite 数据库服务，继承自 BasedbService
+ * 用户数据库服务
+ * 提供用户表的管理功能
  */
-class SqlitedbService extends BasedbService {
-  constructor() {
-    // 数据库文件名，可根据需求修改
-    super({ dbname: 'sqlite-demo.db' });
+class UserDb extends ModuleDbBase {
+  constructor(options = {}) {
+    // 设置数据库名称和模块ID
+    super({
+      dbname: options.dbname || 'user-data.db',
+      moduleId: 'user-module'
+    });
+    
     this.userTable = 'user';
     this._initTable();
   }
 
   /**
-   * 初始化 user 表
+   * 初始化用户表
+   * @private
    */
   _initTable() {
     const sql = `
       CREATE TABLE IF NOT EXISTS ${this.userTable} (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT NOT NULL,
-        password TEXT NOT NULL
+        username TEXT NOT NULL,      -- User name
+        password TEXT NOT NULL,      -- User password
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  -- Creation time
       );
     `;
     this.db.exec(sql);
@@ -106,8 +113,10 @@ class SqlitedbService extends BasedbService {
   }
 }
 
-SqlitedbService.toString = () => '[class SqlitedbService]';
+UserDb.toString = () => '[class UserDb]';
 
+// 导出类和便捷的单例获取方法
 module.exports = {
-  SqlitedbService
+  UserDb,
+  getUserDb: (options) => UserDb.getInstance(options)
 }; 

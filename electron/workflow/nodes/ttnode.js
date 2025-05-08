@@ -138,7 +138,7 @@ class TTNode {
 // 节点自有配置
 TTNode.nodeConfig = {
   type: 'normal',
-  tag: 'ai',
+  tag: 'chat',
   name: 'text-to-text',
   description: '纯文本输入的ai工作流节点，适配那些不具有多模态输入的ai模型',
   input: 'text',
