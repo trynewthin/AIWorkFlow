@@ -33,7 +33,6 @@ class VectorDb extends ModuleDbBase {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  -- Creation time
       );
       
-      -- 创建索引提高查询性能
       CREATE INDEX IF NOT EXISTS idx_vector_dimension ON ${this.vectorTable} (dimension);
     `;
     this.db.exec(sql);
