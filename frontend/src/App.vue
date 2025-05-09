@@ -1,6 +1,11 @@
 <template>
-  <router-view/>
+  <div class="min-h-screen flex flex-col bg-gray-100">
+    <div class="flex-1 py-12">
+      <router-view/>
+    </div>
+  </div>
 </template>
+
 <script setup>
 import { onMounted } from 'vue';
 
@@ -11,4 +16,3 @@ if (loadingElement) {
 }
 });
 </script>
-<style lang="less"></style>

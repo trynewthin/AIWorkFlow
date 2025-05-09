@@ -1,4 +1,5 @@
-const Renderer = (window.require && window.require('electron')) || window.electron || {};
+// Renderer 对象来自 preload 脚本，通过 contextBridge 暴露在 window.electron
+const Renderer = window.electron || {};
 
 /**
  * ipc
@@ -20,12 +21,12 @@ const Renderer = (window.require && window.require('electron')) || window.electr
 /**
  * ipc
  */
-const ipc = Renderer.ipcRenderer || undefined;
+const ipc = Renderer.ipcRenderer;
 
 /**
- * 是否为EE环境
+ * 是否为 EE 环境
  */
-const isEE = ipc ? true : false;
+const isEE = !!ipc;
 
 export {
   Renderer, ipc, isEE

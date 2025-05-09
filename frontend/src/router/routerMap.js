@@ -6,16 +6,15 @@
 const constantRouterMap = [
   {
     path: '/',
-    name: 'Example',
-    redirect: { name: 'ExampleHelloIndex' },
+    component: () => import('@/views/home/Index.vue'),
     children: [
       {
-        path: '/example',
-        name: 'ExampleHelloIndex',
-        component: () => import('@/views/example/hello/Index.vue')
+        path: '',
+        name: 'Home',
+        component: () => import('@/views/home/HomeContent.vue')
       },
     ]
-  },
+  }
 ]
 
 export default constantRouterMap
