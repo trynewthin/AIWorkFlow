@@ -64,6 +64,13 @@ module.exports = () => {
     mainServer: {
       indexPath: '/public/dist/index.html',
       channelSeparator: '/',
+    },
+    /* IPC通信路由 */
+    ipcRoutes: {
+      'controller/connection/check': {
+        controller: 'connection',
+        action: 'check'
+      }
     }
   }
 }
