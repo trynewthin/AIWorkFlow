@@ -59,6 +59,15 @@ class KnowledgeController {
     // 调用服务层创建知识库
     return await knowledgeService.createKnowledgeBase(params);
   }
+
+  /**
+   * 删除指定知识库及其所有文档、分块与向量
+   * @param {string} knowledgeBaseId
+   */
+  async deleteBase(knowledgeBaseId) {
+    await knowledgeService.deleteKnowledgeBase(knowledgeBaseId);
+    return { success: true };
+  }
 }
 
 module.exports = KnowledgeController; 

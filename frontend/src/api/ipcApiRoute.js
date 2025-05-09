@@ -10,7 +10,8 @@ const ipcApiRoute = {
   listDocuments: 'controller/knowledge/listDocuments',
   getDocumentChunks: 'controller/knowledge/getDocumentChunks',
   ingestDocument: 'controller/knowledge/ingestDocument',
-  deleteDocument: 'controller/knowledge/deleteDocument'
+  deleteDocument: 'controller/knowledge/deleteDocument',
+  deleteBase: 'controller/knowledge/deleteBase'
 };
 
 export default ipcApiRoute; 

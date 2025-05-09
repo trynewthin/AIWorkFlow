@@ -116,6 +116,24 @@ class KnowledgeService {
     await this.kbDb.addKnowledgeBase({ id: kbId, name, description, owner });
     return { id: kbId, name, description, owner };
   }
+
+  /**
+   * 删除指定知识库及其所有关联文档、分块与向量
+   * @param {string} knowledgeBaseId 知识库ID
+   */
+  async deleteKnowledgeBase(knowledgeBaseId) {
+    // 获取该知识库下的所有文档
+    const docs = await this.listDocuments(knowledgeBaseId);
+    // 逐个删除文档及其关联数据
+    for (const doc of docs) {
+      await this.deleteDocument(doc.id);
+    }
+    // 删除知识库记录
+    const stmt = this.kbDb.db.prepare(
+      `DELETE FROM ${this.kbDb.kbTable} WHERE id = ?`
+    );
+    stmt.run(knowledgeBaseId);
+  }
 }
 
 module.exports = new KnowledgeService(); 

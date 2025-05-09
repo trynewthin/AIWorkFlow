@@ -7,7 +7,7 @@
       <textarea v-model="form.description" placeholder="描述" class="border rounded p-2 w-full mb-4"></textarea>
       <div class="flex justify-end">
         <button @click="cancel" class="mr-2">取消</button>
-        <button @click="create" class="bg-green-500 text-white py-1 px-4 rounded">创建</button>
+        <button @click="create" class="bg-black text-white py-1 px-4 rounded">创建</button>
       </div>
     </div>
   </div>
@@ -17,10 +17,12 @@
 // TODO: 导入依赖
 import { ref, watch } from 'vue';
 import { createKnowledgeBase } from '@/api/knowledge';
+import useNotificationStore from '@/utils/notification';
 
 // TODO: 定义属性和事件
 const props = defineProps({ visible: Boolean });
 const emit = defineEmits(['update:visible', 'created']);
+const { notify } = useNotificationStore();
 
 // TODO: 表单数据
 const form = ref({ name: '', description: '' });
@@ -40,8 +42,10 @@ const create = async () => {
     const payload = { name: form.value.name, description: form.value.description };
     const newKb = await createKnowledgeBase(payload);
     emit('created', newKb);
+    notify('创建知识库成功');
   } catch (e) {
     console.error('创建知识库失败:', e);
+    notify('创建知识库失败');
   }
 };
 </script>
@@ -54,7 +58,8 @@ const create = async () => {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0,0,0,0.5);
+  background-color: rgba(255,255,255,0.3);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -65,6 +70,7 @@ const create = async () => {
 .modal-container {
   background-color: #fff;
   padding: 1rem;
+  box-shadow: rgba(0, 0, 0, 0.2) 0px 8px 16px;
   border-radius: 0.5rem;
   width: 90%;
   max-width: 400px;

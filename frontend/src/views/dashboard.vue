@@ -51,8 +51,9 @@ const navButtons = ref([
     id: 'knowledge',
     label: '知识库',
     icon: `
-      <svg class="lucide lucide-book" stroke-linejoin="round" stroke-linecap="round" stroke-width="2" stroke="currentColor" fill="none" viewBox="0 0 24 24" height="22" width="22" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 19.5v-15"></path>
+      <svg xmlns="http://www.w3.org/2000/svg" class="lucide lucide-book-open" stroke-linejoin="round" stroke-linecap="round" stroke-width="2" stroke="currentColor" fill="none" viewBox="0 0 24 24" height="22" width="22">
+        <path d="M2 3h7a4 4 0 0 1 4 4v11a4 4 0 0 1-4 4H2z"></path>
+        <path d="M22 3h-7a4 4 0 0 0-4 4v11a4 4 0 0 0 4 4h7z"></path>
       </svg>
     `,
     action: '/knowledge',

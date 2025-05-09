@@ -26,7 +26,7 @@ const constantRouterMap = [
           {
             path: '',
             name: 'KnowledgeList',
-            component: () => import('@/views/knowledge/List.vue')
+            component: () => import('@/views/knowledge/Index.vue')
           },
           {
             path: ':kbId',

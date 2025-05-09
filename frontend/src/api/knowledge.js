@@ -69,4 +69,15 @@ export const createKnowledgeBase = async (params) => {
     console.error('创建知识库失败:', error);
     throw error;
   }
+};
+
+// 删除知识库
+export const deleteKnowledgeBase = async (baseId) => {
+  try {
+    const res = await ipc.invoke(ipcApiRoute.deleteBase, baseId);
+    return res;
+  } catch (error) {
+    console.error('删除知识库失败:', error);
+    throw error;
+  }
 }; 

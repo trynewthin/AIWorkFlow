@@ -95,6 +95,10 @@ module.exports = () => {
       'controller/knowledge/deleteDocument': {
         controller: 'knowledge',
         action: 'deleteDocument'
+      },
+      'controller/knowledge/deleteBase': {
+        controller: 'knowledge',
+        action: 'deleteBase'
       }
     }
   }
