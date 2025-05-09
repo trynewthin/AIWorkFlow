@@ -1,7 +1,7 @@
 const { ElectronEgg } = require('ee-core');
 const { Lifecycle } = require('./preload/lifecycle');
 const { preload } = require('./preload');
-const { getUserDb, getVectorDb } = require('./database/index');
+const { getUserDb, getKnowledgeDb } = require('./database/index');
 const { app: electronApp } = require('electron');
 
 // new app
@@ -22,5 +22,5 @@ eggApp.run();
 
 // 在应用启动并完成初始化后获取数据库服务实例
 const userDb = getUserDb();
-const vectorDb = getVectorDb();
+const knowledgeDb = getKnowledgeDb();
 

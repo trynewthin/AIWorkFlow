@@ -3,7 +3,9 @@
  */
 
 // 导入 OpenAI 库
-import OpenAI from "openai";
+'use strict';
+const OpenAIImport = require("openai");
+const OpenAI = OpenAIImport.default || OpenAIImport;
 
 // 文本向量节点类
 class EmbNode {
@@ -122,4 +124,4 @@ EmbNode.StatusEnum = {
 };
 
 // 导出节点类
-export default EmbNode;
+module.exports = EmbNode;

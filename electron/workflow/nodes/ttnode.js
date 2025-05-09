@@ -3,7 +3,9 @@
  * */
 
 // 导入 OpenAI 库
-import OpenAI from "openai";
+'use strict';
+const OpenAIImport = require("openai");
+const OpenAI = OpenAIImport.default || OpenAIImport;
 
 // 文字-文字节点类
 class TTNode {
@@ -169,4 +171,4 @@ TTNode.StatusEnum = {
 };
 
 // 导出节点类
-export default TTNode; 
+module.exports = TTNode; 

@@ -70,6 +70,31 @@ module.exports = () => {
       'controller/connection/check': {
         controller: 'connection',
         action: 'check'
+      },
+      // 知识库相关接口
+      'controller/knowledge/listBases': {
+        controller: 'knowledge',
+        action: 'listBases'
+      },
+      'controller/knowledge/createBase': {
+        controller: 'knowledge',
+        action: 'createBase'
+      },
+      'controller/knowledge/listDocuments': {
+        controller: 'knowledge',
+        action: 'listDocuments'
+      },
+      'controller/knowledge/getDocumentChunks': {
+        controller: 'knowledge',
+        action: 'getDocumentChunks'
+      },
+      'controller/knowledge/ingestDocument': {
+        controller: 'knowledge',
+        action: 'ingestDocument'
+      },
+      'controller/knowledge/deleteDocument': {
+        controller: 'knowledge',
+        action: 'deleteDocument'
       }
     }
   }

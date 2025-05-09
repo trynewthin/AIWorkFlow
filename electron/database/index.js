@@ -3,7 +3,7 @@
 // 导入模块数据库服务
 const { ModuleDbBase } = require('./module-db-base');
 const { UserDb, getUserDb } = require('./user-db');
-const { VectorDb, getVectorDb } = require('./vector-db');
+const { KnowledgeDb, getKnowledgeDb } = require('./knowledge-db');
 
 /**
  * 数据库服务索引
@@ -17,7 +17,7 @@ module.exports = {
   UserDb,
   getUserDb,
   
-  // 向量数据库
-  VectorDb,
-  getVectorDb
+  // 知识库数据库服务
+  KnowledgeDb,
+  getKnowledgeDb
 }; 
