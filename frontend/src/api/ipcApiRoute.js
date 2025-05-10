@@ -14,7 +14,8 @@ const ipcApiRoute = {
   createBase: 'controller/knowledge/createBase',
   listDocuments: 'controller/knowledge/listDocuments',
   getDocumentChunks: 'controller/knowledge/getDocumentChunks',
-  ingestDocument: 'controller/knowledge/ingestDocument',
+  ingestFromPath: 'controller/knowledge/ingestFromPath',
+  getRetriever: 'controller/knowledge/getRetriever',
   deleteDocument: 'controller/knowledge/deleteDocument',
   deleteBase: 'controller/knowledge/deleteBase'
 };

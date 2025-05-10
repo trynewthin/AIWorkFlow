@@ -88,9 +88,13 @@ module.exports = () => {
         controller: 'knowledge',
         action: 'getDocumentChunks'
       },
-      'controller/knowledge/ingestDocument': {
+      'controller/knowledge/ingestFromPath': {
         controller: 'knowledge',
-        action: 'ingestDocument'
+        action: 'ingestFromPath'
+      },
+      'controller/knowledge/getRetriever': {
+        controller: 'knowledge',
+        action: 'getRetriever'
       },
       'controller/knowledge/deleteDocument': {
         controller: 'knowledge',

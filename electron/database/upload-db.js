@@ -55,7 +55,15 @@ class UploadDb extends ModuleDbBase {
       'INSERT INTO upload_files(id, filename, mimetype, size, path) VALUES(?,?,?,?,?)'
     );
     stmt.run(id, filename, mimetype, stats.size, destFilename);
-    return { id, filename, mimetype, size: stats.size, path: destFilename };
+    // 返回记录信息，并添加完整路径
+    return { 
+      id, 
+      filename, 
+      mimetype, 
+      size: stats.size, 
+      path: destFilename,
+      fullPath: destPath // 添加完整路径
+    };
   }
 
   /**

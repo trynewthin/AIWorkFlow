@@ -2,20 +2,17 @@
  * 文本分块节点（基于 LangChain JS 加载器与分块策略）
  */
 
-// 导入目录加载器、Markdown 加载器和分块器
+// 导入目录加载器和文本加载器，以支持Markdown文件读取
 const { DirectoryLoader } = require("langchain/document_loaders/fs/directory");
-const { MarkdownLoader } = require("langchain/document_loaders/fs/markdown");
+const { TextLoader } = require("langchain/document_loaders/fs/text");
 const { RecursiveCharacterTextSplitter } = require("langchain/text_splitter");
+const BaseNode = require('./baseNode');
+const fs = require('fs');
+const path = require('path');
 
-class ChunkNode {
+class ChunkNode extends BaseNode {
   constructor(externalConfig = {}) {
-    // 节点公共信息
-    this.nodeInfo = {
-      nodeId: externalConfig.nodeId || '',
-      nodeName: externalConfig.nodeName || ChunkNode.nodeConfig.name,
-      nextNodeId: externalConfig.nextNodeId || null,
-      status: externalConfig.status || ChunkNode.Status.IDLE
-    };
+    super(externalConfig);
     // 分块配置
     this.chunkSize = externalConfig.chunkSize || ChunkNode.defaultConfig.chunkSize;
     this.chunkOverlap = externalConfig.chunkOverlap || ChunkNode.defaultConfig.chunkOverlap;
@@ -25,10 +22,31 @@ class ChunkNode {
   async execute(pathOrDir) {
     this.setStatus(ChunkNode.Status.RUNNING);
     try {
-      const loader = new DirectoryLoader(pathOrDir, { 
-        ".md": (filePath) => new MarkdownLoader(filePath)
-      }, true);
-      const documents = await loader.load();
+      let documents;
+      
+      // 判断路径是文件还是目录
+      const stats = fs.statSync(pathOrDir);
+      
+      if (stats.isFile()) {
+        // 如果是文件，直接使用 TextLoader
+        console.log(`加载单个文件: ${pathOrDir}`);
+        const loader = new TextLoader(pathOrDir);
+        documents = await loader.load();
+      } else if (stats.isDirectory()) {
+        // 如果是目录，使用 DirectoryLoader
+        console.log(`加载目录中的文件: ${pathOrDir}`);
+        const loader = new DirectoryLoader(pathOrDir, {
+          ".md": (filePath) => new TextLoader(filePath),
+          ".txt": (filePath) => new TextLoader(filePath),
+          ".json": (filePath) => new TextLoader(filePath),
+          ".html": (filePath) => new TextLoader(filePath),
+        }, true);
+        documents = await loader.load();
+      } else {
+        throw new Error(`路径 ${pathOrDir} 既不是文件也不是目录`);
+      }
+      
+      // 分块处理
       const splitter = new RecursiveCharacterTextSplitter({
         chunkSize: this.chunkSize,
         chunkOverlap: this.chunkOverlap
@@ -39,28 +57,9 @@ class ChunkNode {
       return chunks;
     } catch (error) {
       this.setStatus(ChunkNode.Status.FAILED);
+      console.error('ChunkNode执行失败:', error);
       throw error;
     }
-  }
-
-  // 设置状态
-  setStatus(status) {
-    this.nodeInfo.status = status;
-  }
-
-  // 获取状态
-  getStatus() {
-    return this.nodeInfo.status;
-  }
-
-  // 获取节点输入类型
-  getInputType() {
-    return ChunkNode.nodeConfig.input;
-  }
-
-  // 获取节点输出类型
-  getOutputType() {
-    return ChunkNode.nodeConfig.output;
   }
 
   // 设置分块尺寸
@@ -99,14 +98,6 @@ ChunkNode.nodeConfig = {
   input: 'path',
   output: 'text[]',
   version: '1.0.0'
-};
-
-// 状态枚举
-ChunkNode.Status = {
-  IDLE: 'idle',
-  RUNNING: 'running',
-  COMPLETED: 'completed',
-  FAILED: 'failed'
 };
 
 // 导出节点类

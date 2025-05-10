@@ -4,7 +4,7 @@ const { getKnowledgeDb, getHNSWDb } = require('../../database');
 const ChunkNode = require('../../model/nodes/chunk');
 const EmbeddingNode = require('../../model/nodes/embedding');
 const { randomUUID } = require('crypto');
-const { Document } = require('langchain/document');
+const { Document } = require('@langchain/core/documents');
 
 /**
  * 知识库服务（基于HNSW索引的超集实现）

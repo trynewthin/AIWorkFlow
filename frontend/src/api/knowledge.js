@@ -38,13 +38,24 @@ export const getDocumentChunks = async (documentId) => {
   }
 };
 
-// 添加文档并自动分块、向量化存储
-export const ingestDocument = async (params) => {
+// 从文件路径添加文档并构建HNSW索引
+export const ingestFromPath = async (params) => {
   try {
-    const res = await ipc.invoke(ipcApiRoute.ingestDocument, params);
+    const res = await ipc.invoke(ipcApiRoute.ingestFromPath, params);
     return res;
   } catch (error) {
     console.error('文档入库失败:', error);
+    throw error;
+  }
+};
+
+// 获取基于HNSW的检索器
+export const getRetriever = async () => {
+  try {
+    const res = await ipc.invoke(ipcApiRoute.getRetriever);
+    return res;
+  } catch (error) {
+    console.error('获取检索器失败:', error);
     throw error;
   }
 };

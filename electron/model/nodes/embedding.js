@@ -3,18 +3,13 @@
  */
 
 // 导入 OpenAIEmbeddings 类
-const { OpenAIEmbeddings } = require("langchain/embeddings/openai");
+const { OpenAIEmbeddings } = require("@langchain/openai");
+const BaseNode = require('./baseNode');
 
 // Embedding 节点类
-class EmbeddingNode {
+class EmbeddingNode extends BaseNode {
   constructor(externalConfig = {}) {
-    // 节点公共信息
-    this.nodeInfo = {
-      nodeId: externalConfig.nodeId || '',
-      nodeName: externalConfig.nodeName || EmbeddingNode.nodeConfig.name,
-      nextNodeId: externalConfig.nextNodeId || null,
-      status: externalConfig.status || EmbeddingNode.Status.IDLE
-    };
+    super(externalConfig);
 
     // 模型配置
     this.modelName = externalConfig.modelName || EmbeddingNode.defaultConfig.modelName;
@@ -37,16 +32,6 @@ class EmbeddingNode {
     }
   }
 
-  // 设置状态
-  setStatus(status) {
-    this.nodeInfo.status = status;
-  }
-
-  // 获取状态
-  getStatus() {
-    return this.nodeInfo.status;
-  }
-
   // 设置模型名称
   setModelName(name) {
     this.modelName = name;
@@ -57,15 +42,7 @@ class EmbeddingNode {
     return this.modelName;
   }
 
-  // 获取节点输入格式
-  getInputType() {
-    return EmbeddingNode.nodeConfig.input;
-  }
-
-  // 获取节点输出格式
-  getOutputType() {
-    return EmbeddingNode.nodeConfig.output;
-  }
+  // 输入/输出类型及状态相关方法已提取至基类 BaseNode
 }
 
 // 默认配置
@@ -82,14 +59,6 @@ EmbeddingNode.nodeConfig = {
   input: 'text',
   output: 'embedding',
   version: '1.0.0'
-};
-
-// 状态枚举
-EmbeddingNode.Status = {
-  IDLE: 'idle',
-  RUNNING: 'running',
-  COMPLETED: 'completed',
-  FAILED: 'failed'
 };
 
 // 导出节点类

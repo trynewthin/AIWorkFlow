@@ -13,7 +13,7 @@ const { getKnowledgeDb } = require('./index');
 
 class HNSWDb extends ModuleDbBase {
   constructor(options = {}) {
-    super({ dbname: options.dbname || 'hnsw-index.sqlite', moduleId: options.moduleId || 'hnsw-index-module' });
+    super({ dbname: options.dbname || 'hnsw-index.db', moduleId: options.moduleId || 'hnsw-index-module' });
     // 索引文件存储目录
     this.indexDir = path.resolve(getDataDir(), options.indexDir || 'hnsw_index');
     if (!fs.existsSync(this.indexDir)) {
