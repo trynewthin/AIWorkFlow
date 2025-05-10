@@ -154,6 +154,26 @@ class KnowledgeDb extends ModuleDbBase {
     scored.sort((a,b)=>b.score - a.score);
     return scored.slice(0, topK).map(({chunk_id,chunk_text,document_id,score})=>({chunk_id,chunk_text,document_id,score}));
   }
+
+  /**
+   * 获取所有分块和对应的向量数组
+   * @param {string} [knowledgeBaseId] 可选，按知识库ID过滤
+   * @returns {{ documents: Array<{pageContent:string, metadata:object}>, embeddings: number[][] }}
+   */
+  async getAllChunksWithEmbeddings(knowledgeBaseId) {
+    // 拼接 SQL，按需过滤知识库
+    const sql = `
+      SELECT dc.id AS chunkId, dc.chunk_text AS pageContent, dc.document_id AS documentId, ce.embedding AS embJson
+      FROM ${this.chunkTable} dc
+      JOIN ${this.embeddingTable} ce ON dc.id = ce.chunk_id
+      ${knowledgeBaseId ? `JOIN ${this.documentTable} d ON dc.document_id=d.id AND d.knowledge_base_id='${knowledgeBaseId}'` : ''}
+    `;
+    const rows = this.db.prepare(sql).all();
+    // 构造文档和向量数组
+    const documents = rows.map(r => ({ pageContent: r.pageContent, metadata: { chunkId: r.chunkId, documentId: r.documentId } }));
+    const embeddings = rows.map(r => JSON.parse(r.embJson));
+    return { documents, embeddings };
+  }
 }
 
 KnowledgeDb.toString = () => '[class KnowledgeDb]';

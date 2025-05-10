@@ -4,6 +4,8 @@
 const { ModuleDbBase } = require('./module-db-base');
 const { UserDb, getUserDb } = require('./user-db');
 const { KnowledgeDb, getKnowledgeDb } = require('./knowledge-db');
+const { HNSWDb, getHNSWDb } = require('./hnsw-db');
+const { UploadDb, getUploadDb } = require('./upload-db');
 
 /**
  * 数据库服务索引
@@ -19,5 +21,13 @@ module.exports = {
   
   // 知识库数据库服务
   KnowledgeDb,
-  getKnowledgeDb
+  getKnowledgeDb,
+  
+  // HNSW 索引管理服务
+  HNSWDb,
+  getHNSWDb,
+  
+  // 上传数据库服务
+  UploadDb,
+  getUploadDb
 }; 

@@ -19,6 +19,11 @@ const constantRouterMap = [
         component: () => import('@/views/test/Index.vue')
       },
       {
+        path: 'Test/Upload',
+        name: 'UploadTest',
+        component: () => import('@/views/test/UploadTest.vue')
+      },
+      {
         path: 'Knowledge',
         name: 'Knowledge',
         component: () => import('@/views/knowledge/Index.vue'),

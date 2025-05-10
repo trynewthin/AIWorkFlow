@@ -3,9 +3,14 @@
  */
 const ipcApiRoute = {
   checkConnection: 'controller/connection/check',
+  // 上传文件相关接口
+  uploadFile: 'controller/upload/uploadFile',
+  listFiles: 'controller/upload/listFiles',
+  getFileInfo: 'controller/upload/getFileInfo',
+  deleteFile: 'controller/upload/deleteFile',
+  getFilePath: 'controller/upload/getFilePath',
   // 知识库相关接口
   listBases: 'controller/knowledge/listBases',
-  // 新建知识库
   createBase: 'controller/knowledge/createBase',
   listDocuments: 'controller/knowledge/listDocuments',
   getDocumentChunks: 'controller/knowledge/getDocumentChunks',

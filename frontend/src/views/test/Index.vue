@@ -6,6 +6,11 @@
         button-text="执行测试"
         @execute-test="handleConnectionTest"
       />
+      <TestItem
+        item-name="文件上传测试"
+        button-text="进入测试页"
+        @execute-test="goUploadTest"
+      />
       <!-- // TODO: 未来可以添加更多测试项 -->
     </ul>
   </div>
@@ -15,21 +20,21 @@
 import { checkConnection } from '@/api/connection';
 import TestItem from '@/components/TestItem.vue'; // // 导入 TestItem 组件
 import useNotificationStore from '@/utils/notification'; // // 导入通知存储
+import { useRouter } from 'vue-router';
 
 const { notify } = useNotificationStore(); // // 获取 notify 方法
 
 export default {
   name: 'TestConnectionPage',
   components: {
-    TestItem // // 注册 TestItem 组件
+    TestItem
   },
-  // data() { // // 根据要求，移除 result
-  //   return {
-  //     result: ''
-  //   };
-  // },
-  methods: {
-    async handleConnectionTest() { // // 方法重命名并修改以适应新组件
+  setup() {
+    const router = useRouter();
+    const goUploadTest = () => {
+      router.push({ name: 'UploadTest' });
+    };
+    async function handleConnectionTest() { // // 方法重命名并修改以适应新组件
       try {
         const response = await checkConnection();
         notify('连接测试成功: ' + response.message); // // 使用通知显示结果
@@ -37,6 +42,10 @@ export default {
         notify('连接测试失败: ' + error.message); // // 使用通知显示失败
       }
     }
+    return {
+      handleConnectionTest,
+      goUploadTest
+    };
   }
 };
 </script>
