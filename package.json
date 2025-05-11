@@ -37,6 +37,7 @@
     "electron-builder": "^25.1.8"
   },
   "dependencies": {
+    "autoprefixer": "^10.4.21",
     "better-sqlite3": "^11.9.1",
     "dotenv": "^16.5.0",
     "ee-core": "^4.1.4",

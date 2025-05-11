@@ -1,49 +1,13 @@
-import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
-import path from 'path'
-// https://vitejs.dev/config/
-export default defineConfig(() => {
-  return {
-    // 项目插件
-    plugins: [
-      vue(),
-    ],
-    // 基础配置
-    base: './',
-    publicDir: 'public',
-    resolve: {
-      alias: {
-        '@': path.resolve(__dirname, 'src'),
-      },
-    },
-    css: {
-      preprocessorOptions: {
-        less: {
-          modifyVars: {
-            '@border-color-base': '#dce3e8',
-          },
-          javascriptEnabled: true,
-        },
-      },
-    },
-    build: {
-      outDir: 'dist',
-      assetsDir: 'assets',
-      assetsInlineLimit: 4096,
-      cssCodeSplit: true,
-      brotliSize: false,
-      sourcemap: false,
-      minify: 'terser',
-      terserOptions: {
-        compress: {
-          // 生产环境去除console及debug
-          drop_console: false,
-          drop_debugger: true,
-        },
-      },
-    },
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  base: './', // 设置为相对路径，确保file://协议下能正确加载资源
+  server: {
+    port: 8080,
+    strictPort: true, // 确保使用指定的端口
+    host: 'localhost'
   }
 })
-
-

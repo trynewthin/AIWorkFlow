@@ -1,59 +1,13 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
+<!doctype html>
+<html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0" />
-    <title></title>
-    <!-- 优化：vue渲染未完成之前，先加一个css动画 -->
-    <style>
-      #loadingPage {
-        background-color: #dedede;
-        font-size: 12px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        margin: 0;
-      }
-      .loader {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 5px;
-      }
-      .loader span {
-        font-size: 22px;
-        font-family: 'Courier New', Courier, monospace;
-        font-weight: 600;
-        animation: blur 3s linear infinite;
-        line-height: 20px;
-        transition: all 0.5s;
-        letter-spacing: 0.2em;
-      }
-      @keyframes blur {
-        0%, 90% {
-          filter: blur(0);
-        }
-        50% {
-          filter: blur(10px);
-        }
-      }
-    </style>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + React</title>
   </head>
   <body>
-    <div id="loadingPage">
-      <div class="loader">
-        <span>L</span>
-        <span>O</span>
-        <span>A</span>
-        <span>D</span>
-        <span>I</span>
-        <span>N</span>
-        <span>G</span>
-      </div>
-    </div>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
