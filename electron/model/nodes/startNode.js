@@ -1,82 +1,56 @@
 /**
+ * @file electron/model/nodes/startNode.js
  * @class StartNode
- * @description 将原始输入转换为 Pipeline 实例的开始节点
+ * @description 开始节点：根据输入类型创建初始管道
  */
 const BaseNode = require('./baseNode');
 const Pipeline = require('../pipeline/Pipeline');
-const DataType = require('../pipeline/Datatype');
-const { PipelineType } = require('../pipeline/Piptype');
+const { DataType, PipelineType } = require('../../config/pipeline');
 
 class StartNode extends BaseNode {
   /**
    * @constructor
-   * @param {Object} config - 配置对象
-   * @param {string} [config.pipelineType] - 生成的管道类型
-   * @param {string} [config.dataType] - 初始数据的数据类型
+   * @description 构造开始节点实例，并注册默认执行处理器
+   * @param {Object} config - 配置对象（保留以兼容 BaseNode）
    */
   constructor(config = {}) {
     super(config);
-    // 设置管道类型和数据类型
-    this.pipelineType = config.pipelineType || PipelineType.CUSTOM;
-    this.dataType = config.dataType || DataType.DATA;
-
-    // 注册默认的未支持类型处理器（主要用于 execute 调用路径，如果发生）
+    // 注册通配符处理器：不支持通过 execute 调用
     this.registerHandler('*', this._defaultUnsupportedHandler.bind(this));
   }
 
   /**
-   * @description 执行开始节点，将原始输入封装为 Pipeline
-   * @param {*} input - 原始数据
-   * @returns {Promise<Pipeline>} 包含初始数据的 Pipeline 实例
+   * @method process
+   * @description 创建并返回包含初始输入数据的管道实例
+   * @param {*} input - 原始输入数据
+   * @returns {Promise<Pipeline>} 包含初始数据的管道实例
    */
   async process(input) {
-    // 创建并返回 Pipeline 实例
-    const pipeline = Pipeline.of(this.pipelineType, this.dataType, input);
-    return pipeline;
+    let pipelineType;
+    let dataType;
+    // 根据输入类型选择管道类型和数据类型
+    if (typeof input === 'string') {
+      pipelineType = PipelineType.PROMPT;
+      dataType = DataType.TEXT;
+    } else {
+      throw new Error('StartNode 不支持的输入类型: ' + typeof input);
+    }
+    // 创建并返回新的管道
+    return Pipeline.of(pipelineType, dataType, input);
   }
 
   /**
-   * @private
-   * @description 处理不支持的管道类型，默认抛出错误 (主要用于 execute 调用路径)。
-   * @param {Pipeline} pipeline - 输入的管道实例。
-   * @throws {Error} 当接收到不支持的管道类型时抛出。
-   * @returns {Promise<Pipeline>}
+   * @method _defaultUnsupportedHandler
+   * @description 默认处理器，当通过 execute 调用时抛出错误，提醒使用 process
+   * @param {Pipeline} pipeline - 输入的管道实例
+   * @throws {Error}
    */
   async _defaultUnsupportedHandler(pipeline) {
+    // 使用 this._classConfig 获取节点信息
+    const nodeName = this._classConfig.name || '未知节点'; 
     const pipelineType = pipeline.getPipelineType();
-    throw new Error(`节点 ${this.constructor.nodeConfig.name} (ID: ${this.nodeInfo.nodeId}) 不支持通过 execute 处理 ${pipelineType} 类型的管道。请使用 process(input) 创建新管道。`);
-  }
-
-  /**
-   * @description 返回自定义配置，用于序列化
-   * @returns {Object} 自定义配置对象
-   */
-  getCustomConfig() {
-    return {
-      pipelineType: this.pipelineType,
-      dataType: this.dataType
-    };
-  }
-
-  /**
-   * @description 设置自定义配置，用于反序列化
-   * @param {Object} config - 配置对象
-   */
-  setCustomConfig(config) {
-    if (config.pipelineType) this.pipelineType = config.pipelineType;
-    if (config.dataType) this.dataType = config.dataType;
+    throw new Error(`节点 ${nodeName} (类型: ${this._classConfig.tag || '未知'}) 不支持通过 execute 处理 ${pipelineType} 类型的管道。请使用 process(input) 方法创建新管道。`);
   }
 }
 
-// 节点元数据
-StartNode.nodeConfig = {
-  type: 'utility',
-  tag: 'start',
-  name: 'pipeline-start-node',
-  description: '将原始输入封装为 Pipeline',
-  // 输出为 START 类型
-  supportedOutputPipelines: [PipelineType.START],
-  version: '1.0.0'
-};
-
-module.exports = StartNode; 
+module.exports = StartNode;
