@@ -2,8 +2,8 @@
  * @class PromptNode
  * @description 文本提示词优化节点，使用大模型对用户输入的提示词进行清晰、有条理的优化
  */
-const IOConfigs = require('../configs/IOconfigs');
-const PIPconfigs = require('../configs/PIPconfigs');
+const DataType = require('../pipeline/Datatype');
+const { PipelineType } = require('../pipeline/Piptype');
 const { ChatOpenAI } = require('@langchain/openai');
 const BaseNode = require('./baseNode');
 
@@ -31,7 +31,7 @@ class PromptNode extends BaseNode {
     this.setStatus(PromptNode.Status.RUNNING);
     try {
       // 获取文本数据
-      const textItems = pipeline.getByType(IOConfigs.DataType.TEXT);
+      const textItems = pipeline.getByType(DataType.TEXT);
       if (textItems.length === 0) {
         throw new Error('未找到文本数据，无法优化提示词');
       }
@@ -41,7 +41,7 @@ class PromptNode extends BaseNode {
           { role: 'system', content: this.chatConfig.systemPrompt },
           { role: 'user', content: item.data }
         ]);
-        pipeline.add(IOConfigs.DataType.TEXT, optimized);
+        pipeline.add(DataType.TEXT, optimized);
       }
       this.setStatus(PromptNode.Status.COMPLETED);
       return pipeline;
@@ -82,15 +82,15 @@ PromptNode.nodeConfig = {
   description: '组织用户提示词字符串，进行格式化处理',
   // 支持的输入管道类型
   supportedInputPipelines: [
-    PIPconfigs.PipelineType.PROMPT,
-    PIPconfigs.PipelineType.TEXT_PROCESSING,
-    PIPconfigs.PipelineType.LLM
+    PipelineType.PROMPT,
+    PipelineType.TEXT_PROCESSING,
+    PipelineType.LLM
   ],
   // 支持的输出管道类型
   supportedOutputPipelines: [
-    PIPconfigs.PipelineType.PROMPT,
-    PIPconfigs.PipelineType.TEXT_PROCESSING,
-    PIPconfigs.PipelineType.LLM
+    PipelineType.PROMPT,
+    PipelineType.TEXT_PROCESSING,
+    PipelineType.LLM
   ],
   version: '1.0.0'
 };

@@ -3,13 +3,13 @@
  * @description 合并多个 Pipeline，并设置合并后管道类型
  */
 const BaseNode = require('./baseNode');
-const PIPconfigs = require('../configs/PIPconfigs');
+const { PipelineType } = require('../pipeline/Piptype');
 
 class MergeNode extends BaseNode {
   constructor(config = {}) {
     super(config);
     // 合并后管道类型
-    this.outputType = config.outputType || PIPconfigs.PipelineType.CUSTOM;
+    this.outputType = config.outputType || PipelineType.CUSTOM;
     // 合并数量阈值
     this.mergeCount = config.mergeCount != null ? config.mergeCount : 2;
     // 是否立即合并，只要接收到数据就直接合并

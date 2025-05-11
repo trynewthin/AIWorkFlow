@@ -4,8 +4,8 @@
  */
 const EmbeddingNode = require('./embedding');
 const { getHNSWDb, getKnowledgeDb } = require('../../database');
-const IOConfigs = require('../configs/IOconfigs');
-const PIPconfigs = require('../configs/PIPconfigs');
+const DataType = require('../pipeline/Datatype');
+const { PipelineType } = require('../pipeline/Piptype');
 const BaseNode = require('./baseNode');
 
 class SearchNode extends BaseNode {
@@ -32,7 +32,7 @@ class SearchNode extends BaseNode {
       // 使用嵌入节点处理文本，生成 EMBEDDING 数据
       pipeline = await this.embeddingNode.process(pipeline);
       // 获取嵌入向量
-      const embeddingItems = pipeline.getByType(IOConfigs.DataType.EMBEDDING);
+      const embeddingItems = pipeline.getByType(DataType.EMBEDDING);
       if (embeddingItems.length === 0) {
         throw new Error('未找到嵌入向量，无法执行检索');
       }
@@ -56,7 +56,7 @@ class SearchNode extends BaseNode {
         }
         // 添加检索结果
         for (const doc of results) {
-          pipeline.add(IOConfigs.DataType.SEARCH_RESULTS, doc);
+          pipeline.add(DataType.SEARCH_RESULTS, doc);
         }
       }
       this.setStatus(SearchNode.Status.COMPLETED);
@@ -97,15 +97,15 @@ SearchNode.nodeConfig = {
   description: '将文本向量化并使用 HNSW 索引检索相关文档',
   // 支持的输入管道类型
   supportedInputPipelines: [
-    PIPconfigs.PipelineType.SEARCH,
-    PIPconfigs.PipelineType.RETRIEVAL,
-    PIPconfigs.PipelineType.RAG
+    PipelineType.SEARCH,
+    PipelineType.RETRIEVAL,
+    PipelineType.RAG
   ],
   // 支持的输出管道类型
   supportedOutputPipelines: [
-    PIPconfigs.PipelineType.SEARCH,
-    PIPconfigs.PipelineType.RETRIEVAL,
-    PIPconfigs.PipelineType.RAG
+    PipelineType.SEARCH,
+    PipelineType.RETRIEVAL,
+    PipelineType.RAG
   ],
   version: '1.0.0'
 };

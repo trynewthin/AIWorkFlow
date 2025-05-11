@@ -4,15 +4,15 @@
  */
 const BaseNode = require('./baseNode');
 const Pipeline = require('../pipeline/Pipeline');
-const IOConfigs = require('../configs/IOconfigs');
-const PIPconfigs = require('../configs/PIPconfigs');
+const DataType = require('../pipeline/Datatype');
+const { PipelineType } = require('../pipeline/Piptype');
 
 class StartNode extends BaseNode {
   constructor(config = {}) {
     super(config);
     // TODO: 设置管道类型和数据类型
-    this.pipelineType = config.pipelineType || PIPconfigs.PipelineType.CUSTOM;
-    this.dataType = config.dataType || IOConfigs.DataType.DATA;
+    this.pipelineType = config.pipelineType || PipelineType.CUSTOM;
+    this.dataType = config.dataType || DataType.DATA;
   }
 
   /**

@@ -1,6 +1,6 @@
 // 聊天节点（基于 LangChain JS）
-const IOConfigs = require('../configs/IOconfigs');
-const PIPconfigs = require('../configs/PIPconfigs');
+const DataType = require('../pipeline/Datatype');
+const { PipelineType } = require('../pipeline/Piptype');
 const { ChatOpenAI } = require('@langchain/openai');
 const BaseNode = require('./baseNode');
 
@@ -24,8 +24,8 @@ class ChatNode extends BaseNode {
     this.setStatus(ChatNode.Status.RUNNING);
     try {
       // 获取文本和搜索结果数据
-      const textItems = pipeline.getByType(IOConfigs.DataType.TEXT);
-      const searchItems = pipeline.getByType(IOConfigs.DataType.SEARCH_RESULTS)
+      const textItems = pipeline.getByType(DataType.TEXT);
+      const searchItems = pipeline.getByType(DataType.SEARCH_RESULTS)
         .map(item => ({ data: item.data.pageContent }));
       const items = [...textItems, ...searchItems];
       // 如果没有任何可处理的文本，抛出错误
@@ -43,7 +43,7 @@ class ChatNode extends BaseNode {
         ]);
         
         // 将结果添加到管道
-        pipeline.add(IOConfigs.DataType.TEXT, response);
+        pipeline.add(DataType.TEXT, response);
       }
       
       this.setStatus(ChatNode.Status.COMPLETED);
@@ -109,15 +109,15 @@ ChatNode.nodeConfig = {
   name: 'chat-completion-lc',
   description: '使用 LangChain JS 进行对话生成',
   supportedInputPipelines: [
-    PIPconfigs.PipelineType.CHAT,
-    PIPconfigs.PipelineType.LLM,
-    PIPconfigs.PipelineType.TEXT_PROCESSING,
-    PIPconfigs.PipelineType.SEARCH
+    PipelineType.CHAT,
+    PipelineType.LLM,
+    PipelineType.TEXT_PROCESSING,
+    PipelineType.SEARCH
   ],
   supportedOutputPipelines: [
-    PIPconfigs.PipelineType.CHAT,
-    PIPconfigs.PipelineType.LLM,
-    PIPconfigs.PipelineType.TEXT_PROCESSING
+    PipelineType.CHAT,
+    PipelineType.LLM,
+    PipelineType.TEXT_PROCESSING
   ],
   version: '1.0.0'
 };

@@ -4,8 +4,8 @@ const { getKnowledgeDb, getHNSWDb } = require('../../database');
 const ChunkNode = require('../../model/nodes/chunk');
 const EmbeddingNode = require('../../model/nodes/embedding');
 const Pipeline = require('../../model/pipeline/Pipeline');
-const IOConfigs = require('../../model/configs/IOconfigs');
-const PIPconfigs = require('../../model/configs/PIPconfigs');
+const DataType = require('../../model/pipeline/Datatype');
+const { PipelineType } = require('../../model/pipeline/Piptype');
 const { randomUUID } = require('crypto');
 const { Document } = require('@langchain/core/documents');
 
@@ -60,10 +60,10 @@ class KnowledgeService {
     });
 
     // 基于 Pipeline 流执行分块
-    const chunkPipeline = Pipeline.of(PIPconfigs.PipelineType.FILE, IOConfigs.DataType.PATH, sourcePath);
-    const chunkResult = await chunkPipeline.pipe(this.chunkNode);
+    const chunkPipeline = Pipeline.of(PipelineType.FILE, DataType.PATH, sourcePath);
+    const chunkResult = await this.chunkNode.process(chunkPipeline);
     // 获取分块文本数组
-    const chunkTexts = chunkResult.getByType(IOConfigs.DataType.TEXT).map(item => item.data);
+    const chunkTexts = chunkResult.getByType(DataType.TEXT).map(item => item.data);
 
     const docsForIndex = [];
     let vectorDim = null;
@@ -79,9 +79,9 @@ class KnowledgeService {
         chunk_text: chunkText
       });
       // 使用 Pipeline 流生成嵌入向量
-      const embedPipeline = Pipeline.of(PIPconfigs.PipelineType.TEXT_PROCESSING, IOConfigs.DataType.TEXT, chunkText);
-      const embedResult = await embedPipeline.pipe(this.embeddingNode);
-      const vector = embedResult.getByType(IOConfigs.DataType.EMBEDDING)[0].data;
+      const embedPipeline = Pipeline.of(PipelineType.TEXT_PROCESSING, DataType.TEXT, chunkText);
+      const embedResult = await this.embeddingNode.process(embedPipeline);
+      const vector = embedResult.getByType(DataType.EMBEDDING)[0].data;
       vectorDim = vector.length;
       // 存储向量到数据库
       await this.kbDb.addEmbedding({

@@ -3,14 +3,13 @@
  * @description 将 Pipeline 数据转换为指定原始类型的结束节点
  */
 const BaseNode = require('./baseNode');
-const IOConfigs = require('../configs/IOconfigs');
-const PIPconfigs = require('../configs/PIPconfigs');
+const DataType = require('../pipeline/Datatype');
 
 class EndNode extends BaseNode {
   constructor(config = {}) {
     super(config);
     // TODO: 设置要提取的数据类型
-    this.dataType = config.dataType || IOConfigs.DataType.TEXT;
+    this.dataType = config.dataType || DataType.TEXT;
   }
 
   /**

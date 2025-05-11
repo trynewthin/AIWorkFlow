@@ -8,7 +8,6 @@ class BaseNode {
     this.nodeInfo = {
       nodeId: config.nodeId || '',
       nodeName: config.nodeName || this.constructor.nodeConfig.name,
-      nextNodeId: config.nextNodeId || null,
       status: config.status || this.constructor.Status.IDLE
     };
   }

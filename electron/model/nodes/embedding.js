@@ -4,8 +4,8 @@
 
 // 导入 OpenAIEmbeddings 类
 const { OpenAIEmbeddings } = require("@langchain/openai");
-const PIPconfigs = require('../configs/PIPconfigs');
-const IOConfigs = require('../configs/IOconfigs');
+const { PipelineType } = require('../pipeline/Piptype');
+const DataType = require('../pipeline/Datatype');
 const BaseNode = require('./baseNode');
 
 // Embedding 节点类
@@ -25,7 +25,7 @@ class EmbeddingNode extends BaseNode {
     const embeddings = new OpenAIEmbeddings({ modelName: this.modelName, ...this.modelOptions });
     try {
       // 从管道中获取文本数据
-      const textItems = pipeline.getByType(IOConfigs.DataType.TEXT);
+      const textItems = pipeline.getByType(DataType.TEXT);
       
       // 如果没有文本数据，抛出错误
       if (textItems.length === 0) {
@@ -40,7 +40,7 @@ class EmbeddingNode extends BaseNode {
         const vector = await embeddings.embedQuery(text);
         
         // 将结果添加到管道
-        pipeline.add(IOConfigs.DataType.EMBEDDING, vector);
+        pipeline.add(DataType.EMBEDDING, vector);
       }
       
       this.setStatus(EmbeddingNode.Status.COMPLETED);
@@ -90,15 +90,15 @@ EmbeddingNode.nodeConfig = {
   name: 'text-to-embedding-lc',
   description: '使用LangChain JS生成文本嵌入向量',
   supportedInputPipelines: [
-    PIPconfigs.PipelineType.TEXT_PROCESSING,
-    PIPconfigs.PipelineType.VECTOR_PROCESSING,
-    PIPconfigs.PipelineType.CHAT,
+    PipelineType.TEXT_PROCESSING,
+    PipelineType.VECTOR_PROCESSING,
+    PipelineType.CHAT,
   ],
   supportedOutputPipelines: [
-    PIPconfigs.PipelineType.VECTOR_PROCESSING,
-    PIPconfigs.PipelineType.TEXT_PROCESSING,
+    PipelineType.VECTOR_PROCESSING,
+    PipelineType.TEXT_PROCESSING,
   ],
-  supportedDataTypes: [IOConfigs.DataType.TEXT],
+  supportedDataTypes: [DataType.TEXT],
   version: '1.0.0'
 };
 

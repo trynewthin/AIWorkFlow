@@ -69,18 +69,6 @@ class Pipeline {
   }
 
   /**
-   * 管道式调用节点，自动传入当前Pipeline
-   * @param {BaseNode} node - 继承自BaseNode的节点实例，需实现process方法
-   * @returns {Promise<Pipeline>} 执行后返回新的Pipeline实例
-   */
-  async pipe(node) {
-    if (typeof node.process !== 'function') {
-      throw new Error('节点不支持管道执行，请确保节点继承自BaseNode并实现process方法');
-    }
-    return node.process(this);
-  }
-
-  /**
    * 快速创建包含单个数据体的管道
    * @param {string} pipelineType - 管道类型
    * @param {string} type - 数据类型

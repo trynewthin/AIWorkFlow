@@ -7,8 +7,8 @@ const { DirectoryLoader } = require("langchain/document_loaders/fs/directory");
 const { TextLoader } = require("langchain/document_loaders/fs/text");
 const { RecursiveCharacterTextSplitter } = require("langchain/text_splitter");
 const BaseNode = require('./baseNode');
-const PIPconfigs = require('../configs/PIPconfigs');
-const IOConfigs = require('../configs/IOconfigs');
+const { PipelineType } = require('../pipeline/Piptype');
+const DataType = require('../pipeline/Datatype');
 const fs = require('fs');
 const path = require('path');
 
@@ -26,7 +26,7 @@ class ChunkNode extends BaseNode {
     this.setStatus(ChunkNode.Status.RUNNING);
     try {
       // TODO: 获取路径数据
-      const pathItems = pipeline.getByType(IOConfigs.DataType.PATH);
+      const pathItems = pipeline.getByType(DataType.PATH);
       if (pathItems.length === 0) {
         throw new Error('未找到路径数据，无法执行分块');
       }
@@ -59,13 +59,13 @@ class ChunkNode extends BaseNode {
         const chunkedDocs = await splitter.splitDocuments(documents);
         // TODO: 添加分块结果
         for (const doc of chunkedDocs) {
-          pipeline.add(IOConfigs.DataType.TEXT, doc.pageContent);
+          pipeline.add(DataType.TEXT, doc.pageContent);
         }
       }
       // TODO: 设置状态为完成
       this.setStatus(ChunkNode.Status.COMPLETED);
       // TODO: 更新输出管道类型为 文本处理
-      pipeline.setPipelineType(PIPconfigs.PipelineType.TEXT_PROCESSING);
+      pipeline.setPipelineType(PipelineType.TEXT_PROCESSING);
       return pipeline;
     } catch (error) {
       // TODO: 设置状态为失败
@@ -124,13 +124,13 @@ ChunkNode.nodeConfig = {
   description: '使用LangChain JS加载器和分块策略将文本或文件分割为多个块',
   // 支持的输入管道类型
   supportedInputPipelines: [
-    PIPconfigs.PipelineType.FILE,
-    PIPconfigs.PipelineType.DOCUMENT_PROCESSING,
-    PIPconfigs.PipelineType.TEXT_PROCESSING
+    PipelineType.FILE,
+    PipelineType.DOCUMENT_PROCESSING,
+    PipelineType.TEXT_PROCESSING
   ],
   // 支持的输出管道类型
   supportedOutputPipelines: [
-    PIPconfigs.PipelineType.TEXT_PROCESSING
+    PipelineType.TEXT_PROCESSING
   ],
   version: '1.0.0'
 };
