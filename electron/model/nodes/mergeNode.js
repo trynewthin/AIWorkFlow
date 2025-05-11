@@ -6,6 +6,13 @@ const BaseNode = require('./baseNode');
 const { PipelineType } = require('../pipeline/Piptype');
 
 class MergeNode extends BaseNode {
+  /**
+   * @constructor
+   * @param {Object} config - 配置对象
+   * @param {string} [config.outputType] - 合并后输出的管道类型
+   * @param {number} [config.mergeCount] - 执行合并所需的管道数量阈值
+   * @param {boolean} [config.immediateMerge] - 是否立即合并，或等待达到 mergeCount
+   */
   constructor(config = {}) {
     super(config);
     // 合并后管道类型
@@ -14,15 +21,18 @@ class MergeNode extends BaseNode {
     this.mergeCount = config.mergeCount != null ? config.mergeCount : 2;
     // 是否立即合并，只要接收到数据就直接合并
     this.immediateMerge = config.immediateMerge != null ? config.immediateMerge : true;
+
+    // 注册默认的未支持类型处理器（主要用于 execute 调用路径，如果发生）
+    this.registerHandler('*', this._defaultUnsupportedHandler.bind(this));
   }
 
   /**
-   * 执行合并，将后续管道的数据合并到第一个管道，并设置新的管道类型
+   * @description 执行合并，将后续管道的数据合并到第一个管道，并设置新的管道类型
    * @param {Array<Pipeline>} pipelines - 要合并的 Pipeline 实例数组
-   * @returns {Pipeline} 合并后的 Pipeline 实例
+   * @returns {Promise<Pipeline>} 合并后的 Pipeline 实例
+   * @throws {Error} 如果未开启立即合并且管道数量不足时抛出
    */
   async process(pipelines) {
-    // TODO: 设置状态为运行中
     this.setStatus(MergeNode.Status.RUNNING);
     // 阻塞合并：如果未开启立即合并模式且数量不足，则抛出
     if (!this.immediateMerge && pipelines.length < this.mergeCount) {
@@ -37,13 +47,25 @@ class MergeNode extends BaseNode {
     }
     // 设置合并后管道类型
     first.setPipelineType(this.outputType);
-    // TODO: 设置状态为完成
     this.setStatus(MergeNode.Status.COMPLETED);
     return first;
   }
 
   /**
-   * 返回自定义配置，用于序列化
+   * @private
+   * @description 处理不支持的管道类型，默认抛出错误 (主要用于 execute 调用路径)。
+   * @param {Pipeline} pipeline - 输入的管道实例。
+   * @throws {Error} 当接收到不支持的管道类型时抛出。
+   * @returns {Promise<Pipeline>}
+   */
+  async _defaultUnsupportedHandler(pipeline) {
+    const pipelineType = pipeline.getPipelineType();
+    throw new Error(`节点 ${this.constructor.nodeConfig.name} (ID: ${this.nodeInfo.nodeId}) 不支持通过 execute 处理 ${pipelineType} 类型的管道。请使用 process(pipelines) 处理。`);
+  }
+
+  /**
+   * @description 返回自定义配置，用于序列化
+   * @returns {Object} 自定义配置对象
    */
   getCustomConfig() {
     return {
@@ -54,7 +76,8 @@ class MergeNode extends BaseNode {
   }
 
   /**
-   * 设置自定义配置，用于反序列化
+   * @description 设置自定义配置，用于反序列化
+   * @param {Object} config - 配置对象
    */
   setCustomConfig(config) {
     if (config.outputType) this.outputType = config.outputType;
@@ -62,32 +85,48 @@ class MergeNode extends BaseNode {
     if (config.immediateMerge != null) this.immediateMerge = config.immediateMerge;
   }
 
-  // 设置合并数量阈值
+  /**
+   * @description 设置合并数量阈值
+   * @param {number} count - 合并数量
+   */
   setMergeCount(count) {
     this.mergeCount = count;
   }
 
-  // 获取合并数量阈值
+  /**
+   * @description 获取合并数量阈值
+   * @returns {number} 合并数量
+   */
   getMergeCount() {
     return this.mergeCount;
   }
 
-  // 增加合并数量阈值
+  /**
+   * @description 增加合并数量阈值
+   */
   incrementMergeCount() {
     this.mergeCount++;
   }
 
-  // 减少合并数量阈值
+  /**
+   * @description 减少合并数量阈值，最小为 1
+   */
   decrementMergeCount() {
     if (this.mergeCount > 1) this.mergeCount--;
   }
 
-  // 设置立即合并模式
+  /**
+   * @description 设置立即合并模式
+   * @param {boolean} flag - 是否立即合并
+   */
   setImmediateMerge(flag) {
     this.immediateMerge = flag;
   }
 
-  // 获取立即合并模式
+  /**
+   * @description 获取立即合并模式
+   * @returns {boolean} 是否立即合并
+   */
   getImmediateMerge() {
     return this.immediateMerge;
   }

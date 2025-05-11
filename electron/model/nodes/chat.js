@@ -4,7 +4,18 @@ const { PipelineType } = require('../pipeline/Piptype');
 const { ChatOpenAI } = require('@langchain/openai');
 const BaseNode = require('./baseNode');
 
+/**
+ * @class ChatNode
+ * @description 聊天节点（基于 LangChain JS）
+ */
 class ChatNode extends BaseNode {
+  /**
+   * 构造函数
+   * @param {Object} config - 配置对象
+   * @param {string} [config.model] - 模型名称
+   * @param {string} [config.systemPrompt] - 系统提示词
+   * @param {number} [config.temperature] - 温度
+   */
   constructor(config = {}) {
     super(config);
     // 聊天配置，包括模型和系统提示
@@ -12,15 +23,24 @@ class ChatNode extends BaseNode {
       model: config.model || ChatNode.aiConfig.defaultModel,
       systemPrompt: config.systemPrompt || ChatNode.aiConfig.defaultSystemPrompt
     };
-    // TODO: 创建 LangChain ChatOpenAI 实例
+    // 创建 LangChain ChatOpenAI 实例
     this.llm = new ChatOpenAI({
       modelName: this.chatConfig.model,
       temperature: config.temperature != null ? config.temperature : ChatNode.defaultConfig.temperature
     });
+    // 注册管道类型处理器
+    this.registerHandler(PipelineType.CHAT, this._handleChat.bind(this));
+    this.registerHandler(PipelineType.LLM, this._handleChat.bind(this));
+    this.registerHandler(PipelineType.TEXT_PROCESSING, this._handleChat.bind(this));
+    this.registerHandler(PipelineType.SEARCH, this._handleChat.bind(this));
   }
 
-  // 执行聊天，根据用户输入返回模型回复
-  async execute(pipeline) {
+  /**
+   * 私有处理方法：执行聊天逻辑
+   * @param {Pipeline} pipeline - 管道实例
+   * @returns {Promise<Pipeline>} 处理后的管道
+   */
+  async _handleChat(pipeline) {
     this.setStatus(ChatNode.Status.RUNNING);
     try {
       // 获取文本和搜索结果数据
@@ -28,24 +48,17 @@ class ChatNode extends BaseNode {
       const searchItems = pipeline.getByType(DataType.SEARCH_RESULTS)
         .map(item => ({ data: item.data.pageContent }));
       const items = [...textItems, ...searchItems];
-      // 如果没有任何可处理的文本，抛出错误
       if (items.length === 0) {
         throw new Error('未找到可处理的文本或搜索结果，无法执行聊天');
       }
-      
-      // 处理每一条文本数据或搜索结果
       for (const item of items) {
         const text = item.data;
-        
         const response = await this.llm.call([
           { role: 'system', content: this.chatConfig.systemPrompt },
           { role: 'user', content: text }
         ]);
-        
-        // 将结果添加到管道
         pipeline.add(DataType.TEXT, response);
       }
-      
       this.setStatus(ChatNode.Status.COMPLETED);
       return pipeline;
     } catch (error) {

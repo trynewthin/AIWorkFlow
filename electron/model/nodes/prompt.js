@@ -8,6 +8,13 @@ const { ChatOpenAI } = require('@langchain/openai');
 const BaseNode = require('./baseNode');
 
 class PromptNode extends BaseNode {
+  /**
+   * @constructor
+   * @param {Object} config - 配置对象
+   * @param {string} [config.model] - LLM 模型名称
+   * @param {string} [config.systemPrompt] - 系统提示词
+   * @param {number} [config.temperature] - LLM 温度参数
+   */
   constructor(config = {}) {
     super(config);
     // LLM 调用配置
@@ -15,19 +22,27 @@ class PromptNode extends BaseNode {
       model: config.model || PromptNode.aiConfig.defaultModel, // 聊天模型
       systemPrompt: config.systemPrompt || PromptNode.aiConfig.defaultSystemPrompt // 系统提示
     };
-    // TODO: 创建 LangChain LLM 实例
+    // 创建 LangChain LLM 实例
     this.llm = new ChatOpenAI({
       modelName: this.chatConfig.model,
       temperature: config.temperature != null ? config.temperature : PromptNode.defaultConfig.temperature
     });
+
+    // 注册支持的管道类型处理器
+    this.registerHandler(PipelineType.PROMPT, this._handlePromptOptimization.bind(this));
+    this.registerHandler(PipelineType.TEXT_PROCESSING, this._handlePromptOptimization.bind(this));
+    this.registerHandler(PipelineType.LLM, this._handlePromptOptimization.bind(this));
+    // 注册默认的未支持类型处理器
+    this.registerHandler('*', this._defaultUnsupportedHandler.bind(this));
   }
 
   /**
-   * 执行优化：使用大模型优化提示词，基于 Pipeline 流
+   * @private
+   * @description 执行优化：使用大模型优化提示词，基于 Pipeline 流
    * @param {Pipeline} pipeline - 管道流实例
-   * @returns {Pipeline} 优化后的管道流实例
+   * @returns {Promise<Pipeline>} 优化后的管道流实例
    */
-  async execute(pipeline) {
+  async _handlePromptOptimization(pipeline) {
     this.setStatus(PromptNode.Status.RUNNING);
     try {
       // 获取文本数据
@@ -51,8 +66,22 @@ class PromptNode extends BaseNode {
     }
   }
 
+  /**
+   * @private
+   * @description 处理不支持的管道类型，默认抛出错误。
+   * @param {Pipeline} pipeline - 输入的管道实例。
+   * @throws {Error} 当接收到不支持的管道类型时抛出。
+   * @returns {Promise<Pipeline>}
+   */
+  async _defaultUnsupportedHandler(pipeline) {
+    const pipelineType = pipeline.getPipelineType();
+    throw new Error(`节点 ${this.constructor.nodeConfig.name} (ID: ${this.nodeInfo.nodeId}) 不支持处理 ${pipelineType} 类型的管道。`);
+  }
 
-  // TODO: 返回自定义配置，用于序列化
+  /**
+   * @description 返回自定义配置，用于序列化
+   * @returns {Object} 自定义配置对象
+   */
   getCustomConfig() {
     return {
       model: this.chatConfig.model,
@@ -61,7 +90,10 @@ class PromptNode extends BaseNode {
     };
   }
 
-  // TODO: 设置自定义配置，用于反序列化
+  /**
+   * @description 设置自定义配置，用于反序列化
+   * @param {Object} config - 配置对象
+   */
   setCustomConfig(config) {
     if (config.model) this.chatConfig.model = config.model;
     if (config.systemPrompt) this.chatConfig.systemPrompt = config.systemPrompt;

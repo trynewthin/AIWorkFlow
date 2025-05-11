@@ -9,6 +9,14 @@ const { PipelineType } = require('../pipeline/Piptype');
 const BaseNode = require('./baseNode');
 
 class SearchNode extends BaseNode {
+  /**
+   * @constructor
+   * @param {Object} config - 配置对象
+   * @param {number} [config.topK] - 检索返回的 top K 结果数量
+   * @param {string} [config.knowledgeBaseId] - 知识库 ID，用于过滤结果
+   * @param {string} [config.modelName] - 嵌入模型的名称
+   * @param {Object} [config.modelOptions] - 嵌入模型的其他参数
+   */
   constructor(config = {}) {
     super(config);
     // 检索配置
@@ -19,18 +27,30 @@ class SearchNode extends BaseNode {
     // HNSW 索引服务实例
     this.hnswDb = getHNSWDb();
     this.kbDb = getKnowledgeDb();
+
+    // 注册支持的管道类型处理器
+    this.registerHandler(PipelineType.SEARCH, this._handleSearch.bind(this));
+    this.registerHandler(PipelineType.RETRIEVAL, this._handleSearch.bind(this));
+    this.registerHandler(PipelineType.RAG, this._handleSearch.bind(this));
+    // 注册默认的未支持类型处理器
+    this.registerHandler('*', this._defaultUnsupportedHandler.bind(this));
   }
 
   /**
-   * 执行检索：基于 Pipeline 流处理文本并生成搜索结果
+   * @private
+   * @description 执行检索：基于 Pipeline 流处理文本并生成搜索结果
    * @param {Pipeline} pipeline - 输入的 Pipeline 实例
-   * @returns {Pipeline} 处理后的 Pipeline 实例
+   * @returns {Promise<Pipeline>} 处理后的 Pipeline 实例
    */
-  async execute(pipeline) {
+  async _handleSearch(pipeline) {
     this.setStatus(SearchNode.Status.RUNNING);
     try {
       // 使用嵌入节点处理文本，生成 EMBEDDING 数据
+      // 注意：这里调用 embeddingNode.process，它内部会使用 registerHandler (如果适配了)
+      // 或者直接调用 embeddingNode._handleEmbedding(pipeline) 如果确定类型
+      // 为保持 SearchNode 的独立性，且嵌入是其固有步骤，直接调用 process 更合适
       pipeline = await this.embeddingNode.process(pipeline);
+      
       // 获取嵌入向量
       const embeddingItems = pipeline.getByType(DataType.EMBEDDING);
       if (embeddingItems.length === 0) {
@@ -67,7 +87,22 @@ class SearchNode extends BaseNode {
     }
   }
 
-  // TODO: 返回自定义配置，用于序列化
+  /**
+   * @private
+   * @description 处理不支持的管道类型，默认抛出错误。
+   * @param {Pipeline} pipeline - 输入的管道实例。
+   * @throws {Error} 当接收到不支持的管道类型时抛出。
+   * @returns {Promise<Pipeline>}
+   */
+  async _defaultUnsupportedHandler(pipeline) {
+    const pipelineType = pipeline.getPipelineType();
+    throw new Error(`节点 ${this.constructor.nodeConfig.name} (ID: ${this.nodeInfo.nodeId}) 不支持处理 ${pipelineType} 类型的管道。`);
+  }
+
+  /**
+   * @description 返回自定义配置，用于序列化
+   * @returns {Object} 自定义配置对象
+   */
   getCustomConfig() {
     return {
       topK: this.topK,
@@ -76,7 +111,10 @@ class SearchNode extends BaseNode {
     };
   }
 
-  // TODO: 设置自定义配置，用于反序列化
+  /**
+   * @description 设置自定义配置，用于反序列化
+   * @param {Object} config - 配置对象
+   */
   setCustomConfig(config) {
     if (config.topK != null) this.topK = config.topK;
     if (config.knowledgeBaseId) this.knowledgeBaseId = config.knowledgeBaseId;

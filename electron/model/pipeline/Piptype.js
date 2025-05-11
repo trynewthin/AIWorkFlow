@@ -17,7 +17,11 @@ const PipelineType = {
   FILE: 'file',                             // 文件处理管道
   DATA: 'data',                             // 数据处理管道
 
-  CUSTOM: 'custom'                          // 自定义管道类型
+  CUSTOM: 'custom',                         // 自定义管道类型
+  /** 开始管道，由 StartNode 输出 */
+  START: 'start',
+  /** 结束管道，由 EndNode 输出 */
+  END: 'end'
 };
 
 function isValidPipelineType(type) {
@@ -30,16 +34,21 @@ function getAllPipelineTypes() {
 
 function getRecommendedPipelineTypes(nodeType) {
   switch (nodeType) {
-    case 'chat':
-      return [PipelineType.CHAT, PipelineType.LLM];
+    case 'start':
+      return [PipelineType.START];
+    case 'end':
+      return [PipelineType.END];
+    case 'split':
+      return [PipelineType.FILE, PipelineType.DOCUMENT_PROCESSING];
     case 'embedding':
       return [PipelineType.VECTOR_PROCESSING];
-    case 'chunk':
-      return [PipelineType.DOCUMENT_PROCESSING];
+    case 'retrieve':
     case 'search':
       return [PipelineType.SEARCH, PipelineType.RETRIEVAL];
     case 'prompt':
       return [PipelineType.PROMPT, PipelineType.TEXT_PROCESSING];
+    case 'chat':
+      return [PipelineType.CHAT, PipelineType.LLM];
     default:
       return [PipelineType.CUSTOM];
   }
