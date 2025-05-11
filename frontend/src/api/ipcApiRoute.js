@@ -17,7 +17,16 @@ const ipcApiRoute = {
   ingestFromPath: 'controller/knowledge/ingestFromPath',
   getRetriever: 'controller/knowledge/getRetriever',
   deleteDocument: 'controller/knowledge/deleteDocument',
-  deleteBase: 'controller/knowledge/deleteBase'
+  deleteBase: 'controller/knowledge/deleteBase',
+  // 工作流相关接口
+  workflowList: 'controller/workflow/getWorkflowList',
+  workflowDetail: 'controller/workflow/getWorkflowConfig',
+  workflowSave: 'controller/workflow/createWorkflow',
+  workflowUpdate: 'controller/workflow/updateWorkflow',
+  workflowDelete: 'controller/workflow/deleteWorkflow',
+  workflowRun: 'controller/workflow/executeWorkflow',
+  workflowStatus: 'controller/workflow/getWorkflowStatus',
+  workflowControl: 'controller/workflow/controlWorkflow'
 };
 
 export default ipcApiRoute; 

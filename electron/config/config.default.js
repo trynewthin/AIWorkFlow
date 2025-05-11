@@ -124,6 +124,81 @@ module.exports = () => {
       'controller/upload/getFilePath': {
         controller: 'upload',
         action: 'getFilePath'
+      },
+      // 工作流管理接口
+      'controller/workflow/getWorkflowList': {
+        controller: 'workflow',
+        action: 'getWorkflowList'
+      },
+      'controller/workflow/getWorkflowConfig': {
+        controller: 'workflow',
+        action: 'getWorkflowConfig' // 参数: name
+      },
+      'controller/workflow/createWorkflow': {
+        controller: 'workflow',
+        action: 'createWorkflow' // 参数: name, config
+      },
+      'controller/workflow/updateWorkflow': {
+        controller: 'workflow',
+        action: 'updateWorkflow' // 参数: name, config
+      },
+      'controller/workflow/deleteWorkflow': {
+        controller: 'workflow',
+        action: 'deleteWorkflow' // 参数: name
+      },
+      'controller/workflow/executeWorkflow': {
+        controller: 'workflow',
+        action: 'executeWorkflow' // 参数: name, input
+      },
+      'controller/workflow/getWorkflowStatus': {
+        controller: 'workflow',
+        action: 'getWorkflowStatus' // 参数: engineId
+      },
+      'controller/workflow/controlWorkflow': {
+        controller: 'workflow',
+        action: 'controlWorkflow' // 参数: engineId, action
+      },
+      'controller/workflow/getRunningWorkflows': {
+        controller: 'workflow',
+        action: 'getRunningWorkflows'
+      },
+      // 工作流步骤管理接口
+      'controller/workflow/getSteps': {
+        controller: 'workflow',
+        action: 'getSteps' // 参数: name (workflowName)
+      },
+      'controller/workflow/addStep': {
+        controller: 'workflow',
+        action: 'addStep' // 参数: name (workflowName), stepName, stepConfig, options
+      },
+      'controller/workflow/updateStep': {
+        controller: 'workflow',
+        action: 'updateStep' // 参数: name (workflowName), stepName, newConfig
+      },
+      'controller/workflow/removeStep': {
+        controller: 'workflow',
+        action: 'removeStep' // 参数: name (workflowName), stepName
+      },
+      'controller/workflow/reorderSteps': {
+        controller: 'workflow',
+        action: 'reorderSteps' // 参数: name (workflowName), orderedStepNames
+      },
+      // 节点管理接口
+      'controller/node/getNodeList': {
+        controller: 'node',
+        action: 'getNodeList'
+      },
+      'controller/node/getNodeConfig': {
+        controller: 'node',
+        action: 'getNodeConfig' // 参数: tag
+      },
+      'controller/node/getNodeConfigSchema': {
+        controller: 'node',
+        action: 'getNodeConfigSchema' // 参数: name (nodeName)
+      },
+      'controller/node/updateNodeConfig': {
+        controller: 'node',
+        action: 'updateNodeConfig' // 参数: name (nodeName), config
       }
     }
   }

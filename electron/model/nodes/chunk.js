@@ -74,7 +74,7 @@ class ChunkNode extends BaseNode {
         
         for (const doc of chunkedDocs) {
           // 添加包含元数据的文档块，保留来源信息
-          pipeline.add(DataType.DOCUMENT_ARRAY, doc);
+          pipeline.add(DataType.DOCUMENTS, doc);
           // 添加仅包含文本内容的块，以便后续仅处理 TEXT 类型数据
           pipeline.add(DataType.TEXT, doc.pageContent);
         }

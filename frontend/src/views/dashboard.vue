@@ -48,6 +48,23 @@ const navButtons = ref([
     customClass: 'hover:text-[#06B6D4]'
   },
   {
+  id: 'workflow',
+  label: '工作流',
+  icon: `
+    <svg class="lucide lucide-flowchart" stroke-linejoin="round" stroke-linecap="round" stroke-width="2" stroke="currentColor" fill="none" viewBox="0 0 24 24" height="22" width="22" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="2" width="6" height="6" rx="1"></rect>
+      <rect x="16" y="2" width="6" height="6" rx="1"></rect>
+      <rect x="9" y="16" width="6" height="6" rx="1"></rect>
+      <path d="M8 5h8"></path>
+      <path d="M5 8v8"></path>
+      <path d="M19 8v8"></path>
+      <path d="M12 8v8"></path>
+    </svg>
+  `,
+  action: '/workflow',
+  customClass: 'hover:text-purple-500'
+  },
+  {
     id: 'knowledge',
     label: '知识库',
     icon: `

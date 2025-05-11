@@ -23,7 +23,7 @@ const DataType = {
   /** HNSW 索引实例，由 HNSWDb 输出 */
   HNSW_INDEX: 'hnsw_index',
   /** 检索结果数组，由 SearchNode 输出，包含 pageContent、metadata、score */
-  RETRIEVAL_RESULTS: 'retrieval_results'
+  SEARCH_RESULTS: 'search_results'
 };
 
 module.exports = DataType;

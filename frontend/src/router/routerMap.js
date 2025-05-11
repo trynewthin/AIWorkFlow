@@ -40,6 +40,35 @@ const constantRouterMap = [
             props: true
           }
         ]
+      },
+      {
+        path: 'Workflow',
+        name: 'Workflow',
+        component: () => import('@/views/workflow/Index.vue'),
+        children: [
+          { 
+            path: '', 
+            name: 'WorkflowList', 
+            component: () => import('@/views/workflow/List.vue') 
+          },
+          { 
+            path: 'create', 
+            name: 'WorkflowCreate', 
+            component: () => import('@/views/workflow/Create.vue') 
+          },
+          { 
+            path: ':id', 
+            name: 'WorkflowDetail', 
+            component: () => import('@/views/workflow/Detail.vue'), 
+            props: true 
+          },
+          { 
+            path: ':id/edit', 
+            name: 'WorkflowEdit', 
+            component: () => import('@/views/workflow/Edit.vue'), 
+            props: true 
+          }
+        ]
       }
     ]
   }
