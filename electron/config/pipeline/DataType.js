@@ -15,7 +15,9 @@ const DataType = {
   EMBEDDING: 'embedding',
   /** 检索结果，含 score */
   RETRIEVAL: 'retrieval',
+  /** 文本块，包含文本内容和元数据 */
+  CHUNK: 'chunk',
   // … 如有更多类型可继续添加
 };
 
-export default DataType; 
+module.exports = DataType; 

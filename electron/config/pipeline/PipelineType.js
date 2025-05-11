@@ -13,6 +13,12 @@ const PipelineType = {
   EMBEDDING: 'embedding',
   /** 自定义管道 */
   CUSTOM: 'custom',
+  /** 文本块类型管道，包含分块后的文本段落 */
+  CHUNK: 'chunk',
+  /** 错误类型管道 */
+  ERROR: 'error',
+  /** 未知类型 */
+  UNKNOWN: 'unknown',
   // … 如果有更多业务管道类型可在此添加
 };
 
@@ -43,12 +49,14 @@ function getRecommendedPipelineTypes(nodeType) {
     case 'chat':   return [PipelineType.CHAT];
     case 'prompt': return [PipelineType.PROMPT];
     case 'search': return [PipelineType.RETRIEVAL];
+    case 'chunk':  return [PipelineType.CHUNK]; 
+    case 'embedding': return [PipelineType.EMBEDDING];
     // … 可根据业务继续补充
     default:       return [PipelineType.CUSTOM];
   }
 }
 
-export default {
+module.exports = {
   PipelineType,
   isValidPipelineType,
   getAllPipelineTypes,

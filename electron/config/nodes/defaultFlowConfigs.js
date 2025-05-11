@@ -32,4 +32,24 @@ module.exports = {
   //   nodeName: '示例节点',
   //   status: Status.IDLE
   // }
+  ChunkNode: {
+    nodeName: '文本分块节点',
+    status: Status.IDLE
+  },
+  EmbeddingNode: {
+    nodeName: '向量嵌入节点',
+    status: Status.IDLE
+  },
+  SearchNode: {
+    nodeName: '检索引擎节点',
+    status: Status.IDLE
+  },
+  MergeNode: {
+    nodeName: '合并节点',
+    status: Status.IDLE
+  },
+  PromptNode: {
+    nodeName: '提示词优化节点',
+    status: Status.IDLE
+  }
 }; 

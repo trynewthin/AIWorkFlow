@@ -6,6 +6,7 @@ const { UserDb, getUserDb } = require('./user-db');
 const { KnowledgeDb, getKnowledgeDb } = require('./knowledge-db');
 const { HNSWDb, getHNSWDb } = require('./hnsw-db');
 const { UploadDb, getUploadDb } = require('./upload-db');
+const { WorkflowDb, getWorkflowDb } = require('./workflow-db');
 
 /**
  * 数据库服务索引
@@ -29,5 +30,9 @@ module.exports = {
   
   // 上传数据库服务
   UploadDb,
-  getUploadDb
+  getUploadDb,
+  
+  // 工作流数据库服务
+  WorkflowDb,
+  getWorkflowDb
 }; 

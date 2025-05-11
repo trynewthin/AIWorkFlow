@@ -1,13 +1,14 @@
 'use strict';
 
 const { getKnowledgeDb, getHNSWDb } = require('../../database');
-const ChunkNode = require('../../model/nodes/chunk');
-const EmbeddingNode = require('../../model/nodes/embedding');
+const ChunkNode = require('../../model/nodes/ChunkNode');
+const EmbeddingNode = require('../../model/nodes/EmbeddingNode');
 const Pipeline = require('../../model/pipeline/Pipeline');
-const DataType = require('../../model/pipeline/Datatype');
-const { PipelineType } = require('../../model/pipeline/Piptype');
+const { DataType, PipelineType } = require('../../config/pipeline/index');
 const { randomUUID } = require('crypto');
 const { Document } = require('@langchain/core/documents');
+const fs = require('fs');
+const path = require('path');
 
 /**
  * 知识库服务（基于HNSW索引的超集实现）
@@ -18,10 +19,22 @@ class KnowledgeService {
     this.kbDb = getKnowledgeDb();
     // 获取HNSW索引管理服务实例
     this.hnswDb = getHNSWDb();
-    // 创建分块节点实例
+    // 创建分块节点实例 (尚未初始化)
     this.chunkNode = new ChunkNode();
-    // 创建嵌入节点实例
+    // 创建嵌入节点实例 (尚未初始化)
     this.embeddingNode = new EmbeddingNode();
+  }
+
+  /**
+   * @method initService
+   * @description 异步初始化服务内部依赖的节点。
+   * @async
+   */
+  async initService() {
+    // 使用默认配置初始化节点
+    await this.chunkNode.init();
+    await this.embeddingNode.init();
+    // 此处可以添加检查，确保节点已成功初始化，例如检查 this.chunkNode.isInitialized()
   }
 
   // 创建新的知识库
@@ -48,28 +61,69 @@ class KnowledgeService {
     return this.kbDb.getChunksByDocument(documentId);
   }
 
+  /**
+   * 读取文件内容
+   * @param {string} filePath 文件路径
+   * @returns {Promise<string>} 文件内容
+   */
+  async _readFileContent(filePath) {
+    try {
+      // 检查文件是否存在
+      if (!fs.existsSync(filePath)) {
+        throw new Error(`文件不存在: ${filePath}`);
+      }
+
+      // 读取文件内容
+      const content = fs.readFileSync(filePath, 'utf8');
+      return content;
+    } catch (error) {
+      console.error(`读取文件失败: ${error.message}`);
+      throw error;
+    }
+  }
+
   // 文档分块并构建HNSW索引
   async ingestFromPath({ knowledgeBaseId, sourcePath, metadata = {} }) {
+    // 确保节点已初始化 (如果服务未强制调用 initService，则可在此处按需初始化)
+    if (!this.chunkNode.isInitialized()) await this.chunkNode.init();
+    if (!this.embeddingNode.isInitialized()) await this.embeddingNode.init();
+
     const docId = randomUUID();
+    
+    // 读取文件内容
+    let fileContent;
+    try {
+      fileContent = await this._readFileContent(sourcePath);
+    } catch (error) {
+      throw new Error(`无法读取文件内容: ${error.message}`);
+    }
+
     // 插入文档元信息
     await this.kbDb.addDocument({
       id: docId,
       knowledge_base_id: knowledgeBaseId,
-      title: metadata.title || sourcePath,
-      metadata
+      title: metadata.title || path.basename(sourcePath),
+      metadata: JSON.stringify(metadata)
     });
 
-    // 基于 Pipeline 流执行分块
-    const chunkPipeline = Pipeline.of(PipelineType.FILE, DataType.PATH, sourcePath);
+    // 基于 Pipeline 流执行分块，直接使用文件内容而非路径
+    const chunkPipeline = Pipeline.of(PipelineType.PROMPT, DataType.TEXT, fileContent);
     const chunkResult = await this.chunkNode.process(chunkPipeline);
-    // 获取分块文本数组
-    const chunkTexts = chunkResult.getByType(DataType.TEXT).map(item => item.data);
+    
+    // 获取分块数据
+    const chunks = chunkResult.getByType(DataType.CHUNK);
+    if (!chunks || chunks.length === 0) {
+      throw new Error('分块失败，未生成有效的文本块');
+    }
 
     const docsForIndex = [];
     let vectorDim = null;
 
-    for (let idx = 0; idx < chunkTexts.length; idx++) {
-      const chunkText = chunkTexts[idx];
+    for (let idx = 0; idx < chunks.length; idx++) {
+      const chunk = chunks[idx].data;
+      const chunkText = chunk.text;
+      const chunkMetadata = chunk.metadata || {};
+      
       const chunkId = randomUUID();
       // 存储分块文本
       await this.kbDb.addChunk({
@@ -78,31 +132,38 @@ class KnowledgeService {
         chunk_index: idx,
         chunk_text: chunkText
       });
+      
       // 使用 Pipeline 流生成嵌入向量
-      const embedPipeline = Pipeline.of(PipelineType.TEXT_PROCESSING, DataType.TEXT, chunkText);
+      const embedPipeline = Pipeline.of(PipelineType.PROMPT, DataType.TEXT, chunkText);
       const embedResult = await this.embeddingNode.process(embedPipeline);
-      const vector = embedResult.getByType(DataType.EMBEDDING)[0].data;
+      const vector = embedResult.getByType(DataType.EMBEDDING)[0].data.vector;
       vectorDim = vector.length;
+      
       // 存储向量到数据库
       await this.kbDb.addEmbedding({
         chunk_id: chunkId,
         embedding: vector,
         dimension: vectorDim
       });
+      
       // 准备HNSW索引文档数据
       docsForIndex.push(new Document({
         pageContent: chunkText,
-        metadata: { chunkId, documentId: docId }
+        metadata: { 
+          chunkId, 
+          documentId: docId,
+          ...chunkMetadata
+        }
       }));
     }
 
     // 构建并持久化HNSW索引
     await this.hnswDb.buildIndex(docsForIndex, {
-      modelName: this.embeddingNode.getModelName(),
+      modelName: this.embeddingNode.getWorkConfig().model,
       dimension: vectorDim
     });
 
-    return { docId, chunkCount: chunkTexts.length };
+    return { docId, chunkCount: chunks.length };
   }
 
   // 获取HNSW检索器
