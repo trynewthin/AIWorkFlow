@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path' // 导入 path 模块
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -9,5 +10,11 @@ export default defineConfig({
     port: 8080,
     strictPort: true, // 确保使用指定的端口
     host: 'localhost'
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
   }
 })
+
