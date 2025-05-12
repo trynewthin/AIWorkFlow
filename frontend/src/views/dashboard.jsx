@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import {
   AudioWaveform,
   BookOpen,
@@ -33,14 +33,20 @@ import homeConfig from '@/lib/homeConfig';
  * @returns {JSX.Element}
  */
 function Home() {
-  const location = useLocation();
-  const segments = location.pathname.split('/');
-  const current = segments[segments.length - 1] || '';
-  const title = pageTitles[current] || 'AI 工作流平台';
+  const { pathname } = useLocation();
+  const segments = pathname.split('/').filter(Boolean);
+  
+  // 如果是 /knowledge/:kbId，则映射到 knowledgeDetail
+  const pageKey = 
+    segments.length === 2 && segments[0] === 'knowledge'
+      ? 'knowledgeDetail'
+      : segments[segments.length - 1] || '';
+  
+  const title = pageTitles[pageKey] || 'AI 工作流平台';
 
   return (
     <SidebarProvider>
-      <div className="flex h-full w-full">
+      <div className="flex h-screen w-full">
         <Sidebar collapsible="icon">
           <SidebarHeader>
             <TeamSwitcher teams={homeConfig.teams} />
@@ -54,9 +60,26 @@ function Home() {
           </SidebarFooter>
         </Sidebar>
         <div className="flex-1 flex flex-col overflow-auto">
-          <div className="flex h-14 items-center border-b px-4">
+          <div className="sticky top-0 h-14 flex items-center border-b bg-white/30 backdrop-blur px-4 flex-shrink-0 z-10">
             <SidebarTrigger />
-            <div className="ml-4 font-semibold">{title}</div>
+            <div className="ml-4 flex items-center space-x-2 text-sm text-gray-600">
+              <Link to="/" className="hover:underline">首页</Link>
+              {segments.map((seg, idx) => {
+                const pathTo = `/${segments.slice(0, idx + 1).join('/')}`;
+                let key = seg;
+                // 针对知识库详情页映射到固定 key
+                if (segments.length === 2 && segments[0] === 'knowledge' && idx === 1) {
+                  key = 'knowledgeDetail';
+                }
+                const name = pageTitles[key] || seg;
+                return (
+                  <React.Fragment key={pathTo}>
+                    <span>›</span>
+                    <Link to={pathTo} className="hover:underline">{name}</Link>
+                  </React.Fragment>
+                );
+              })}
+            </div>
           </div>
           <main className="flex-1 p-6">
             {/* 渲染子路由页面 */}

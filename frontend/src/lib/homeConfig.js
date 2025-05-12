@@ -57,7 +57,7 @@ const homeConfig = {
       url: "#",
       icon: BookOpen,
       items: [
-        { title: "知识库管理", url: "#" },
+        { title: "知识库管理", url: "/knowledge" },
       ],
     },
     {

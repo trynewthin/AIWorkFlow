@@ -4,8 +4,8 @@
  */
 const pageTitles = {
   '': 'AI 工作流平台',
-  projects: '最近项目',
-  quick: '快速操作',
+  'knowledge': '知识库',
+  'knowledgeDetail': '知识库详情',
 };
 
 export default pageTitles; 
