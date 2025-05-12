@@ -48,6 +48,33 @@ class ConfigService {
     // 返回配置的副本
     return { ...(this.defaultWorkConfigs[nodeType] || {}) };
   }
+  
+  /**
+   * @description 获取所有可用节点的配置列表
+   * @returns {Array<Object>} 所有节点配置的数组
+   */
+  getNodeConfigs() {
+    // 返回所有节点的完整配置信息
+    return Object.values(this.classConfigs);
+  }
+
+  /**
+   * @description 获取所有可用节点的类型名称列表
+   * @returns {Array<string>} 所有节点类型名称 (例如 'StartNode', 'ChatNode') 的数组
+   */
+  getNodeTypeNames() {
+    // 返回 classConfigs 对象的所有键名
+    return Object.keys(this.classConfigs);
+  }
+
+  /**
+   * @description 根据节点类型名称获取其静态配置 (classConfig)
+   * @param {string} nodeType - 节点类型名称 (例如 'StartNode')
+   * @returns {Object | null} 对应的 classConfig，如果未找到则返回 null
+   */
+  getNodeConfigByType(nodeType) {
+    return this.classConfigs[nodeType] || null;
+  }
 }
 
 // 导出 ConfigService 的单例

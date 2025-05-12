@@ -2,6 +2,8 @@ import Dashboard from '../views/dashboard';
 import HomePage from '../views/home/HomePage';
 import Knowledge from '../views/knowledge/knowledge';
 import KnowledgeDetail from '../views/knowledge/Detail';
+import DocsPage from '../views/odocs';
+import NodeGuide from '../views/odocs/nodeGuide';
 
 /**
  * @description 路由配置数组
@@ -36,6 +38,18 @@ const routerMap = [
         element: <KnowledgeDetail />,
         name: 'KnowledgeDetail',
         meta: { title: '知识库详情' },
+      },
+      {
+        path: 'docs',
+        element: <DocsPage />,
+        name: 'DocsPage',
+        meta: { title: '教程文档' },
+      },
+      {
+        path: 'docs/node',
+        element: <NodeGuide />,
+        name: 'NodeGuide',
+        meta: { title: '节点使用教程' },
       },
     ]
   },

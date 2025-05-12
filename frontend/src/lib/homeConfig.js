@@ -34,9 +34,9 @@ const homeConfig = {
       icon: SquareTerminal,
       isActive: true,
       items: [
-        { title: "历史记录", url: "#" },
-        { title: "收藏项目", url: "#" },
-        { title: "设置选项", url: "#" },
+    //    { title: "历史记录", url: "#" },
+    //    { title: "收藏项目", url: "#" },
+    //    { title: "设置选项", url: "#" },
       ],
     },
 
@@ -60,15 +60,13 @@ const homeConfig = {
         { title: "知识库管理", url: "/knowledge" },
       ],
     },
+
     {
       title: "系统设置",
       url: "#",
       icon: Settings2,
       items: [
-        { title: "基础设置", url: "#" },
-        { title: "团队管理", url: "#" },
-        { title: "账单信息", url: "#" },
-        { title: "使用限制", url: "#" },
+        { title: "教程文档", url: "/docs" },
       ],
     },
   ],

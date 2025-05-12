@@ -4,9 +4,7 @@
  */
 
 const { logger } = require('ee-core/log');
-const WorkflowManager = require('../model/workflow/WorkflowManager');
-const { getWorkflowExecutor } = require('../model/workflow/WorkflowExecutor');
-const { getNodeFactory } = require('../model/workflow/NodeFactory');
+const workflowService = require('../services/workflow/workflow-service');
 
 /**
  * 工作流控制器
@@ -15,9 +13,6 @@ const { getNodeFactory } = require('../model/workflow/NodeFactory');
 class WorkflowController {
   constructor(ctx) {
     this.ctx = ctx;
-    this.workflowManager = new WorkflowManager();
-    this.workflowExecutor = getWorkflowExecutor();
-    this.nodeFactory = getNodeFactory();
   }
 
   /**
@@ -31,7 +26,7 @@ class WorkflowController {
         return { code: 400, message: '工作流名称不能为空', success: false };
       }
       
-      const workflow = await this.workflowManager.createWorkflow(name, description, config);
+      const workflow = await workflowService.createWorkflow(name, description, config);
       return { code: 200, data: workflow, success: true };
     } catch (error) {
       logger.error(`[WorkflowController] 创建工作流失败: ${error.message}`);
@@ -50,7 +45,7 @@ class WorkflowController {
         return { code: 400, message: '工作流ID不能为空', success: false };
       }
       
-      const workflow = await this.workflowManager.getWorkflow(id);
+      const workflow = await workflowService.getWorkflow(id);
       
       if (!workflow) {
         return { code: 404, message: '工作流不存在', success: false };
@@ -68,7 +63,7 @@ class WorkflowController {
    */
   async listWorkflows() {
     try {
-      const workflows = await this.workflowManager.listWorkflows();
+      const workflows = await workflowService.listWorkflows();
       return { code: 200, data: workflows, success: true };
     } catch (error) {
       logger.error(`[WorkflowController] 获取工作流列表失败: ${error.message}`);
@@ -92,7 +87,7 @@ class WorkflowController {
       if (description !== undefined) data.description = description;
       if (config !== undefined) data.config = config;
       
-      const result = await this.workflowManager.updateWorkflow(id, data);
+      const result = await workflowService.updateWorkflow(id, data);
       
       if (!result) {
         return { code: 404, message: '工作流不存在', success: false };
@@ -116,7 +111,7 @@ class WorkflowController {
         return { code: 400, message: '工作流ID不能为空', success: false };
       }
       
-      const result = await this.workflowManager.deleteWorkflow(id);
+      const result = await workflowService.deleteWorkflow(id);
       
       if (!result) {
         return { code: 404, message: '工作流不存在', success: false };
@@ -144,12 +139,13 @@ class WorkflowController {
         return { code: 400, message: '节点类型不能为空', success: false };
       }
       
-      // 检查节点类型是否存在
-      if (!this.nodeFactory.hasNodeType(nodeType)) {
+      // 检查节点类型是否存在 (通过服务中的节点类型列表检查)
+      const nodeTypes = workflowService.getNodeTypes();
+      if (!nodeTypes.includes(nodeType)) {
         return { code: 400, message: `未知节点类型: ${nodeType}`, success: false };
       }
       
-      const nodeId = await this.workflowManager.addNode(
+      const nodeId = await workflowService.addNode(
         workflowId,
         nodeType,
         flowConfig || {},
@@ -175,7 +171,7 @@ class WorkflowController {
         return { code: 400, message: '节点ID不能为空', success: false };
       }
       
-      const result = await this.workflowManager.updateNode(nodeId, flowConfig, workConfig);
+      const result = await workflowService.updateNode(nodeId, flowConfig, workConfig);
       
       if (!result) {
         return { code: 404, message: '节点不存在', success: false };
@@ -199,7 +195,7 @@ class WorkflowController {
         return { code: 400, message: '节点ID不能为空', success: false };
       }
       
-      const result = await this.workflowManager.deleteNode(nodeId);
+      const result = await workflowService.deleteNode(nodeId);
       
       if (!result) {
         return { code: 404, message: '节点不存在', success: false };
@@ -227,7 +223,7 @@ class WorkflowController {
         return { code: 400, message: '新位置索引不能为空或负数', success: false };
       }
       
-      const result = await this.workflowManager.moveNode(nodeId, newIndex);
+      const result = await workflowService.moveNode(nodeId, newIndex);
       
       if (!result) {
         return { code: 404, message: '节点不存在', success: false };
@@ -245,7 +241,7 @@ class WorkflowController {
    */
   async getNodeTypes() {
     try {
-      const nodeTypes = this.nodeFactory.getRegisteredTypes();
+      const nodeTypes = workflowService.getNodeTypes();
       return { code: 200, data: nodeTypes, success: true };
     } catch (error) {
       logger.error(`[WorkflowController] 获取节点类型列表失败: ${error.message}`);
@@ -264,7 +260,7 @@ class WorkflowController {
         return { code: 400, message: '工作流ID不能为空', success: false };
       }
       
-      const result = await this.workflowExecutor.execute(workflowId, input, options);
+      const result = await workflowService.executeWorkflow(workflowId, input, options);
       
       // 返回管道数据
       return { 

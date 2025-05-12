@@ -37,6 +37,7 @@
     "electron-builder": "^25.1.8"
   },
   "dependencies": {
+    "@langchain/community": "^0.3.42",
     "autoprefixer": "^10.4.21",
     "better-sqlite3": "^11.9.1",
     "dotenv": "^16.5.0",
