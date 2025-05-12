@@ -1,4 +1,4 @@
-import Home from '../views/home/Home';
+import Dashboard from '../views/dashboard';
 
 /**
  * @description 路由配置数组
@@ -11,12 +11,12 @@ import Home from '../views/home/Home';
  */
 const routerMap = [
   {
-    index: true,    // 将主页设置为索引路由
-    element: <Home />,
-    name: 'Home',
-    meta: {
-      title: '主页'
-    }
+    path: '/',
+    element: <Dashboard />,    
+    name: 'Dashboard',
+    meta: { title: '主页' },
+    children: [
+    ]
   },
   // 在这里添加更多路由配置
 ];
