@@ -23,8 +23,8 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarProvider,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
+import TopNav from "@/components/ui/top-nav";
 import pageTitles from '@/lib/pageTitles';
 import homeConfig from '@/lib/homeConfig';
 
@@ -60,27 +60,7 @@ function Home() {
           </SidebarFooter>
         </Sidebar>
         <div className="flex-1 flex flex-col overflow-auto">
-          <div className="sticky top-0 h-14 flex items-center border-b bg-white/30 backdrop-blur px-4 flex-shrink-0 z-10">
-            <SidebarTrigger />
-            <div className="ml-4 flex items-center space-x-2 text-sm text-gray-600">
-              <Link to="/" className="hover:underline">首页</Link>
-              {segments.map((seg, idx) => {
-                const pathTo = `/${segments.slice(0, idx + 1).join('/')}`;
-                let key = seg;
-                // 针对知识库详情页映射到固定 key
-                if (segments.length === 2 && segments[0] === 'knowledge' && idx === 1) {
-                  key = 'knowledgeDetail';
-                }
-                const name = pageTitles[key] || seg;
-                return (
-                  <React.Fragment key={pathTo}>
-                    <span>›</span>
-                    <Link to={pathTo} className="hover:underline">{name}</Link>
-                  </React.Fragment>
-                );
-              })}
-            </div>
-          </div>
+          <TopNav />
           <main className="flex-1 p-6">
             {/* 渲染子路由页面 */}
             <Outlet />

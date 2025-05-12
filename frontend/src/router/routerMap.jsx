@@ -1,5 +1,5 @@
 import Dashboard from '../views/dashboard';
-import HomePage from '../views/HomePage';
+import HomePage from '../views/home/HomePage';
 import Knowledge from '../views/knowledge/knowledge';
 import KnowledgeDetail from '../views/knowledge/Detail';
 
