@@ -4,6 +4,9 @@ import Knowledge from '../views/knowledge/knowledge';
 import KnowledgeDetail from '../views/knowledge/Detail';
 import DocsPage from '../views/odocs';
 import NodeGuide from '../views/odocs/nodeGuide';
+import WorkflowList from '../views/workflow/WorkflowList';
+import WorkflowEditor from '../views/workflow/WorkflowEditor';
+import WorkflowExecution from '../views/workflow/WorkflowExecution';
 
 /**
  * @description 路由配置数组
@@ -51,6 +54,24 @@ const routerMap = [
         name: 'NodeGuide',
         meta: { title: '节点使用教程' },
       },
+      {
+        path: 'workflow',
+        element: <WorkflowList />,
+        name: 'WorkflowList',
+        meta: { title: '工作流列表' },
+      },
+      {
+        path: 'workflow/:id',
+        element: <WorkflowEditor />,
+        name: 'WorkflowEditor',
+        meta: { title: '编辑工作流' },
+      },
+      {
+        path: 'workflow/:id/execute',
+        element: <WorkflowExecution />,
+        name: 'WorkflowExecution',
+        meta: { title: '执行工作流' },
+      }
     ]
   },
   // 在这里添加更多路由配置

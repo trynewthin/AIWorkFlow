@@ -18,9 +18,9 @@ class WorkflowController {
   /**
    * 创建工作流
    */
-  async createWorkflow() {
+  async createWorkflow(params) {
     try {
-      const { name, description, config } = this.ctx.request.body;
+      const { name, description, config } = params;
       
       if (!name) {
         return { code: 400, message: '工作流名称不能为空', success: false };
@@ -37,9 +37,9 @@ class WorkflowController {
   /**
    * 获取工作流
    */
-  async getWorkflow() {
+  async getWorkflow(params) {
     try {
-      const { id } = this.ctx.request.body;
+      const { id } = params;
       
       if (!id) {
         return { code: 400, message: '工作流ID不能为空', success: false };
@@ -74,9 +74,9 @@ class WorkflowController {
   /**
    * 更新工作流
    */
-  async updateWorkflow() {
+  async updateWorkflow(params) {
     try {
-      const { id, name, description, config } = this.ctx.request.body;
+      const { id, name, description, config } = params;
       
       if (!id) {
         return { code: 400, message: '工作流ID不能为空', success: false };
@@ -103,9 +103,9 @@ class WorkflowController {
   /**
    * 删除工作流
    */
-  async deleteWorkflow() {
+  async deleteWorkflow(params) {
     try {
-      const { id } = this.ctx.request.body;
+      const { id } = params;
       
       if (!id) {
         return { code: 400, message: '工作流ID不能为空', success: false };
@@ -127,9 +127,9 @@ class WorkflowController {
   /**
    * 添加节点
    */
-  async addNode() {
+  async addNode(params) {
     try {
-      const { workflowId, nodeType, flowConfig, workConfig, index } = this.ctx.request.body;
+      const { workflowId, nodeType, flowConfig, workConfig, index } = params;
       
       if (!workflowId) {
         return { code: 400, message: '工作流ID不能为空', success: false };
@@ -163,9 +163,9 @@ class WorkflowController {
   /**
    * 更新节点
    */
-  async updateNode() {
+  async updateNode(params) {
     try {
-      const { nodeId, flowConfig, workConfig } = this.ctx.request.body;
+      const { nodeId, flowConfig, workConfig } = params;
       
       if (!nodeId) {
         return { code: 400, message: '节点ID不能为空', success: false };
@@ -187,9 +187,9 @@ class WorkflowController {
   /**
    * 删除节点
    */
-  async deleteNode() {
+  async deleteNode(params) {
     try {
-      const { nodeId } = this.ctx.request.body;
+      const { nodeId } = params;
       
       if (!nodeId) {
         return { code: 400, message: '节点ID不能为空', success: false };
@@ -211,9 +211,9 @@ class WorkflowController {
   /**
    * 移动节点
    */
-  async moveNode() {
+  async moveNode(params) {
     try {
-      const { nodeId, newIndex } = this.ctx.request.body;
+      const { nodeId, newIndex } = params;
       
       if (!nodeId) {
         return { code: 400, message: '节点ID不能为空', success: false };
@@ -252,9 +252,9 @@ class WorkflowController {
   /**
    * 执行工作流
    */
-  async executeWorkflow() {
+  async executeWorkflow(params) {
     try {
-      const { workflowId, input, options } = this.ctx.request.body;
+      const { workflowId, input, options } = params;
       
       if (!workflowId) {
         return { code: 400, message: '工作流ID不能为空', success: false };

@@ -10,6 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@flowgram.ai/free-layout-editor": "^0.1.27",
+    "@flowgram.ai/free-snap-plugin": "^0.1.27",
+    "@flowgram.ai/minimap-plugin": "^0.1.27",
     "@flowgram.ai/node": "^0.1.26",
     "@flowgram.ai/renderer": "^0.1.26",
     "@radix-ui/react-avatar": "^1.1.9",

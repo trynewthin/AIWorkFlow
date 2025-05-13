@@ -2,7 +2,7 @@
  * @description Home 页面静态数据配置
  * @type {object}
  */
-import { AudioWaveform, GalleryVerticalEnd, Command, SquareTerminal, Bot, BookOpen, Settings2, Frame, PieChart, Map } from "lucide-react";
+import { AudioWaveform, GalleryVerticalEnd, Command, SquareTerminal, Bot, BookOpen, Settings2, Frame, PieChart, Map, Workflow } from "lucide-react";
 
 const homeConfig = {
   user: {
@@ -58,6 +58,15 @@ const homeConfig = {
       icon: BookOpen,
       items: [
         { title: "知识库管理", url: "/knowledge" },
+      ],
+    },
+
+    {
+      title: "工作流",
+      url: "#",
+      icon: Workflow,
+      items: [
+        { title: "工作流列表", url: "/workflow" },
       ],
     },
 
