@@ -27,6 +27,7 @@ module.exports = () => {
       icon: path.join(getBaseDir(), 'public', 'images', 'logo-32.png'),
     },
     logger: {
+      encoding: 'utf-8', 
       level: 'INFO',
       outputJSON: false,
       appLogName: 'ee.log',

@@ -39,7 +39,7 @@ class SearchNode extends BaseNode {
         }
     }
 
-    this.registerHandler(PipelineType.CUSTOM, this._handleSearch.bind(this));
+    this.registerHandler(PipelineType.CHAT, this._handleSearch.bind(this));
   }
 
   /**

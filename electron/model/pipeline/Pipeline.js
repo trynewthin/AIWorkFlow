@@ -78,6 +78,37 @@ class Pipeline {
   static of(pipelineType, type, data) {
     return new Pipeline(pipelineType).add(type, data);
   }
+
+  /**
+   * 快速将一个单数据管道类型和数据类型转换为指定类型
+   * @param {Pipeline} pipeline - 原始管道实例
+   * @param {string} pipelineType - 新的管道类型
+   * @param {string} dataType - 新的数据类型，将应用于管道中的第一个数据项
+   * @returns {Pipeline} 转换后的管道实例
+   * @throws {Error} 如果传入的不是有效的管道实例
+   */
+  static convert(pipeline, pipelineType, dataType) {
+    // 验证参数是否为 Pipeline 实例
+    if (!pipeline || typeof pipeline.getPipelineType !== 'function') {
+      throw new Error('convert 方法需要 Pipeline 实例作为第一个参数');
+    }
+
+    // 创建一个新的管道实例，使用指定的管道类型
+    const newPipeline = new Pipeline(pipelineType);
+    
+    // 获取原始管道中的所有数据项
+    const items = pipeline.getAll();
+    
+    // 如果管道为空，则直接返回
+    if (!items || items.length === 0) {
+      return newPipeline;
+    }
+    
+    // 添加第一个数据项，但使用新的数据类型
+    const firstItem = items[0];
+    newPipeline.add(dataType, firstItem.data);
+    return newPipeline;
+  }
 }
 
 module.exports = Pipeline; 

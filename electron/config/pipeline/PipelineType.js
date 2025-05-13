@@ -3,6 +3,10 @@
  * @description 语义化管道类型枚举及常用辅助方法
  */
 const PipelineType = {
+
+  /** 所有类型的管道都支持*/
+  ALL: 'all',
+
   /** 聊天管道（处理 chat 场景） */
   CHAT: 'chat',
   /** 提示词处理管道（prompt → text） */
@@ -20,6 +24,12 @@ const PipelineType = {
   /** 未知类型 */
   UNKNOWN: 'unknown',
   // … 如果有更多业务管道类型可在此添加
+
+  /** 搜索结果管道 */
+  SEARCH: 'search',
+
+  /** 用户消息管道 */
+  USER_MESSAGE: 'user_message',
 };
 
 /**

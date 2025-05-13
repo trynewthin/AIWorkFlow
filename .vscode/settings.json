@@ -1,0 +1,18 @@
+{
+  // 配置 Git Bash 为默认终端并启用 UTF-8 本地化环境
+  "terminal.integrated.profiles.windows": {
+    "Git Bash": {
+      "path": "C:\\Program Files\\Git\\bin\\bash.exe",
+      "args": ["--login", "-i"],
+      "env": {
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "LC_CTYPE": "C.UTF-8"
+      }
+    }
+  },
+  // 将 Git Bash 设置为默认终端
+  "terminal.integrated.defaultProfile.windows": "Git Bash",
+  // 使用支持中文的等宽字体
+  "terminal.integrated.fontFamily": "Consolas, 'Microsoft YaHei', monospace"
+} 

@@ -4,6 +4,7 @@
  * 包含：模型名称、temperature、系统提示词等，具体字段因节点类型而异
  */
 const { PipelineType } = require('../pipeline'); // 添加导入
+const { DataType } = require('../pipeline'); // 添加导入
 
 module.exports = {
   TextNode: {
@@ -45,6 +46,10 @@ module.exports = {
     model: 'qwen-plus', // 假设使用通义千问进行优化
     systemPrompt: '请对用户提供的提示词进行优化，确保清晰、准确、有条理，适合用于大模型生成。',
     temperature: 0.7
+  },
+  StartNode: {
+    pipelineType: PipelineType.USER_MESSAGE, // 转换为的管道类型
+    dataType: DataType.TEXT // 默认数据类型
   }
   // 在此添加更多其他节点类型的默认运行时配置
   // ExampleNode: {

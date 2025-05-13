@@ -5,6 +5,7 @@
 
 const { logger } = require('ee-core/log');
 const workflowService = require('../services/workflow/workflow-service');
+const configService = require('../services/config/configService');
 
 /**
  * 工作流控制器
@@ -148,8 +149,8 @@ class WorkflowController {
       const nodeId = await workflowService.addNode(
         workflowId,
         nodeType,
-        flowConfig || {},
-        workConfig || {},
+        configService.getDefaultFlowConfig(nodeType),
+        configService.getDefaultWorkConfig(nodeType),
         index !== undefined ? index : -1
       );
       

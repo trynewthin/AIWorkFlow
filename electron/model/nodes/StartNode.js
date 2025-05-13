@@ -1,7 +1,7 @@
 /**
  * @file electron/model/nodes/startNode.js
  * @class StartNode
- * @description 开始节点：根据输入类型创建初始管道
+ * @description 开始节点：根据配置的目标管道类型创建初始管道
  */
 const BaseNode = require('./baseNode');
 const Pipeline = require('../pipeline/Pipeline');
@@ -10,46 +10,56 @@ const { DataType, PipelineType } = require('../../config/pipeline');
 class StartNode extends BaseNode {
   /**
    * @constructor
-   * @description 构造开始节点实例，并注册默认执行处理器
+   * @description 构造开始节点实例
    * @param {Object} config - 配置对象（保留以兼容 BaseNode）
    */
   constructor(config = {}) {
     super(config);
-    // 注册通配符处理器：不支持通过 execute 调用
-    this.registerHandler('*', this._defaultUnsupportedHandler.bind(this));
+  }
+
+  /**
+   * @method onInit
+   * @description 初始化节点，在 BaseNode.init() 方法内部被调用
+   * @override
+   * @param {Object} classConfig - 节点类型的静态配置
+   * @param {Object} flowConfig - 流程级配置
+   * @param {Object} workConfig - 运行时配置
+   */
+  async onInit(classConfig, flowConfig, workConfig) {
+    // 打印调试信息，帮助理解输入参数的结构
+    console.log('StartNode: onInit 被调用');
+    console.log('StartNode: classConfig =', JSON.stringify(classConfig));
+    console.log('StartNode: flowConfig =', JSON.stringify(flowConfig));
+    console.log('StartNode: workConfig =', JSON.stringify(workConfig));
+
+    // 注意：onInit 方法不需要返回值或修改传入的参数
+    // init() 方法已经将配置保存到 BaseNode 实例中
+    // 只需要处理那些需要初始化的事物，例如注册处理器或创建资源
+    // 在 BaseNode.process 方法中，我们将使用 this.getWorkConfig() 获取正确的配置
   }
 
   /**
    * @method process
-   * @description 创建并返回包含初始输入数据的管道实例
-   * @param {*} input - 原始输入数据
-   * @returns {Promise<Pipeline>} 包含初始数据的管道实例
+   * @description 创建并返回包含初始输入数据的管道实例，或转换已有管道
+   * @param {Pipeline|any} input - 管道实例或原始输入数据
+   * @returns {Promise<Pipeline>} 包含初始数据的管道实例或修改后的管道
    */
   async process(input) {
-    let pipelineType;
-    let dataType;
-    // 根据输入类型选择管道类型和数据类型
-    if (typeof input === 'string') {
-      pipelineType = PipelineType.PROMPT;
-      dataType = DataType.TEXT;
-    } else {
-      throw new Error('StartNode 不支持的输入类型: ' + typeof input);
-    }
-    // 创建并返回新的管道
-    return Pipeline.of(pipelineType, dataType, input);
-  }
+    // 直接获取工作配置
 
-  /**
-   * @method _defaultUnsupportedHandler
-   * @description 默认处理器，当通过 execute 调用时抛出错误，提醒使用 process
-   * @param {Pipeline} pipeline - 输入的管道实例
-   * @throws {Error}
-   */
-  async _defaultUnsupportedHandler(pipeline) {
-    // 使用 this._classConfig 获取节点信息
-    const nodeName = this._classConfig.name || '未知节点'; 
-    const pipelineType = pipeline.getPipelineType();
-    throw new Error(`节点 ${nodeName} (类型: ${this._classConfig.tag || '未知'}) 不支持通过 execute 处理 ${pipelineType} 类型的管道。请使用 process(input) 方法创建新管道。`);
+    const workConfig = this.getWorkConfig();
+    
+    console.log(`StartNode.process: 工作配置`, workConfig);
+
+    // 从配置中获取管道类型和数据类型
+    const pipelineType = workConfig.pipelineType ;
+    const dataType = workConfig.dataType ;
+  
+    console.log(`StartNode.process: 使用管道类型 ${pipelineType} 和数据类型 ${dataType}`,input);
+
+    const line = Pipeline.convert(input, workConfig.pipelineType, workConfig.dataType);
+    console.log(`StartNode.process: 转换后的管道`,line);
+    return line;
   }
 }
 

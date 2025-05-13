@@ -146,6 +146,10 @@ class BaseNode {
    */
   supportsInputPipeline(pipelineType) {
     const supportedTypes = this.getSupportedInputPipelineTypes();
+    // 如果支持类型包含ALL类型，表示支持所有管道类型
+    if (supportedTypes.includes('all')) {
+      return true;
+    }
     return supportedTypes.length === 0 || supportedTypes.includes(pipelineType);
   }
 

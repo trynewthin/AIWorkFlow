@@ -115,34 +115,16 @@ class WorkflowExecutor {
    * @param {Pipeline|Object|string|null} input - 输入数据
    * @returns {Pipeline} 初始管道
    */
-  _createInitialPipeline(input) {
-    // 如果输入已经是 Pipeline 实例，直接返回
-    if (input && typeof input.getPipelineType === 'function') {
-      return input;
+  _createInitialPipeline(input) { 
+    // 默认创建 CUSTOM 管道
+
+    if (typeof input === 'object') {
+      const keys = Object.keys(input);
+      console.log(`WorkflowExecutor._createInitialPipeline: 输入`,input);
+      return Pipeline.of(PipelineType.CUSTOM, DataType.ANY, input[keys[0]]);
     }
-    
-    // 根据输入类型创建 Pipeline
-    if (typeof input === 'string') {
-      // 文本输入转为 PROMPT 管道
-      return Pipeline.of(PipelineType.PROMPT, DataType.TEXT, input);
-    } else if (typeof input === 'object' && input !== null) {
-      // 对象输入
-      if (Array.isArray(input) && input.length > 0 && input[0].role) {
-        // 检测类似 [{ role: 'user', content: '...' }] 的消息数组格式，转为 CHAT 管道
-        const pipeline = new Pipeline(PipelineType.CHAT);
-        input.forEach(msg => {
-          pipeline.add(DataType.TEXT, msg.content);
-          pipeline.add(DataType.METADATA, { role: msg.role });
-        });
-        return pipeline;
-      } else {
-        // 普通对象转为 CUSTOM 管道
-        return Pipeline.of(PipelineType.CUSTOM, DataType.OBJECT, input);
-      }
-    }
-    
-    // 默认创建空的 PROMPT 管道
-    return new Pipeline(PipelineType.PROMPT);
+
+    return Pipeline.of(PipelineType.CUSTOM, DataType.ANYs, input);
   }
 }
 

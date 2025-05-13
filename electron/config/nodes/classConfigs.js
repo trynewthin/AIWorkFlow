@@ -13,8 +13,8 @@ module.exports = {
     tag: 'start',
     description: '将原始输入封装为初始管道',
     version: '1.0',
-    supportedInputPipelines: [],
-    supportedOutputPipelines: [PipelineType.PROMPT]
+    supportedInputPipelines: [PipelineType.ALL],
+    supportedOutputPipelines: [PipelineType.ALL]
   },
   ChatNode: {
     id: 'chat',
@@ -24,13 +24,10 @@ module.exports = {
     description: '使用 LangChain JS 进行对话生成',
     version: '1.0.0',
     supportedInputPipelines: [
-      PipelineType.CHAT,
-      PipelineType.PROMPT,
-      PipelineType.RETRIEVAL
+      PipelineType.USER_MESSAGE
     ],
     supportedOutputPipelines: [
-      PipelineType.CHAT,
-      PipelineType.PROMPT
+      PipelineType.CHAT
     ]
   },
   EndNode: {
@@ -76,7 +73,8 @@ module.exports = {
     supportedInputPipelines: [
       PipelineType.EMBEDDING,
       PipelineType.CHUNK, // 添加对文本块输入的支持
-      PipelineType.PROMPT // 支持文本提示词输入
+      PipelineType.PROMPT, // 支持文本提示词输入
+      PipelineType.USER_MESSAGE, // 支持用户消息输入
     ],
     supportedOutputPipelines: [
       PipelineType.EMBEDDING // 输出向量嵌入数据
@@ -90,10 +88,11 @@ module.exports = {
     description: '将文本向量化并使用 HNSW 索引检索相关文档',
     version: '1.0.0',
     supportedInputPipelines: [
-      PipelineType.CUSTOM // 期望输入管道中包含 DataType.EMBEDDING 的向量数据
+      PipelineType.CHAT,
+      PipelineType.EMBEDDING,
     ],
     supportedOutputPipelines: [
-      PipelineType.RETRIEVAL
+      PipelineType.SEARCH
     ]
   },
   MergeNode: {
@@ -114,10 +113,10 @@ module.exports = {
     description: '组织用户提示词字符串，进行格式化处理或优化',
     version: '1.0.0',
     supportedInputPipelines: [
-      PipelineType.PROMPT
+      PipelineType.USER_MESSAGE
     ],
     supportedOutputPipelines: [
-      PipelineType.PROMPT // 输出优化后的提示词
+      PipelineType.USER_MESSAGE // 输出优化后的提示词
     ]
   }
 }; 

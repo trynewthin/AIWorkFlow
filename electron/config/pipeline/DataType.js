@@ -18,6 +18,9 @@ const DataType = {
   /** 文本块，包含文本内容和元数据 */
   CHUNK: 'chunk',
   // … 如有更多类型可继续添加
+
+  
+  
 };
 
 module.exports = DataType; 

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getWorkflow, executeWorkflow } from '../../api/workflow';
-import { ArrowLeft, Play, StopCircle } from 'lucide-react';
+import { Play, StopCircle } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
 
 /**
  * @component WorkflowExecution
@@ -59,14 +60,7 @@ function WorkflowExecution() {
 
     try {
       // 解析输入内容
-      let inputData;
-      try {
-        // 尝试解析为JSON
-        inputData = input.trim() ? JSON.parse(input) : {};
-      } catch (err) {
-        // 如果不是有效JSON，则作为字符串处理
-        inputData = { text: input };
-      }
+      let inputData = { text: input };
 
       // 执行工作流
       const result = await executeWorkflow(
@@ -124,21 +118,12 @@ function WorkflowExecution() {
   return (
     <div className="container mx-auto p-4">
       {/* 顶部工具栏 */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center">
-          <button 
-            onClick={goToEditPage}
-            className="mr-4 p-2 rounded-full hover:bg-gray-200"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h1 className="text-2xl font-semibold">执行工作流</h1>
-        </div>
-        <div>
+      <PageHeader title="执行工作流" onBack={goToEditPage}>
+        <div className="flex flex-col">
           <h2 className="text-xl font-medium">{workflow.name}</h2>
           <p className="text-gray-500 text-sm">{workflow.description}</p>
         </div>
-      </div>
+      </PageHeader>
 
       {/* 主体内容 - 两栏布局 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
