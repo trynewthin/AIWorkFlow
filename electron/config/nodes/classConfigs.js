@@ -18,7 +18,7 @@ module.exports = {
   },
   ChatNode: {
     id: 'chat',
-    name: 'chat-completion-lc',
+    name: 'llm对话节点',
     type: 'model',
     tag: 'chat',
     description: '使用 LangChain JS 进行对话生成',
@@ -35,19 +35,11 @@ module.exports = {
     name: '结束节点',
     type: 'utility',
     tag: 'end',
-    description: '将CHAT管道转换为文本输出',
+    description: '将管道转换为具体输出',
     version: '1.0.0',
     supportedInputPipelines: [PipelineType.CHAT],
     supportedOutputPipelines: [PipelineType.CUSTOM]
   },
-  // 在此添加更多其他节点类型的静态配置
-  // ExampleNode: {
-  //   id: 'example',
-  //   name: '示例节点',
-  //   version: '1.0',
-  //   supportedInputPipelines: [PipelineType.CUSTOM],
-  //   supportedOutputPipelines: [PipelineType.CUSTOM]
-  // }
   ChunkNode: {
     id: 'chunk',
     name: 'text-to-chunks-lc',

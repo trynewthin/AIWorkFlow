@@ -4,6 +4,15 @@ const path = require('path');
 const { getBaseDir } = require('ee-core/ps');
 
 /**
+ * @description IPC 路由分模块配置
+ */
+const connectionRoutes = require('./api/connection');
+const knowledgeRoutes = require('./api/knowledge');
+const uploadRoutes = require('./api/upload');
+const configRoutes = require('./api/config');
+const workflowRoutes = require('./api/workflow');
+
+/**
  * 默认配置
  */
 module.exports = () => {
@@ -68,126 +77,11 @@ module.exports = () => {
     },
     /* IPC通信路由 */
     ipcRoutes: {
-      'controller/connection/check': {
-        controller: 'connection',
-        action: 'check'
-      },
-      // 知识库相关接口
-      'controller/knowledge/listBases': {
-        controller: 'knowledge',
-        action: 'listBases'
-      },
-      'controller/knowledge/createBase': {
-        controller: 'knowledge',
-        action: 'createBase'
-      },
-      'controller/knowledge/listDocuments': {
-        controller: 'knowledge',
-        action: 'listDocuments'
-      },
-      'controller/knowledge/getDocumentChunks': {
-        controller: 'knowledge',
-        action: 'getDocumentChunks'
-      },
-      'controller/knowledge/ingestFromPath': {
-        controller: 'knowledge',
-        action: 'ingestFromPath'
-      },
-      'controller/knowledge/getRetriever': {
-        controller: 'knowledge',
-        action: 'getRetriever'
-      },
-      'controller/knowledge/deleteDocument': {
-        controller: 'knowledge',
-        action: 'deleteDocument'
-      },
-      'controller/knowledge/deleteBase': {
-        controller: 'knowledge',
-        action: 'deleteBase'
-      },
-      // 上传文件相关接口
-      'controller/upload/uploadFile': {
-        controller: 'upload',
-        action: 'uploadFile'
-      },
-      'controller/upload/listFiles': {
-        controller: 'upload',
-        action: 'listFiles'
-      },
-      'controller/upload/getFileInfo': {
-        controller: 'upload',
-        action: 'getFileInfo'
-      },
-      'controller/upload/deleteFile': {
-        controller: 'upload',
-        action: 'deleteFile'
-      },
-      'controller/upload/getFilePath': {
-        controller: 'upload',
-        action: 'getFilePath'
-      },
-      // 配置相关接口
-      'controller/config/getNodeTypes': {
-        controller: 'config',
-        action: 'getNodeTypes'
-      },
-      'controller/config/getNodeConfigByType': {
-        controller: 'config',
-        action: 'getNodeConfigByType'
-      },
-      'controller/config/getDefaultFlowConfig': {
-        controller: 'config',
-        action: 'getDefaultFlowConfig'
-      },
-      'controller/config/getDefaultWorkConfig': {
-        controller: 'config',
-        action: 'getDefaultWorkConfig'
-      },
-      // 工作流相关接口
-      'controller/workflow/createWorkflow': {
-        controller: 'workflow',
-        action: 'createWorkflow'
-      },
-      'controller/workflow/getWorkflow': {
-        controller: 'workflow',
-        action: 'getWorkflow'
-      },
-      'controller/workflow/listWorkflows': {
-        controller: 'workflow',
-        action: 'listWorkflows'
-      },
-      'controller/workflow/updateWorkflow': {
-        controller: 'workflow',
-        action: 'updateWorkflow'
-      },
-      'controller/workflow/deleteWorkflow': {
-        controller: 'workflow',
-        action: 'deleteWorkflow'
-      },
-      'controller/workflow/addNode': {
-        controller: 'workflow',
-        action: 'addNode'
-      },
-      'controller/workflow/updateNode': {
-        controller: 'workflow',
-        action: 'updateNode'
-      },
-      'controller/workflow/deleteNode': {
-        controller: 'workflow',
-        action: 'deleteNode'
-      },
-      'controller/workflow/moveNode': {
-        controller: 'workflow',
-        action: 'moveNode'
-      },
-      'controller/workflow/getNodeTypes': {
-        controller: 'workflow',
-        action: 'getNodeTypes'
-      },
-      'controller/workflow/executeWorkflow': {
-        controller: 'workflow',
-        action: 'executeWorkflow'
-      }
+      ...connectionRoutes,
+      ...knowledgeRoutes,
+      ...uploadRoutes,
+      ...configRoutes,
+      ...workflowRoutes
     }
   }
 }

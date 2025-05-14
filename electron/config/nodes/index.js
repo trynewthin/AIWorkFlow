@@ -6,7 +6,7 @@
 const classConfigs = require('./classConfigs');
 const defaultFlowConfigs = require('./defaultFlowConfigs');
 const defaultWorkConfigs = require('./defaultWorkConfigs');
-const { Status } = require('./nodeConfigs');
+const { Status } = defaultFlowConfigs;
 
 module.exports = {
   classConfigs,

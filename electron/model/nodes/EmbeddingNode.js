@@ -7,7 +7,7 @@ const { OpenAIEmbeddings } = require("@langchain/openai");
 const { PipelineType, DataType } = require('../../config/pipeline/index');
 const BaseNode = require('./baseNode');
 const Pipeline = require('../pipeline/Pipeline');
-const { Status } = require('../../config/nodes/nodeConfigs');
+const { Status } = require('../../config/nodes');
 
 class EmbeddingNode extends BaseNode {
   /**

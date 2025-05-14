@@ -7,15 +7,6 @@ const { PipelineType } = require('../pipeline'); // 添加导入
 const { DataType } = require('../pipeline'); // 添加导入
 
 module.exports = {
-  TextNode: {
-    model: 'gpt-4o-mini', // 示例默认模型
-    temperature: 0.7,
-    systemPrompt: '你是一个有用的助手。'
-  },
-  ImageNode: {
-    model: 'clip-vit-large-patch14', // 示例默认模型
-    output_mode: 'text_description' // 示例：图片处理模式
-  },
   ChatNode: {
     model: 'qwen-plus', 
     systemPrompt: '你是一个友好的助手，请根据用户输入提供帮助。', 
@@ -35,7 +26,7 @@ module.exports = {
   SearchNode: {
     topK: 5,
     knowledgeBaseId: null, // 默不指定特定知识库
-    hnswDimension: 1536 // 例如 OpenAI text-embedding-ada-002 / v3-small 的维度
+    hnswDimension: 1536 
   },
   MergeNode: {
     outputType: PipelineType.CUSTOM, // 默认合并后为自定义类型，可由用户指定
@@ -51,8 +42,4 @@ module.exports = {
     pipelineType: PipelineType.USER_MESSAGE, // 转换为的管道类型
     dataType: DataType.TEXT // 默认数据类型
   }
-  // 在此添加更多其他节点类型的默认运行时配置
-  // ExampleNode: {
-  //   some_param: 'default_value'
-  // }
 }; 

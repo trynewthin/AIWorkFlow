@@ -5,7 +5,7 @@
 const { RecursiveCharacterTextSplitter } = require("langchain/text_splitter");
 const { PipelineType, DataType } = require('../../config/pipeline');
 const BaseNode = require('./baseNode');
-const { Status } = require('../../config/nodes/nodeConfigs');
+const { Status } = require('../../config/nodes');
 const Pipeline = require('../pipeline/Pipeline');
 
 class ChunkNode extends BaseNode {

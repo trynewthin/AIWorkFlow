@@ -3,7 +3,16 @@
  * @description 各节点类型的默认流程级配置
  * 包含：nodeId (通常在实例化时生成唯一的)、nodeName、status
  */
-const { Status } = require('./nodeConfigs');
+/**
+ * @description 节点状态枚举
+ * @type {{IDLE: string, RUNNING: string, COMPLETED: string, FAILED: string}}
+ */
+const Status = {
+  IDLE: 'idle',
+  RUNNING: 'running',
+  COMPLETED: 'completed',
+  FAILED: 'failed'
+};
 
 module.exports = {
   TextNode: {
@@ -27,11 +36,6 @@ module.exports = {
     nodeName: '结束处理节点',
     status: Status.IDLE
   },
-  // 在此添加更多其他节点类型的默认流程配置
-  // ExampleNode: {
-  //   nodeName: '示例节点',
-  //   status: Status.IDLE
-  // }
   ChunkNode: {
     nodeName: '文本分块节点',
     status: Status.IDLE
@@ -52,4 +56,7 @@ module.exports = {
     nodeName: '提示词优化节点',
     status: Status.IDLE
   }
-}; 
+};
+
+// 将 Status 枚举挂载到默认流程配置上
+module.exports.Status = Status; 
