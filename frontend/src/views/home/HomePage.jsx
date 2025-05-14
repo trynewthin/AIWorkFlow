@@ -177,7 +177,7 @@ function HomePage() {
             <p className="text-xs text-gray-500">AI 链式调用</p>
           </div>
           <div className="px-4 py-3 bg-white rounded-lg shadow-sm">
-            <p className="text-purple-600 font-medium">Flowgram</p>
+            <p className="text-purple-600 font-medium">ReactFlow</p>
             <p className="text-xs text-gray-500">节点流引擎</p>
           </div>
         </div>

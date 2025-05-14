@@ -18,5 +18,9 @@ module.exports = {
   'controller/config/getDefaultWorkConfig': {
     controller: 'config',
     action: 'getDefaultWorkConfig'
+  },
+  'controller/config/getAllPipelineTypes': {
+    controller: 'config',
+    action: 'getAllPipelineTypes'
   }
 }; 

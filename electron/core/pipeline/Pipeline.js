@@ -83,6 +83,17 @@ class Pipeline {
   }
 
   /**
+   * @description 将管道对象转换为 JSON 对象
+   * @returns {Object} 包含 pipelineType 和 items 的 JSON 表示
+   */
+  toJSON() {
+    return {
+      pipelineType: this.pipelineType,
+      items: this.items
+    };
+  }
+
+  /**
    * 快速创建包含单个数据体的管道
    * @param {string} pipelineType - 管道类型
    * @param {string} type - 数据类型
