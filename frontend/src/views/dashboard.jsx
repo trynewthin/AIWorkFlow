@@ -40,8 +40,13 @@ function Home() {
   const pageKey = 
     segments.length === 2 && segments[0] === 'knowledge'
       ? 'knowledgeDetail'
-      : segments[segments.length - 1] || '';
+      : segments.length === 2 && segments[0] === 'workflow'
+        ? 'workflowDetail' // 工作流详情页
+        : segments.length === 3 && segments[0] === 'workflow' && segments[2] === 'execute'
+          ? 'workflowExecute' // 工作流执行页
+          : segments[segments.length - 1] || '';
   
+  // 根据路径来显示自定义标题
   const title = pageTitles[pageKey] || 'AI 工作流平台';
 
   return (
@@ -53,7 +58,7 @@ function Home() {
           </SidebarHeader>
           <SidebarContent>
             <NavMain items={homeConfig.navMain} />
-            <NavProjects projects={homeConfig.getProjects()} />
+            <NavProjects projects={homeConfig.getProjects} />
           </SidebarContent>
           <SidebarFooter>
             <NavUser user={homeConfig.user} />

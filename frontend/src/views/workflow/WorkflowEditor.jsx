@@ -38,16 +38,50 @@ function WorkflowEditor() {
   const [error, setError] = useState(null);
   const [nodeTypes, setNodeTypes] = useState([]);
   const [selectedNode, setSelectedNode] = useState(null);
-  const [editingWorkflowInfo, setEditingWorkflowInfo] = useState({
-    name: '',
-    description: ''
-  });
   const [isFlowgramMode, setIsFlowgramMode] = useState(false);
   const [flowgramData, setFlowgramData] = useState(null);
 
   // 路由参数和导航
   const { id } = useParams();
   const navigate = useNavigate();
+
+  // 更新 flowgramData 的辅助函数
+  const updateFlowgramData = (workflowData) => {
+    if (workflowData && workflowData.nodes && workflowData.nodes.length > 0) {
+      const flowgramNodes = workflowData.nodes.map((node, index) => ({
+        id: node.id,
+        type: node.type,
+        data: {
+          ...node.flow_config,
+          ...node.work_config
+        },
+        meta: {
+          position: { x: 100 + index * 250, y: 100 + (index % 2) * 150 }
+        }
+      }));
+      
+      // 生成连接线数据
+      const flowgramEdges = [];
+      if (flowgramNodes.length > 1) {
+        for (let i = 0; i < flowgramNodes.length - 1; i++) {
+          flowgramEdges.push({
+            id: `edge_${flowgramNodes[i].id}_${flowgramNodes[i+1].id}`,
+            source: flowgramNodes[i].id,
+            sourcePortId: `${flowgramNodes[i].id}_output`,
+            target: flowgramNodes[i+1].id,
+            targetPortId: `${flowgramNodes[i+1].id}_input`
+          });
+        }
+      }
+      
+      setFlowgramData({
+        nodes: flowgramNodes,
+        edges: flowgramEdges
+      });
+    } else {
+      setFlowgramData({ nodes: [], edges: [] });
+    }
+  };
 
   // 加载工作流详情和节点类型列表
   useEffect(() => {
@@ -65,10 +99,6 @@ function WorkflowEditor() {
         if (workflowResponse && workflowResponse.success && workflowResponse.data) {
           workflowData = workflowResponse.data;
           setWorkflow(workflowData);
-          setEditingWorkflowInfo({
-            name: workflowData.name,
-            description: workflowData.description
-          });
         } else {
           const errorMessage = workflowResponse && workflowResponse.message ? workflowResponse.message : '获取工作流详情失败';
           throw new Error(errorMessage);
@@ -83,36 +113,7 @@ function WorkflowEditor() {
         
         // 只有在 workflowData 加载成功后才处理 FlowGram 数据转换
         if (workflowData && workflowData.nodes && workflowData.nodes.length > 0) {
-          const flowgramNodes = workflowData.nodes.map((node, index) => ({
-            id: node.id,
-            type: node.type,
-            data: {
-              ...node.flowConfig,
-              ...node.workConfig
-            },
-            meta: {
-              position: { x: 100 + index * 250, y: 100 + (index % 2) * 150 }
-            }
-          }));
-          
-          // 生成连接线数据 (确保节点存在)
-          const flowgramEdges = [];
-          if (flowgramNodes.length > 1) {
-            for (let i = 0; i < flowgramNodes.length - 1; i++) {
-              flowgramEdges.push({
-                id: `edge_${flowgramNodes[i].id}_${flowgramNodes[i+1].id}`,
-                source: flowgramNodes[i].id,
-                sourcePortId: `${flowgramNodes[i].id}_output`, // 确保 portId 唯一且有意义
-                target: flowgramNodes[i+1].id,
-                targetPortId: `${flowgramNodes[i+1].id}_input` // 确保 portId 唯一且有意义
-              });
-            }
-          }
-          
-          setFlowgramData({
-            nodes: flowgramNodes,
-            edges: flowgramEdges
-          });
+          updateFlowgramData(workflowData);
         } else {
           setFlowgramData({ nodes: [], edges: [] }); // 设置空数据以避免后续渲染错误
         }
@@ -131,26 +132,6 @@ function WorkflowEditor() {
 
     loadWorkflowAndNodeTypes();
   }, [id]);
-
-  // 保存工作流基本信息
-  const saveWorkflowInfo = async () => {
-    try {
-      await updateWorkflow(
-        id,
-        editingWorkflowInfo.name,
-        editingWorkflowInfo.description
-      );
-      
-      // 更新成功后刷新工作流数据
-      const workflowData = await getWorkflow(id);
-      setWorkflow(workflowData);
-      
-      alert('保存成功');
-    } catch (err) {
-      setError('保存失败：' + err.message);
-      console.error('保存工作流信息失败', err);
-    }
-  };
 
   // 添加新节点
   const addNewNode = async (nodeType) => {
@@ -171,12 +152,19 @@ function WorkflowEditor() {
       );
       
       // 刷新工作流数据
-      const updatedWorkflow = await getWorkflow(id);
-      setWorkflow(updatedWorkflow);
+      const response = await getWorkflow(id);
+      if (response && response.success && response.data) {
+        const actualWorkflowData = response.data;
+        setWorkflow(actualWorkflowData);
+        updateFlowgramData(actualWorkflowData);
       
-      // 选择新添加的节点进行编辑
-      if (updatedWorkflow.nodes && updatedWorkflow.nodes.length > 0) {
-        setSelectedNode(updatedWorkflow.nodes[updatedWorkflow.nodes.length - 1]);
+        // 选择新添加的节点进行编辑
+        if (actualWorkflowData.nodes && actualWorkflowData.nodes.length > 0) {
+          setSelectedNode(actualWorkflowData.nodes[actualWorkflowData.nodes.length - 1]);
+        }
+      } else {
+        console.error('Failed to refresh workflow after adding node:', response?.message);
+        setError('添加节点后刷新工作流失败：' + (response?.message || '未知错误'));
       }
     } catch (err) {
       setError('添加节点失败：' + err.message);
@@ -190,15 +178,22 @@ function WorkflowEditor() {
       await updateNode(nodeId, flowConfig, workConfig);
       
       // 刷新工作流数据
-      const updatedWorkflow = await getWorkflow(id);
-      setWorkflow(updatedWorkflow);
+      const response = await getWorkflow(id);
+      if (response && response.success && response.data) {
+        const actualWorkflowData = response.data;
+        setWorkflow(actualWorkflowData);
+        updateFlowgramData(actualWorkflowData);
       
-      // 更新选中的节点
-      if (selectedNode && selectedNode.id === nodeId) {
-        const updatedNode = updatedWorkflow.nodes.find(node => node.id === nodeId);
-        if (updatedNode) {
-          setSelectedNode(updatedNode);
+        // 更新选中的节点
+        if (selectedNode && selectedNode.id === nodeId) {
+          const updatedNode = actualWorkflowData.nodes.find(node => node.id === nodeId);
+          if (updatedNode) {
+            setSelectedNode(updatedNode);
+          }
         }
+      } else {
+        console.error('Failed to refresh workflow after updating node:', response?.message);
+        setError('更新节点后刷新工作流失败：' + (response?.message || '未知错误'));
       }
       
       alert('节点配置已保存');
@@ -216,12 +211,19 @@ function WorkflowEditor() {
       await deleteNode(nodeId);
       
       // 刷新工作流数据
-      const updatedWorkflow = await getWorkflow(id);
-      setWorkflow(updatedWorkflow);
+      const response = await getWorkflow(id);
+      if (response && response.success && response.data) {
+        const actualWorkflowData = response.data;
+        setWorkflow(actualWorkflowData);
+        updateFlowgramData(actualWorkflowData);
       
-      // 如果删除的是当前选中的节点，则清除选择
-      if (selectedNode && selectedNode.id === nodeId) {
-        setSelectedNode(null);
+        // 如果删除的是当前选中的节点，则清除选择
+        if (selectedNode && selectedNode.id === nodeId) {
+          setSelectedNode(null);
+        }
+      } else {
+        console.error('Failed to refresh workflow after deleting node:', response?.message);
+        setError('删除节点后刷新工作流失败：' + (response?.message || '未知错误'));
       }
     } catch (err) {
       setError('删除节点失败：' + err.message);
@@ -235,8 +237,15 @@ function WorkflowEditor() {
       await moveNode(nodeId, newIndex);
       
       // 刷新工作流数据
-      const updatedWorkflow = await getWorkflow(id);
-      setWorkflow(updatedWorkflow);
+      const response = await getWorkflow(id);
+      if (response && response.success && response.data) {
+        const actualWorkflowData = response.data;
+        setWorkflow(actualWorkflowData);
+        updateFlowgramData(actualWorkflowData);
+      } else {
+        console.error('Failed to refresh workflow after moving node:', response?.message);
+        setError('移动节点后刷新工作流失败：' + (response?.message || '未知错误'));
+      }
     } catch (err) {
       setError('移动节点失败：' + err.message);
       console.error('移动节点失败', err);
@@ -246,6 +255,12 @@ function WorkflowEditor() {
   // 前往执行页面
   const goToExecutePage = () => {
     navigate(`/workflow/${id}/execute`);
+  };
+
+  // 当选择一个节点时的处理函数
+  const handleNodeSelect = (node) => {
+    console.log("Selected Node Details:", JSON.stringify(node, null, 2));
+    setSelectedNode(node);
   };
 
   // 返回列表页面
@@ -408,39 +423,10 @@ function WorkflowEditor() {
         <Button variant="outline" onClick={toggleEditMode}>
           {isFlowgramMode ? '切换到列表模式' : '切换到可视化模式'}
         </Button>
-        <Button onClick={saveWorkflowInfo}>
-          <Save className="w-4 h-4 mr-2" /> 保存
-        </Button>
         <Button variant="default" onClick={goToExecutePage}>
           <Play className="w-4 h-4 mr-2" /> 执行
         </Button>
       </PageHeader>
-
-      {/* 工作流基本信息表单 */}
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>工作流信息</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium mb-1">工作流名称</label>
-              <Input
-                value={editingWorkflowInfo.name}
-                onChange={(e) => setEditingWorkflowInfo({ ...editingWorkflowInfo, name: e.target.value })}
-              />
-            </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium mb-1">工作流描述</label>
-              <Textarea
-                rows={1}
-                value={editingWorkflowInfo.description}
-                onChange={(e) => setEditingWorkflowInfo({ ...editingWorkflowInfo, description: e.target.value })}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {isFlowgramMode && flowgramEditorProps ? (
         // 可视化编辑模式
@@ -526,7 +512,7 @@ function WorkflowEditor() {
                     <div 
                       key={node.id}
                       className={`p-3 rounded border ${selectedNode && selectedNode.id === node.id ? 'border-blue-500 bg-blue-50' : 'bg-white'}`}
-                      onClick={() => setSelectedNode(node)}
+                      onClick={() => handleNodeSelect(node)}
                     >
                       <div className="flex justify-between items-center">
                         <div className="flex items-center">
@@ -534,7 +520,7 @@ function WorkflowEditor() {
                             {index + 1}
                           </div>
                           <div>
-                            <p className="font-medium">{node.flowConfig?.nodeName || '未命名节点'}</p>
+                            <p className="font-medium">{node.flow_config?.nodeName || '未命名节点'}</p>
                             <p className="text-xs text-gray-500">{node.type}</p>
                           </div>
                         </div>
@@ -591,6 +577,7 @@ function WorkflowEditor() {
             <CardContent>
               {selectedNode ? (
                 <NodeConfigPanel 
+                  key={selectedNode.id}
                   node={selectedNode} 
                   onSave={(flowConfig, workConfig) => saveNodeConfig(selectedNode.id, flowConfig, workConfig)}
                 />
@@ -612,13 +599,13 @@ function WorkflowEditor() {
  * @description 节点配置面板组件
  */
 function NodeConfigPanel({ node, onSave }) {
-  const [flowConfig, setFlowConfig] = useState(node.flowConfig || {});
-  const [workConfig, setWorkConfig] = useState(node.workConfig || {});
+  const [flowConfig, setFlowConfig] = useState(node.flow_config || {});
+  const [workConfig, setWorkConfig] = useState(node.work_config || {});
 
   // 当节点变更时更新配置状态
   useEffect(() => {
-    setFlowConfig(node.flowConfig || {});
-    setWorkConfig(node.workConfig || {});
+    setFlowConfig(node.flow_config || {});
+    setWorkConfig(node.work_config || {});
   }, [node]);
 
   // 处理保存操作

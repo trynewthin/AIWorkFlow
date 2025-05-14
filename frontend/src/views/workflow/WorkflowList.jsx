@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listWorkflows, deleteWorkflow, createWorkflow } from '../../api/workflow';
+import { listWorkflows, deleteWorkflow, createWorkflow, updateWorkflow } from '../../api/workflow';
 import { PlusCircle, Edit, Trash2, Eye, MoreVertical } from 'lucide-react';
 // 从 @/components/ui/sheet 导入所需组件
 import { Sheet, SheetContent, SheetHeader, SheetFooter, SheetTitle } from '@/components/ui/sheet';
@@ -22,6 +22,10 @@ function WorkflowList() {
   const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false); // 此状态将用于控制 Sheet 的 open 属性
   const [newWorkflow, setNewWorkflow] = useState({ name: '', description: '' });
+  
+  // 新增状态用于详情/编辑Sheet
+  const [showInfoSheet, setShowInfoSheet] = useState(false);
+  const [currentWorkflowInSheet, setCurrentWorkflowInSheet] = useState({ id: null, name: '', description: '' });
   
   const navigate = useNavigate();
 
@@ -87,6 +91,39 @@ function WorkflowList() {
     }
   };
 
+  // 新增：处理在Sheet中编辑工作流信息的表单变化
+  const handleCurrentWorkflowChange = (field, value) => {
+    setCurrentWorkflowInSheet(prev => ({ ...prev, [field]: value }));
+  };
+
+  // 新增：保存工作流信息变更
+  const handleUpdateWorkflowInfo = async () => {
+    if (!currentWorkflowInSheet.name.trim()) {
+      setError('工作流名称不能为空'); // 考虑在Sheet内部提示
+      return;
+    }
+    if (!currentWorkflowInSheet.id) {
+      setError('无法更新工作流：ID缺失');
+      return;
+    }
+
+    try {
+      await updateWorkflow(currentWorkflowInSheet.id, currentWorkflowInSheet.name, currentWorkflowInSheet.description);
+      setShowInfoSheet(false); // 关闭Sheet
+      loadWorkflows(); // 重新加载列表
+      setError(null); // 清除之前的错误
+    } catch (err) {
+      setError('更新工作流信息失败：' + err.message);
+      console.error('更新工作流信息失败', err);
+    }
+  };
+  
+  // 新增：打开详情/编辑Sheet的函数
+  const handleShowInfo = (workflow) => {
+    setCurrentWorkflowInSheet({ id: workflow.id, name: workflow.name, description: workflow.description || '' });
+    setShowInfoSheet(true);
+  };
+
   // 导航到工作流详情页
   const goToWorkflowDetail = (id) => {
     navigate(`/workflow/${id}`);
@@ -139,7 +176,7 @@ function WorkflowList() {
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" sideOffset={4} className="w-32">
-                      <DropdownMenuItem onClick={(e) => { e.preventDefault(); goToWorkflowDetail(workflow.id); }}>详情</DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => { e.preventDefault(); handleShowInfo(workflow); }}>详情</DropdownMenuItem>
                       <DropdownMenuItem onClick={(e) => { e.preventDefault(); goToWorkflowEdit(workflow.id); }}>编辑</DropdownMenuItem>
                       <DropdownMenuItem onClick={(e) => { e.preventDefault(); goToWorkflowExecute(workflow.id); }}>执行</DropdownMenuItem>
                       <DropdownMenuSeparator />
@@ -192,6 +229,46 @@ function WorkflowList() {
           <SheetFooter className="flex-row items-center justify-center space-x-2 p-2"> {/* 调整内边距和子元素布局 */}
             <Button variant="outline" onClick={() => setShowCreateModal(false)}>取消</Button>
             <Button onClick={handleCreateWorkflow}>创建</Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* 新增：用于显示和编辑工作流信息的Sheet */}
+      <Sheet open={showInfoSheet} onOpenChange={setShowInfoSheet}>
+        <SheetContent side="right">
+          <SheetHeader>
+            <SheetTitle>工作流详情</SheetTitle>
+          </SheetHeader>
+          <div className="grid gap-4 py-4 px-2">
+            <div className="grid grid-cols-1 items-center gap-2">
+              <label htmlFor="info-workflow-name" className="text-sm font-medium">
+                工作流名称 <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="info-workflow-name"
+                value={currentWorkflowInSheet.name}
+                onChange={(e) => handleCurrentWorkflowChange('name', e.target.value)}
+                placeholder="输入工作流名称"
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-1 items-center gap-2">
+              <label htmlFor="info-workflow-description" className="text-sm font-medium">
+                工作流描述
+              </label>
+              <Textarea
+                id="info-workflow-description"
+                value={currentWorkflowInSheet.description}
+                onChange={(e) => handleCurrentWorkflowChange('description', e.target.value)}
+                placeholder="输入工作流描述（可选）"
+                className="col-span-3"
+                rows={3}
+              />
+            </div>
+          </div>
+          <SheetFooter className="flex-row items-center justify-center space-x-2 p-2">
+            <Button variant="outline" onClick={() => setShowInfoSheet(false)}>取消</Button>
+            <Button onClick={handleUpdateWorkflowInfo}>保存更改</Button>
           </SheetFooter>
         </SheetContent>
       </Sheet>

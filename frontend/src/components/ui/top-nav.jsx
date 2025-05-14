@@ -21,7 +21,11 @@ function TopNav({ menuItems }) {
   const pageKey =
     segments.length === 2 && segments[0] === 'knowledge'
       ? 'knowledgeDetail'
-      : segments[segments.length - 1] || '';
+      : segments.length === 2 && segments[0] === 'workflow'
+        ? 'workflowDetail' // 工作流详情页
+        : segments.length === 3 && segments[0] === 'workflow' && segments[2] === 'execute'
+          ? 'workflowExecute' // 工作流执行页
+          : segments[segments.length - 1] || '';
   const items = menuItems || pageMenus[pageKey] || [];
 
   return (
@@ -35,6 +39,15 @@ function TopNav({ menuItems }) {
           // 针对知识库详情页映射到固定 key
           if (segments.length === 2 && segments[0] === 'knowledge' && idx === 1) {
             key = 'knowledgeDetail';
+          }
+          // 针对工作流详情页映射到固定 key
+          else if (segments.length >= 2 && segments[0] === 'workflow' && idx === 1) {
+            // 工作流ID位置的segment，使用固定key
+            key = 'workflowId';
+          }
+          // 针对工作流执行页映射到固定 key
+          else if (segments.length === 3 && segments[0] === 'workflow' && idx === 2 && seg === 'execute') {
+            key = 'workflowExecute';
           }
           const name = pageTitles[key] || seg;
           return (

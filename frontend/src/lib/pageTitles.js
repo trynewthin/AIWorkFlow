@@ -10,6 +10,9 @@ const pageTitles = {
   'docs': '教程文档',
   'node': '节点教程',
   'workflow': '工作流列表',
+  'workflowDetail': '工作流详情',
+  'workflowId': '工作流',
+  'workflowExecute': '工作流执行',
   'id': '工作流编辑',
   'execute': '工作流执行'
 };
