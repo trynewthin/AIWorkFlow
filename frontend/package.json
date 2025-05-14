@@ -10,11 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@flowgram.ai/free-layout-editor": "^0.1.27",
-    "@flowgram.ai/free-snap-plugin": "^0.1.27",
-    "@flowgram.ai/minimap-plugin": "^0.1.27",
-    "@flowgram.ai/node": "^0.1.26",
-    "@flowgram.ai/renderer": "^0.1.26",
     "@radix-ui/react-avatar": "^1.1.9",
     "@radix-ui/react-checkbox": "^1.3.1",
     "@radix-ui/react-collapsible": "^1.1.10",
@@ -31,6 +26,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.0",
+    "reactflow": "^11.11.4",
     "styled-components": "^6.1.18",
     "tailwind-merge": "^3.3.0"
   },

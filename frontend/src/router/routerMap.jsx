@@ -7,6 +7,7 @@ import NodeGuide from '../views/odocs/nodeGuide';
 import WorkflowList from '../views/workflow/WorkflowList';
 import WorkflowEditor from '../views/workflow/WorkflowEditor';
 import WorkflowExecution from '../views/workflow/WorkflowExecution';
+import WorkflowGraph from '../views/workflow/WorkflowGraph';
 
 /**
  * @description 路由配置数组
@@ -71,7 +72,13 @@ const routerMap = [
         element: <WorkflowExecution />,
         name: 'WorkflowExecution',
         meta: { title: '执行工作流' },
-      }
+      },
+      {
+        path: 'workflow/:id/graph',
+        element: <WorkflowGraph />,
+        name: 'WorkflowGraph',
+        meta: { title: '工作流可视化' },
+      },
     ]
   },
   // 在这里添加更多路由配置

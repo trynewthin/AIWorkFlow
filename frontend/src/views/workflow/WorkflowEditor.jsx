@@ -1,22 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getWorkflow, updateWorkflow, addNode, updateNode, deleteNode, moveNode, getNodeTypes } from '../../api/workflow';
 import { getDefaultFlowConfig, getDefaultWorkConfig, getNodeConfigByType } from '../../api/workflow';
 import { ArrowLeft, Save, Play, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
-
-// FlowGram导入
-import { 
-  FreeLayoutEditorProvider, 
-  EditorRenderer, 
-  WorkflowNodeRenderer, 
-  useNodeRender, 
-  ValidateTrigger,
-  Field,
-  useService,
-  useClientContext
-} from '@flowgram.ai/free-layout-editor';
-import { createMinimapPlugin } from '@flowgram.ai/minimap-plugin';
-import { createFreeSnapPlugin } from '@flowgram.ai/free-snap-plugin';
 
 // UI 组件导入
 import { Button } from '@/components/ui/button';
@@ -38,50 +24,10 @@ function WorkflowEditor() {
   const [error, setError] = useState(null);
   const [nodeTypes, setNodeTypes] = useState([]);
   const [selectedNode, setSelectedNode] = useState(null);
-  const [isFlowgramMode, setIsFlowgramMode] = useState(false);
-  const [flowgramData, setFlowgramData] = useState(null);
 
   // 路由参数和导航
   const { id } = useParams();
   const navigate = useNavigate();
-
-  // 更新 flowgramData 的辅助函数
-  const updateFlowgramData = (workflowData) => {
-    if (workflowData && workflowData.nodes && workflowData.nodes.length > 0) {
-      const flowgramNodes = workflowData.nodes.map((node, index) => ({
-        id: node.id,
-        type: node.type,
-        data: {
-          ...node.flow_config,
-          ...node.work_config
-        },
-        meta: {
-          position: { x: 100 + index * 250, y: 100 + (index % 2) * 150 }
-        }
-      }));
-      
-      // 生成连接线数据
-      const flowgramEdges = [];
-      if (flowgramNodes.length > 1) {
-        for (let i = 0; i < flowgramNodes.length - 1; i++) {
-          flowgramEdges.push({
-            id: `edge_${flowgramNodes[i].id}_${flowgramNodes[i+1].id}`,
-            source: flowgramNodes[i].id,
-            sourcePortId: `${flowgramNodes[i].id}_output`,
-            target: flowgramNodes[i+1].id,
-            targetPortId: `${flowgramNodes[i+1].id}_input`
-          });
-        }
-      }
-      
-      setFlowgramData({
-        nodes: flowgramNodes,
-        edges: flowgramEdges
-      });
-    } else {
-      setFlowgramData({ nodes: [], edges: [] });
-    }
-  };
 
   // 加载工作流详情和节点类型列表
   useEffect(() => {
@@ -110,20 +56,10 @@ function WorkflowEditor() {
           const errorMessage = nodeTypesResponse && nodeTypesResponse.message ? nodeTypesResponse.message : '获取节点类型失败';
           throw new Error(errorMessage);
         }
-        
-        // 只有在 workflowData 加载成功后才处理 FlowGram 数据转换
-        if (workflowData && workflowData.nodes && workflowData.nodes.length > 0) {
-          updateFlowgramData(workflowData);
-        } else {
-          setFlowgramData({ nodes: [], edges: [] }); // 设置空数据以避免后续渲染错误
-        }
-        
       } catch (err) {
-        // 捕获 Promise.all 中的失败或者我们自己抛出的错误
         setError('加载数据失败：' + err.message);
         setWorkflow(null);
         setNodeTypes([]);
-        setFlowgramData(null);
         console.error('加载数据失败', err);
       } finally {
         setLoading(false);
@@ -156,7 +92,6 @@ function WorkflowEditor() {
       if (response && response.success && response.data) {
         const actualWorkflowData = response.data;
         setWorkflow(actualWorkflowData);
-        updateFlowgramData(actualWorkflowData);
       
         // 选择新添加的节点进行编辑
         if (actualWorkflowData.nodes && actualWorkflowData.nodes.length > 0) {
@@ -182,7 +117,6 @@ function WorkflowEditor() {
       if (response && response.success && response.data) {
         const actualWorkflowData = response.data;
         setWorkflow(actualWorkflowData);
-        updateFlowgramData(actualWorkflowData);
       
         // 更新选中的节点
         if (selectedNode && selectedNode.id === nodeId) {
@@ -215,7 +149,6 @@ function WorkflowEditor() {
       if (response && response.success && response.data) {
         const actualWorkflowData = response.data;
         setWorkflow(actualWorkflowData);
-        updateFlowgramData(actualWorkflowData);
       
         // 如果删除的是当前选中的节点，则清除选择
         if (selectedNode && selectedNode.id === nodeId) {
@@ -241,7 +174,6 @@ function WorkflowEditor() {
       if (response && response.success && response.data) {
         const actualWorkflowData = response.data;
         setWorkflow(actualWorkflowData);
-        updateFlowgramData(actualWorkflowData);
       } else {
         console.error('Failed to refresh workflow after moving node:', response?.message);
         setError('移动节点后刷新工作流失败：' + (response?.message || '未知错误'));
@@ -263,131 +195,14 @@ function WorkflowEditor() {
     setSelectedNode(node);
   };
 
+  // 前往可视化页面
+  const goToVisualPage = () => {
+    navigate(`/workflow/${id}/graph`);
+  };
+
   // 返回列表页面
   const goToListPage = () => {
     navigate('/workflow');
-  };
-
-  // 配置FlowGram编辑器属性
-  const flowgramEditorProps = useMemo(() => {
-    if (!flowgramData) return null;
-    
-    return {
-      // 启用背景网格
-      background: true,
-      // 非只读模式
-      readonly: false,
-      // 初始数据
-      initialData: flowgramData,
-      // 节点类型注册
-      nodeRegistries: nodeTypes.map(nodeType => ({
-        type: nodeType,
-        meta: {
-          defaultPorts: [{ type: 'input' }, { type: 'output' }],
-          defaultExpanded: true,
-        },
-        formMeta: {
-          validateTrigger: ValidateTrigger.onChange,
-          render: () => (
-            <>
-              <Field name="nodeName">
-                {({ field }) => (
-                  <div className="text-center font-medium py-2">
-                    {field.value || nodeType}
-                  </div>
-                )}
-              </Field>
-            </>
-          )
-        }
-      })),
-      // 获取默认节点注册
-      getNodeDefaultRegistry(type) {
-        return {
-          type,
-          meta: {
-            defaultPorts: [{ type: 'input' }, { type: 'output' }],
-            defaultExpanded: true,
-          },
-          formMeta: {
-            render: () => (
-              <>
-                <Field name="nodeName">
-                  {({ field }) => (
-                    <div className="text-center font-medium py-2">
-                      {field.value || type}
-                    </div>
-                  )}
-                </Field>
-              </>
-            )
-          }
-        };
-      },
-      // 自定义渲染
-      materials: {
-        renderDefaultNode: (props) => {
-          const { form } = useNodeRender();
-          return (
-            <WorkflowNodeRenderer 
-              className="demo-free-node bg-white border-2 border-gray-300 rounded-md p-2 min-w-[120px] min-h-[60px]" 
-              node={props.node}
-            >
-              {form?.render()}
-            </WorkflowNodeRenderer>
-          );
-        }
-      },
-      // 内容变更回调
-      onContentChange(ctx, event) {
-        console.log('数据变更:', event, ctx.document.toJSON());
-      },
-      // 启用节点表单引擎
-      nodeEngine: {
-        enable: true,
-      },
-      // 启用历史记录
-      history: {
-        enable: true,
-        enableChangeNode: true, // 监听节点数据变化
-      },
-      // 初始化回调
-      onInit: (ctx) => {
-        console.log('编辑器已初始化');
-      },
-      // 渲染完成回调
-      onAllLayersRendered(ctx) {
-        ctx.document.fitView(false); // 自动适配视图
-        console.log('所有图层已渲染');
-      },
-      // 销毁回调
-      onDispose() {
-        console.log('编辑器已销毁');
-      },
-      // 插件配置
-      plugins: () => [
-        // 缩略图插件
-        createMinimapPlugin({
-          disableLayer: true,
-          canvasStyle: {
-            canvasWidth: 182,
-            canvasHeight: 102,
-            canvasBackground: 'rgba(245, 245, 245, 1)',
-          },
-        }),
-        // 吸附对齐插件
-        createFreeSnapPlugin({
-          edgeColor: '#00B2B2',
-          alignColor: '#00B2B2',
-          edgeLineWidth: 1,
-        }),
-      ],
-    };
-  }, [flowgramData, nodeTypes]);
-
-  // 切换编辑模式
-  const toggleEditMode = () => {
-    setIsFlowgramMode(!isFlowgramMode);
   };
 
   // 渲染加载状态
@@ -420,176 +235,132 @@ function WorkflowEditor() {
     <div className="container mx-auto p-4">
       {/* 顶部工具栏 */}
       <PageHeader title="编辑工作流" onBack={goToListPage}>
-        <Button variant="outline" onClick={toggleEditMode}>
-          {isFlowgramMode ? '切换到列表模式' : '切换到可视化模式'}
+        <Button variant="outline" onClick={goToVisualPage}>
+          可视化模式
         </Button>
         <Button variant="default" onClick={goToExecutePage}>
           <Play className="w-4 h-4 mr-2" /> 执行
         </Button>
       </PageHeader>
 
-      {isFlowgramMode && flowgramEditorProps ? (
-        // 可视化编辑模式
-        <div className="mt-4" style={{ height: '70vh' }}>
-          <FreeLayoutEditorProvider {...flowgramEditorProps}>
-            <div className="h-full border rounded-lg overflow-hidden">
-              {/* 节点类型面板 */}
-              <div className="absolute left-4 top-20 z-10 bg-white p-4 rounded-lg shadow-lg border">
-                <h3 className="font-medium mb-2">可用节点</h3>
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {nodeTypes.map(nodeType => (
-                    <div
-                      key={nodeType}
-                      className="p-2 bg-gray-50 rounded border cursor-pointer hover:bg-blue-50"
-                      onClick={() => {
-                        // 在画布中心创建节点
-                        const ctx = document.querySelector('.flowgram-editor')?.__flowgramContext;
-                        if (ctx) {
-                          // 使用文档的方法添加节点
-                          ctx.document.addNode({ 
-                            id: `node_${Date.now()}`, 
-                            type: nodeType,
-                            data: { nodeName: nodeType }
-                          });
-                        }
-                      }}
-                    >
-                      <div className="flex items-center">
-                        <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center mr-2">
-                          <Plus className="w-4 h-4" />
-                        </div>
-                        <span className="text-sm">{nodeType}</span>
-                      </div>
+      {/* 主要编辑区域 */}
+      <div className="flex flex-col lg:flex-row gap-4 mt-4">
+        {/* 左侧节点类型面板 */}
+        <Card className="lg:w-1/5">
+          <CardHeader>
+            <CardTitle>可用节点</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {nodeTypes.map(nodeType => (
+                <div 
+                  key={nodeType}
+                  className="p-2 bg-white rounded border cursor-pointer hover:bg-blue-50"
+                  onClick={() => addNewNode(nodeType)}
+                >
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-2">
+                      <Plus className="w-5 h-5" />
                     </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* 主编辑区域 */}
-              <EditorRenderer className="flowgram-editor" />
-            </div>
-          </FreeLayoutEditorProvider>
-        </div>
-      ) : (
-        // 列表编辑模式
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* 左侧节点类型面板 */}
-          <Card className="lg:w-1/5">
-            <CardHeader>
-              <CardTitle>可用节点</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {nodeTypes.map(nodeType => (
-                  <div 
-                    key={nodeType}
-                    className="p-2 bg-white rounded border cursor-pointer hover:bg-blue-50"
-                    onClick={() => addNewNode(nodeType)}
-                  >
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-2">
-                        <Plus className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{nodeType}</p>
-                      </div>
+                    <div>
+                      <p className="font-medium">{nodeType}</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* 中央工作流节点面板 */}
-          <Card className="lg:w-2/5 min-h-[400px]">
-            <CardHeader>
-              <CardTitle>节点列表</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {workflow.nodes && workflow.nodes.length > 0 ? (
-                  workflow.nodes.map((node, index) => (
-                    <div 
-                      key={node.id}
-                      className={`p-3 rounded border ${selectedNode && selectedNode.id === node.id ? 'border-blue-500 bg-blue-50' : 'bg-white'}`}
-                      onClick={() => handleNodeSelect(node)}
-                    >
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center">
-                          <div className="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center mr-2">
-                            {index + 1}
-                          </div>
-                          <div>
-                            <p className="font-medium">{node.flow_config?.nodeName || '未命名节点'}</p>
-                            <p className="text-xs text-gray-500">{node.type}</p>
-                          </div>
+        {/* 中央工作流节点面板 */}
+        <Card className="lg:w-2/5 min-h-[400px]">
+          <CardHeader>
+            <CardTitle>节点列表</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {workflow.nodes && workflow.nodes.length > 0 ? (
+                workflow.nodes.map((node, index) => (
+                  <div 
+                    key={node.id}
+                    className={`p-3 rounded border ${selectedNode && selectedNode.id === node.id ? 'border-blue-500 bg-blue-50' : 'bg-white'}`}
+                    onClick={() => handleNodeSelect(node)}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <div className="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center mr-2">
+                          {index + 1}
                         </div>
-                        <div className="flex gap-1">
-                          {index > 0 && (
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                moveNodePosition(node.id, index - 1);
-                              }}
-                              className="p-1 hover:bg-gray-200 rounded"
-                            >
-                              <ArrowUp className="w-4 h-4" />
-                            </button>
-                          )}
-                          {index < workflow.nodes.length - 1 && (
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                moveNodePosition(node.id, index + 1);
-                              }}
-                              className="p-1 hover:bg-gray-200 rounded"
-                            >
-                              <ArrowDown className="w-4 h-4" />
-                            </button>
-                          )}
+                        <div>
+                          <p className="font-medium">{node.flow_config?.nodeName || '未命名节点'}</p>
+                          <p className="text-xs text-gray-500">{node.type}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        {index > 0 && (
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
-                              removeNode(node.id);
+                              moveNodePosition(node.id, index - 1);
                             }}
-                            className="p-1 hover:bg-red-100 text-red-600 rounded"
+                            className="p-1 hover:bg-gray-200 rounded"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <ArrowUp className="w-4 h-4" />
                           </button>
-                        </div>
+                        )}
+                        {index < workflow.nodes.length - 1 && (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              moveNodePosition(node.id, index + 1);
+                            }}
+                            className="p-1 hover:bg-gray-200 rounded"
+                          >
+                            <ArrowDown className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeNode(node.id);
+                          }}
+                          className="p-1 hover:bg-red-100 text-red-600 rounded"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8 bg-white rounded-lg border">
-                    <p className="text-gray-500">暂无节点，请从左侧添加</p>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 右侧配置面板 */}
-          <Card className="lg:w-2/5">
-            <CardHeader>
-              <CardTitle>节点配置</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {selectedNode ? (
-                <NodeConfigPanel 
-                  key={selectedNode.id}
-                  node={selectedNode} 
-                  onSave={(flowConfig, workConfig) => saveNodeConfig(selectedNode.id, flowConfig, workConfig)}
-                />
+                ))
               ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">请选择一个节点进行配置</p>
+                <div className="text-center py-8 bg-white rounded-lg border">
+                  <p className="text-gray-500">暂无节点，请从左侧添加</p>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 右侧配置面板 */}
+        <Card className="lg:w-2/5">
+          <CardHeader>
+            <CardTitle>节点配置</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {selectedNode ? (
+              <NodeConfigPanel 
+                key={selectedNode.id}
+                node={selectedNode} 
+                onSave={(flowConfig, workConfig) => saveNodeConfig(selectedNode.id, flowConfig, workConfig)}
+              />
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">请选择一个节点进行配置</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
