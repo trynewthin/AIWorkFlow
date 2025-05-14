@@ -6,6 +6,17 @@ const fs = require('fs');
 const path = require('path');
 
 /**
+ * @description 节点状态枚举
+ * @type {{IDLE: string, RUNNING: string, COMPLETED: string, FAILED: string}}
+ */
+const Status = {
+  IDLE: 'idle',
+  RUNNING: 'running',
+  COMPLETED: 'completed',
+  FAILED: 'failed'
+};
+
+/**
  * @description 静态配置集合
  * @type {Record<string, object>}
  */
@@ -28,7 +39,10 @@ fs.readdirSync(__dirname)
   .forEach((file) => {
     // 导入模块
     const mod = require(path.join(__dirname, file));
-    const nodeKey = path.basename(file, '.js');
+    const baseName = path.basename(file, '.js'); // 例如 'chat', 'start'
+    // 将 'chat' 转换为 'ChatNode', 'start' 转换为 'StartNode'
+    const nodeKey = baseName.charAt(0).toUpperCase() + baseName.slice(1) + 'Node';
+
     if (mod.classConfig !== undefined) {
       classConfigs[nodeKey] = mod.classConfig;
     }
@@ -40,4 +54,4 @@ fs.readdirSync(__dirname)
     }
   });
 
-module.exports = { classConfigs, defaultFlowConfigs, defaultWorkConfigs }; 
+module.exports = { classConfigs, defaultFlowConfigs, defaultWorkConfigs, Status }; 

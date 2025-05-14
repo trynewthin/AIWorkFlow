@@ -146,6 +146,8 @@ class WorkflowController {
         return { code: 400, message: `未知节点类型: ${nodeType}`, success: false };
       }
       
+      console.log('nodeType', nodeType, configService.getDefaultFlowConfig(nodeType), configService.getDefaultWorkConfig(nodeType));
+
       const nodeId = await workflowService.addNode(
         workflowId,
         nodeType,
@@ -157,6 +159,9 @@ class WorkflowController {
       return { code: 200, data: { nodeId }, success: true };
     } catch (error) {
       logger.error(`[WorkflowController] 添加节点失败: ${error.message}`);
+      if (error.message.includes('节点类型不匹配')) {
+        return { code: 400, message: error.message, success: false };
+      }
       return { code: 500, message: `添加节点失败: ${error.message}`, success: false };
     }
   }
@@ -205,6 +210,9 @@ class WorkflowController {
       return { code: 200, data: true, success: true };
     } catch (error) {
       logger.error(`[WorkflowController] 删除节点失败: ${error.message}`);
+      if (error.message.includes('节点类型不匹配') || error.message.includes('节点类型不兼容')) {
+        return { code: 400, message: error.message, success: false };
+      }
       return { code: 500, message: `删除节点失败: ${error.message}`, success: false };
     }
   }
@@ -233,6 +241,9 @@ class WorkflowController {
       return { code: 200, data: true, success: true };
     } catch (error) {
       logger.error(`[WorkflowController] 移动节点失败: ${error.message}`);
+      if (error.message.includes('节点类型不匹配')) {
+        return { code: 400, message: error.message, success: false };
+      }
       return { code: 500, message: `移动节点失败: ${error.message}`, success: false };
     }
   }
