@@ -3,8 +3,8 @@
  * @description Pipeline 类测试
  */
 
-const Pipeline = require('../../../electron/core/pipline/Pipeline');
-const { DataType, PipelineType } = require('../../../electron/config/pipeline');
+const Pipeline = require('../../../../electron/core/pipeline/Pipeline');
+const { DataType, PipelineType } = require('../../../../electron/config/pipeline');
 
 /**
  * @description Pipeline 类测试

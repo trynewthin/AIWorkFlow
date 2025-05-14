@@ -15,7 +15,7 @@ const nodeConfigurations = {
       tag: 'chat',
       description: '使用 LangChain JS 进行对话生成',
       version: '1.0.0',
-      supportedInputPipelines: [PipelineType.USER_MESSAGE],
+      supportedInputPipelines: [PipelineType.USER_MESSAGE, PipelineType.CHAT],
       supportedOutputPipelines: [PipelineType.CHAT]
     },
     defaultFlowConfig: {

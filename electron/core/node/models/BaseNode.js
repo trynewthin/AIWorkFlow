@@ -1,5 +1,9 @@
 // 导入 ConfigService
 const configService = require('../../configs/services');
+/** @description 导入节点状态枚举 */
+const { Status } = require('../../configs/models/enums');
+/** @description 导入管道类型枚举 */
+const { PipelineType } = require('../../configs/models/pipelineTypes');
 
 /**
  * @class BaseNode
@@ -8,15 +12,20 @@ const configService = require('../../configs/services');
 class BaseNode {
   /**
    * @constructor
+   * @param {string} [nodeKey] - 节点键名，优先用于加载配置，默认使用构造函数名称
    */
-  constructor() {
+  constructor(nodeKey) {
+    /** @type {string} 节点键名 */
+    this._nodeKey = nodeKey || this.constructor.name;
     /** @type {Object} 节点类型的静态配置 */
-    this._classConfig = configService.getClassConfig(this.constructor.name);
-    /** @type {Object|null} 流程级配置，包含节点ID、名称、状态 */
+    this._classConfig = configService.getClassConfig(this._nodeKey) || {};
+    /** @type {Object|null} 流程级配置 */
     this._flowConfig = null;
-    /** @type {Object|null} 运行时配置，包含模型、系统提示词等 */
+    /** @type {Object|null} 运行时配置 */
     this._workConfig = null;
+    /** @type {Object|null} 处理器映射表 */
     this._handlers = null;
+    /** @type {boolean} 是否已初始化 */
     this._initialized = false;
   }
 
@@ -34,9 +43,9 @@ class BaseNode {
     }
 
     // 装载流程级配置：优先使用外部传入，否则使用默认值
-    this._flowConfig = flowConfig ?? { ...configService.getDefaultFlowConfig(this.constructor.name) };
+    this._flowConfig = flowConfig ?? { ...(configService.getDefaultFlowConfig(this._nodeKey) || {}) };
     // 装载运行时配置
-    this._workConfig = workConfig ?? { ...configService.getDefaultWorkConfig(this.constructor.name) };
+    this._workConfig = workConfig ?? { ...(configService.getDefaultWorkConfig(this._nodeKey) || {}) };
     
     // 初始化处理器映射表
     this._handlers = {};
@@ -146,10 +155,11 @@ class BaseNode {
    */
   supportsInputPipeline(pipelineType) {
     const supportedTypes = this.getSupportedInputPipelineTypes();
-    // 如果支持类型包含ALL类型，表示支持所有管道类型
-    if (supportedTypes.includes('all')) {
+    // 如果支持类型包含 ALL 类型，表示支持所有管道类型
+    if (supportedTypes.includes(PipelineType.ALL)) {
       return true;
     }
+    // 默认支持空配置或显式包含
     return supportedTypes.length === 0 || supportedTypes.includes(pipelineType);
   }
 
@@ -165,14 +175,14 @@ class BaseNode {
 
   /**
    * @method fromJSON
-   * @description 根据 flowConfig 和 workConfig 创建并初始化节点实例
+   * @description 根据 flowConfig、workConfig 和可选 nodeKey 创建并初始化节点实例
    * @param {Object} flowConfig - 流程级配置
    * @param {Object} workConfig - 运行时配置
+   * @param {string} [nodeKey] - 节点键名
    * @returns {Promise<BaseNode>} 初始化完成后的节点实例
    */
-  static async fromJSON(flowConfig = {}, workConfig = {}) {
-    const instance = new this(); // constructor 将从 configService 加载 classConfig
-    // init 时传入的 flowConfig 和 workConfig 会覆盖默认值（如果提供的话）
+  static async fromJSON(flowConfig = {}, workConfig = {}, nodeKey) {
+    const instance = new this(nodeKey);
     return await instance.init(flowConfig, workConfig);
   }
 
@@ -227,13 +237,12 @@ class BaseNode {
     if (!input || typeof input.getPipelineType !== 'function') {
       throw new Error('process 方法要求传入 Pipeline 实例');
     }
-    const { randomUUID } = require('crypto');
     const pipeline = input;
 
     // 检查管道类型是否符合节点的输入要求
     const pipelineType = pipeline.getPipelineType();
     if (!this.supportsInputPipeline(pipelineType)) {
-      throw new Error(`节点不支持处理 ${pipelineType} 类型的管道，支持的类型: ${this.getSupportedInputPipelineTypes().join(', ')}`);
+      throw new Error(`节点 ${this._nodeKey} 不支持处理 ${pipelineType} 类型的管道，支持的类型: ${this.getSupportedInputPipelineTypes().join(', ')}`);
     }
 
     // 直接将整个管道传递给execute方法处理
@@ -251,11 +260,7 @@ class BaseNode {
   }
 }
 
-/**
- * @static
- * @type {Object} Status - 节点状态枚举
- * @readonly
- */
-BaseNode.Status = configService.Status;
+// 导出节点状态枚举
+BaseNode.Status = Status;
 
 module.exports = BaseNode; 
