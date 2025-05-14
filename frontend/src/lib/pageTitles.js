@@ -14,7 +14,8 @@ const pageTitles = {
   'workflowId': '工作流',
   'workflowExecute': '工作流执行',
   'id': '工作流编辑',
-  'execute': '工作流执行'
+  'execute': '工作流执行',
+  'graph': '工作流可视化',
 };
 
 export default pageTitles; 

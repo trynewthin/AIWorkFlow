@@ -73,16 +73,14 @@ const routerMap = [
         name: 'WorkflowExecution',
         meta: { title: '执行工作流' },
       },
-      {
-        path: 'workflow/:id/graph',
-        element: <WorkflowGraph />,
-        name: 'WorkflowGraph',
-        meta: { title: '工作流可视化' },
-      },
     ]
   },
-  // 在这里添加更多路由配置
-
+  {
+    path: 'workflow/:id/graph',
+    element: <WorkflowGraph />,
+    name: 'WorkflowGraph',
+    meta: { title: '工作流可视化' },
+  },
 ];
 
 export default routerMap; 
