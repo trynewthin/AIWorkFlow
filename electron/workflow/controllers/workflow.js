@@ -7,7 +7,7 @@ const { logger } = require('ee-core/log');
 const { getWorkflowService } = require('../services/WorkflowService');
 const workflowService = getWorkflowService(); // 获取服务实例
 
-const { getDefaultFlowConfig, getDefaultWorkConfig } = require('../../configs/services');
+const { getDefaultFlowConfig, getDefaultWorkConfig } = require('../../coreconfigs/services');
 
 /**
  * 工作流控制器

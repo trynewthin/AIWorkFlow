@@ -1,9 +1,9 @@
 // 导入 ConfigService
-const configService = require('../../configs/services');
+const configService = require('../../coreconfigs/services');
 /** @description 导入节点状态枚举 */
-const { Status } = require('../../configs/models/enums');
+const { Status } = require('../../coreconfigs/models/enums');
 /** @description 导入管道类型枚举 */
-const { PipelineType } = require('../../configs/models/pipelineTypes');
+const { PipelineType } = require('../../coreconfigs/models/pipelineTypes');
 
 /**
  * @class BaseNode

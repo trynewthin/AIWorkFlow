@@ -5,7 +5,7 @@
  */
 const BaseNode = require('./BaseNode');
 const Pipeline = require('../../pipeline/Pipeline');
-const { DataType, PipelineType } = require('../../configs/models/pipelineTypes');
+const { DataType, PipelineType } = require('../../coreconfigs/models/pipelineTypes');
 
 class StartNode extends BaseNode {
   /**

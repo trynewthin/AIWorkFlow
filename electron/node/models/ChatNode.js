@@ -2,7 +2,7 @@
  * @file electron/model/nodes/chat.js
  * @description 聊天节点（基于 LangChain JS）
  */
-const { DataType, PipelineType } = require('../../configs/models/pipelineTypes');
+const { DataType, PipelineType } = require('../../coreconfigs/models/pipelineTypes');
 const { ChatOpenAI } = require('@langchain/openai');
 // 导入 LangChain 消息类
 const { SystemMessage, HumanMessage } = require('@langchain/core/messages');
@@ -38,8 +38,7 @@ class ChatNode extends BaseNode {
     });
 
     // 注册管道类型处理器
-    this.registerHandler(PipelineType.CHAT, this._handleUserMessage.bind(this));
-    this.registerHandler(PipelineType.USER_MESSAGE, this._handleUserMessage.bind(this));
+    this.registerHandler(PipelineType.TEXT, this._handleUserMessage.bind(this));
   }
 
   /**
@@ -59,7 +58,7 @@ class ChatNode extends BaseNode {
       const messageContent = typeof textData === 'string' ? textData : String(textData);
 
       // 创建新的输出管道，类型为CHAT
-      const outputPipeline = new Pipeline(PipelineType.CHAT);
+      const outputPipeline = new Pipeline(PipelineType.TEXT);
 
       // 使用LangChain JS生成回复
       const response = await this.llm.invoke([

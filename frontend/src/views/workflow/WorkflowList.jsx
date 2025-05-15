@@ -163,10 +163,10 @@ function WorkflowList() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {workflows.map((workflow) => (
-            <Card key={workflow.id} className="hover:shadow-md transition-shadow overflow-hidden">
+            <Card key={workflow.id} onClick={() => goToWorkflowEdit(workflow.id)} className="hover:shadow-md transition-shadow overflow-hidden cursor-pointer">
               <CardHeader>
                 <CardTitle>{workflow.name}</CardTitle>
-                <CardAction>
+                <CardAction onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button className="p-1 rounded hover:bg-gray-100" onClick={(e) => e.stopPropagation()}>

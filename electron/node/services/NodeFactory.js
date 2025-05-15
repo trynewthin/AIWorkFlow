@@ -8,7 +8,7 @@ const { logger } = require('ee-core/log');
 /**
  * @description 导入节点配置
  */
-const { nodeConfigurations } = require('../../configs');
+const { nodeConfigurations } = require('../../coreconfigs');
 
 /**
  * @class NodeFactory

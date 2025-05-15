@@ -15,8 +15,8 @@ const nodeConfigurations = {
       tag: 'chat',
       description: '使用 LangChain JS 进行对话生成',
       version: '1.0.0',
-      supportedInputPipelines: [PipelineType.USER_MESSAGE, PipelineType.CHAT],
-      supportedOutputPipelines: [PipelineType.CHAT]
+      supportedInputPipelines: [PipelineType.TEXT],
+      supportedOutputPipelines: [PipelineType.TEXT]
     },
     defaultFlowConfig: {
       nodeName: 'Chat Completion Node',
@@ -62,8 +62,10 @@ const nodeConfigurations = {
         PipelineType.EMBEDDING,
         PipelineType.CHUNK,
         PipelineType.PROMPT,
-        PipelineType.USER_MESSAGE
+        PipelineType.USER_MESSAGE,
+        PipelineType.TEXT
       ],
+      
       supportedOutputPipelines: [PipelineType.EMBEDDING]
     },
     defaultFlowConfig: {
@@ -95,7 +97,10 @@ const nodeConfigurations = {
       status: Status.IDLE,
       position: { x: 0, y: 0 }
     },
-    defaultWorkConfig: {}
+    defaultWorkConfig: {
+      pipelineType: PipelineType.ALL,
+      dataType: DataType.TEXT
+    }
   },
   [NodeKey.MERGE]: {
     classConfig: {
@@ -149,7 +154,7 @@ const nodeConfigurations = {
       tag: 'retrieve',
       description: '将文本向量化并使用 HNSW 索引检索相关文档',
       version: '1.0.0',
-      supportedInputPipelines: [PipelineType.CHAT, PipelineType.EMBEDDING],
+      supportedInputPipelines: [PipelineType.TEXT],
       supportedOutputPipelines: [PipelineType.SEARCH]
     },
     defaultFlowConfig: {
@@ -180,7 +185,7 @@ const nodeConfigurations = {
       position: { x: 0, y: 0 }
     },
     defaultWorkConfig: {
-      pipelineType: PipelineType.USER_MESSAGE,
+      pipelineType: PipelineType.TEXT,
       dataType: DataType.TEXT
     }
   }

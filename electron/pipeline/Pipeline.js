@@ -2,7 +2,7 @@
  * @file Pipeline.js
  * @description 管道类，封装多类型数据流，支持节点链式执行，使用对象类型存储数据体
  */
-const { PipelineType, isValidPipelineType, DataType } = require('../configs/index');
+const { PipelineType, isValidPipelineType, DataType } = require('../coreconfigs/index');
 
 /**
  * Pipeline 类，封装多类型数据流，支持节点链式执行

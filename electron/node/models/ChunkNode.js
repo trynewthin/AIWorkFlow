@@ -3,9 +3,9 @@
  * @description 文本分块节点，使用LangChain JS进行文本分块
  */
 const { RecursiveCharacterTextSplitter } = require("langchain/text_splitter");
-const { DataType, PipelineType } = require('../../configs/models/pipelineTypes');
+const { DataType, PipelineType } = require('../../coreconfigs/models/pipelineTypes');
 const BaseNode = require('./BaseNode');
-const { Status } = require('../../configs/models/enums');
+const { Status } = require('../../coreconfigs/models/enums');
 const Pipeline = require('../../pipeline/Pipeline');
 
 class ChunkNode extends BaseNode {
