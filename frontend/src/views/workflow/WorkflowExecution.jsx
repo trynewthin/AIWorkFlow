@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getWorkflow, executeWorkflow } from '../../api/workflow';
 import { Play, StopCircle } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
@@ -31,12 +31,18 @@ function WorkflowExecution() {
   // 路由参数和导航
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // 加载工作流详情
   useEffect(() => {
+    console.log('WorkflowExecution: useEffect triggered due to location or id change. Resetting states.');
+    setExecuting(false);
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    setInput('');
+
     const loadWorkflow = async () => {
-      setLoading(true);
-      setError(null); // 重置错误
       try {
         const response = await getWorkflow(id);
         if (response && response.success && response.data) {
@@ -56,8 +62,14 @@ function WorkflowExecution() {
       }
     };
 
-    loadWorkflow();
-  }, [id]);
+    if (id) {
+      loadWorkflow();
+    } else {
+      setError('未提供工作流 ID');
+      setLoading(false);
+      setWorkflow(null);
+    }
+  }, [id, location]);
 
   // 执行工作流
   const handleExecute = async () => {

@@ -56,7 +56,7 @@ class ChatNode extends BaseNode {
       if (textData === undefined || textData === null) {
         throw new Error('ChatNode: 用户消息管道中未找到文本数据');
       }
-      // const messageContent = typeof textData === 'string' ? textData : String(textData);
+      const messageContent = typeof textData === 'string' ? textData : String(textData);
 
       // 创建新的输出管道，类型为CHAT
       const outputPipeline = new Pipeline(PipelineType.CHAT);

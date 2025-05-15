@@ -4,94 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { Button } from "../../components/ui/button";
 import { Separator } from "../../components/ui/separator";
 import { getNodeTypes as getConfigNodeTypes, getNodeConfigByType, getDefaultFlowConfig, getDefaultWorkConfig } from "../../api/config";
-// 导入工作流模块中的获取节点类型方法作为备选
-import { getNodeTypes as getWorkflowNodeTypes } from "../../api/workflow";
-
-// 模拟节点数据
-const mockNodeData = {
-  StartNode: {
-    config: {
-      id: 'start',
-      name: 'start-node',
-      type: 'input',
-      tag: 'start',
-      description: '工作流的起始节点，提供初始数据',
-      version: '1.0.0',
-      supportedInputPipelines: ['PROMPT'],
-      supportedOutputPipelines: ['PROMPT', 'TEXT']
-    },
-    flow: {
-      nodeName: 'Start Node',
-      status: 'IDLE'
-    },
-    work: {
-      initialPrompt: '请输入您的问题',
-      outputFormat: 'text'
-    }
-  },
-  ChatNode: {
-    config: {
-      id: 'chat',
-      name: 'chat-completion',
-      type: 'model',
-      tag: 'chat',
-      description: '使用大语言模型进行对话生成',
-      version: '1.0.0',
-      supportedInputPipelines: ['CHAT', 'PROMPT'],
-      supportedOutputPipelines: ['CHAT', 'PROMPT', 'TEXT']
-    },
-    flow: {
-      nodeName: 'Chat Completion',
-      status: 'IDLE'
-    },
-    work: {
-      model: 'gpt-3.5-turbo',
-      systemPrompt: '你是一个有用的AI助手',
-      temperature: 0.7,
-      maxTokens: 1000
-    }
-  },
-  PromptNode: {
-    config: {
-      id: 'prompt',
-      name: 'prompt-template',
-      type: 'transform',
-      tag: 'prompt',
-      description: '处理并转换提示模板',
-      version: '1.0.0',
-      supportedInputPipelines: ['TEXT', 'JSON'],
-      supportedOutputPipelines: ['PROMPT']
-    },
-    flow: {
-      nodeName: 'Prompt Template',
-      status: 'IDLE'
-    },
-    work: {
-      template: '请根据以下内容回答问题：\n\n上下文: {{context}}\n\n问题: {{question}}',
-      variables: ['context', 'question']
-    }
-  },
-  OutputNode: {
-    config: {
-      id: 'output',
-      name: 'output-node',
-      type: 'output',
-      tag: 'output',
-      description: '处理并输出最终结果',
-      version: '1.0.0',
-      supportedInputPipelines: ['TEXT', 'CHAT', 'JSON'],
-      supportedOutputPipelines: []
-    },
-    flow: {
-      nodeName: 'Output Node',
-      status: 'IDLE'
-    },
-    work: {
-      outputFormat: 'markdown',
-      saveToHistory: true
-    }
-  }
-};
 
 /**
  * @description 节点教程页面
@@ -109,131 +21,81 @@ const NodeGuide = () => {
   // 获取所有节点类型
   useEffect(() => {
     const fetchNodeTypes = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        // 首先尝试使用配置服务获取节点类型
-        let types;
-        try {
-          const response = await getConfigNodeTypes();
-          
-          // 正确提取data字段中的节点类型数组
-          if (response && response.data && Array.isArray(response.data)) {
-            types = response.data;
-          } else {
-            throw new Error("返回数据格式不符合预期");
-          }
-        } catch (configError) {
-          // 如果配置服务失败，尝试使用工作流服务
-          try {
-            const response = await getWorkflowNodeTypes();
-            
-            // 工作流API可能有不同的返回格式，需要相应处理
-            if (response && response.data && Array.isArray(response.data)) {
-              types = response.data;
-            } else if (Array.isArray(response)) {
-              types = response;
-            } else {
-              throw new Error("返回数据格式不符合预期");
-            }
-          } catch (workflowError) {
-            throw workflowError;
-          }
-        }
-
-        // 如果后端返回的节点类型为空，使用模拟数据
-        if (!types || types.length === 0) {
-          types = Object.keys(mockNodeData);
-        }
-
-        setNodeTypes(types);
-        if (types && types.length > 0) {
-          setSelectedNode(types[0]);
+        const response = await getConfigNodeTypes();
+        if (response.success && Array.isArray(response.data)) {
+          setNodeTypes(response.data);
+          setSelectedNode(response.data[0] || null);
+        } else {
+          throw new Error(response.message || '获取节点类型失败');
         }
       } catch (err) {
         console.error('获取节点类型失败:', err);
-        setError(`获取节点类型列表失败: ${err.message}`);
-        // 使用模拟数据
-        const mockTypes = Object.keys(mockNodeData);
-        setNodeTypes(mockTypes);
-        setSelectedNode(mockTypes[0]);
+        setError('获取节点类型失败: ' + err.message);
+        setNodeTypes([]);
+        setSelectedNode(null);
+      } finally {
+        setLoading(false);
       }
     };
-
     fetchNodeTypes();
   }, []);
 
   // 获取选中节点的配置
   useEffect(() => {
-    if (!selectedNode) return;
+    if (!selectedNode) {
+      setNodeConfig(null);
+      setFlowConfig(null);
+      setWorkConfig(null);
+      setError(null); 
+      setLoading(false); 
+      return;
+    }
 
     const fetchNodeConfigs = async () => {
       setLoading(true);
-      setError(null);
+      setError(null); // 清除之前选择节点的错误
       try {
-        let config, flow, work;
-        
-        try {
-          // 获取三种配置
-          const [configResponse, flowResponse, workResponse] = await Promise.all([
-            getNodeConfigByType(selectedNode),
-            getDefaultFlowConfig(selectedNode),
-            getDefaultWorkConfig(selectedNode)
-          ]);
-          
-          // 处理返回结果，针对可能的不同格式做判断
-          config = configResponse && configResponse.data ? configResponse.data : configResponse;
-          flow = flowResponse && flowResponse.data ? flowResponse.data : flowResponse;
-          work = workResponse && workResponse.data ? workResponse.data : workResponse;
-        } catch (err) {
-          // 如果获取配置失败，使用模拟数据
-          
-          // 优先使用预定义的模拟数据
-          if (mockNodeData[selectedNode]) {
-            config = mockNodeData[selectedNode].config;
-            flow = mockNodeData[selectedNode].flow;
-            work = mockNodeData[selectedNode].work;
-          } else {
-            // 如果没有预定义的模拟数据，生成通用模拟数据
-            config = {
-              id: selectedNode.toLowerCase(),
-              name: selectedNode,
-              type: 'model',
-              tag: selectedNode.toLowerCase(),
-              description: `${selectedNode} 的基本描述`,
-              version: '1.0.0',
-              supportedInputPipelines: ['CHAT', 'PROMPT'],
-              supportedOutputPipelines: ['CHAT', 'PROMPT']
-            };
-            
-            flow = {
-              nodeName: `${selectedNode} Node`,
-              status: 'IDLE'
-            };
-            
-            work = {
-              model: selectedNode === 'ChatNode' ? 'gpt-3.5-turbo' : 'default',
-              systemPrompt: '你是一个助手',
-              temperature: 0.7
-            };
-          }
-        }
-        
-        setNodeConfig(config);
-        setFlowConfig(flow);
-        setWorkConfig(work);
+        // 获取类配置
+        const resConfig = await getNodeConfigByType(selectedNode);
+        if (!resConfig.success) throw new Error(resConfig.message || `获取 ${selectedNode} 类配置失败`);
+        setNodeConfig(resConfig.data);
+
+        // 获取流程配置
+        const resFlow = await getDefaultFlowConfig(selectedNode);
+        if (!resFlow.success) throw new Error(resFlow.message || `获取 ${selectedNode} 流程配置失败`);
+        setFlowConfig(resFlow.data);
+
+        // 获取运行时配置
+        const resWork = await getDefaultWorkConfig(selectedNode);
+        if (!resWork.success) throw new Error(resWork.message || `获取 ${selectedNode} 运行时配置失败`);
+        setWorkConfig(resWork.data);
+
       } catch (err) {
         console.error('获取节点配置失败:', err);
-        setError(`获取节点配置信息失败: ${err.message}`);
+        setError('获取节点配置失败: ' + err.message);
+        // 出错时不清空已有的数据显示，允许用户看到上一个成功加载的配置
+        // 如果需要完全清空，可以取消下面三行注释
+        // setNodeConfig(null);
+        // setFlowConfig(null);
+        // setWorkConfig(null);
       } finally {
         setLoading(false);
       }
     };
-
     fetchNodeConfigs();
   }, [selectedNode]);
 
   // 格式化展示JSON对象
   const formatConfigDisplay = (config) => {
-    if (!config) return null;
+    if (config === null || config === undefined) { // 明确检查 null 或 undefined
+      return <p className="text-slate-500 text-xs">此配置信息不可用。</p>;
+    }
+    if (typeof config === 'object' && Object.keys(config).length === 0) {
+      return <p className="text-slate-500 text-xs">此配置为空。</p>;
+    }
     
     return Object.entries(config).map(([key, value]) => (
       <div key={key} className="mb-2">
@@ -330,33 +192,37 @@ const NodeGuide = () => {
               <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-3">"{selectedNode}" 节点配置</h3>
                 
-                {loading ? (
-                  <p className="text-slate-500">加载配置信息中...</p>
-                ) : (
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="font-medium text-md mb-2">基本配置</h4>
-                      <div className="bg-slate-50 p-3 rounded-md text-sm overflow-x-auto">
-                        {formatConfigDisplay(nodeConfig)}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-medium text-md mb-2">流程级配置</h4>
-                      <div className="bg-slate-50 p-3 rounded-md text-sm overflow-x-auto">
-                        {formatConfigDisplay(flowConfig)}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-medium text-md mb-2">运行时配置</h4>
-                      <div className="bg-slate-50 p-3 rounded-md text-sm overflow-x-auto">
-                        {formatConfigDisplay(workConfig)}
-                      </div>
+                {/* 错误信息优先显示 */}
+                {error && <p className="text-red-500 mb-4">{error}</p>}
+
+                {/* 配置项容器，通过CSS class控制加载时的视觉反馈 */}
+                <div className={`space-y-4 transition-opacity duration-300 ${loading ? 'opacity-60' : 'opacity-100'}`}>
+                  <div>
+                    <h4 className="font-medium text-md mb-2">基本配置</h4>
+                    <div className="bg-slate-50 p-3 rounded-md text-sm overflow-x-auto min-h-[70px]"> {/* 增加最小高度 */}
+                      {loading && !nodeConfig ? <p className="text-xs text-slate-400">加载中...</p> : formatConfigDisplay(nodeConfig)}
                     </div>
                   </div>
-                )}
+                  
+                  <div>
+                    <h4 className="font-medium text-md mb-2">流程级配置</h4>
+                    <div className="bg-slate-50 p-3 rounded-md text-sm overflow-x-auto min-h-[70px]"> {/* 增加最小高度 */}
+                      {loading && !flowConfig ? <p className="text-xs text-slate-400">加载中...</p> : formatConfigDisplay(flowConfig)}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-md mb-2">运行时配置</h4>
+                    <div className="bg-slate-50 p-3 rounded-md text-sm overflow-x-auto min-h-[70px]"> {/* 增加最小高度 */}
+                      {loading && !workConfig ? <p className="text-xs text-slate-400">加载中...</p> : formatConfigDisplay(workConfig)}
+                    </div>
+                  </div>
+                </div>
               </div>
+            )}
+            {/* 在没有选中节点且不在加载时提示选择 */}
+            {!selectedNode && !loading && (
+              <p className="text-slate-500 mt-6">请选择一个节点类型以查看其配置详情。</p>
             )}
           </CardContent>
         </Card>

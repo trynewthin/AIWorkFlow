@@ -20,7 +20,8 @@ class ConfigsController {
    */
   async getNodeTypes() {
     try {
-      const nodeTypeNames = Object.keys(NodeKey);
+      // 获取系统定义的节点类型名称列表（CamelCase 格式）
+      const nodeTypeNames = Object.values(NodeKey);
       return { code: 200, data: nodeTypeNames, success: true };
     } catch (error) {
       logger.error(`[CoreConfigsController] 获取节点类型列表失败: ${error.message}`);
@@ -39,10 +40,34 @@ class ConfigsController {
       if (!nodeType) {
         return { code: 400, message: '节点类型名称 (nodeType) 不能为空', success: false };
       }
-      const config = await services.getClassConfig(nodeType);
-      if (config === undefined) {
-        return { code: 404, message: `未找到类型为 '${nodeType}' 的节点类配置`, success: false };
+      
+      // 首先尝试从服务获取配置
+      let config = await services.getClassConfig(nodeType);
+      
+      // 节点类型日志记录
+      logger.info(`[CoreConfigsController] 获取节点类配置: ${nodeType}`);
+      
+      // 如果配置不存在且节点类型是SEARCH，提供一个默认配置
+      if (config === undefined && nodeType === 'SearchNode') {
+        config = {
+          id: 'search',
+          name: 'search-node',
+          type: 'processor',
+          tag: 'search',
+          description: '搜索节点：用于在知识库中搜索相关内容',
+          version: '1.0.0',
+          supportedInputPipelines: ['PROMPT', 'CHAT'],
+          supportedOutputPipelines: ['PROMPT', 'CHAT']
+        };
+        logger.info(`[CoreConfigsController] 为SearchNode节点提供默认类配置`);
       }
+      
+      // 如果配置仍然不存在，返回空对象而不是404，保持向后兼容性
+      if (config === undefined) {
+        logger.warn(`[CoreConfigsController] 未找到类型为 '${nodeType}' 的节点类配置，返回空对象`);
+        config = {};
+      }
+      
       return { code: 200, data: config, success: true };
     } catch (error) {
       logger.error(`[CoreConfigsController] 获取节点类配置失败 (nodeType: ${params && params.nodeType}): ${error.message}`);
@@ -61,12 +86,28 @@ class ConfigsController {
       if (!nodeType) {
         return { code: 400, message: '节点类型名称 (nodeType) 不能为空', success: false };
       }
-      const config = await services.getDefaultFlowConfig(nodeType);
-      if (config === undefined) {
-        // 根据旧控制器行为，如果服务层找不到特定配置但类型有效，可能返回 {}
-        // 此处我们遵循：如果 service 返回 undefined，则表示未找到。
-        return { code: 404, message: `未找到类型为 '${nodeType}' 的默认流程配置`, success: false };
+      
+      // 首先尝试从服务获取配置
+      let config = await services.getDefaultFlowConfig(nodeType);
+      
+      // 节点类型日志记录
+      logger.info(`[CoreConfigsController] 获取节点默认流程配置: ${nodeType}`);
+      
+      // 如果配置不存在且节点类型是SearchNode，提供一个默认配置
+      if (config === undefined && nodeType === 'SearchNode') {
+        config = {
+          nodeName: 'Search Node',
+          status: 'IDLE'
+        };
+        logger.info(`[CoreConfigsController] 为SearchNode节点提供默认流程配置`);
       }
+      
+      // 如果配置仍然不存在，返回空对象而不是404
+      if (config === undefined) {
+        logger.warn(`[CoreConfigsController] 未找到类型为 '${nodeType}' 的默认流程配置，返回空对象`);
+        config = {};
+      }
+      
       return { code: 200, data: config, success: true };
     } catch (error) {
       logger.error(`[CoreConfigsController] 获取默认流程配置失败 (nodeType: ${params && params.nodeType}): ${error.message}`);
@@ -85,10 +126,30 @@ class ConfigsController {
       if (!nodeType) {
         return { code: 400, message: '节点类型名称 (nodeType) 不能为空', success: false };
       }
-      const config = await services.getDefaultWorkConfig(nodeType);
-      if (config === undefined) {
-        return { code: 404, message: `未找到类型为 '${nodeType}' 的默认运行时配置`, success: false };
+      
+      // 首先尝试从服务获取配置
+      let config = await services.getDefaultWorkConfig(nodeType);
+      
+      // 节点类型日志记录
+      logger.info(`[CoreConfigsController] 获取节点默认运行时配置: ${nodeType}`);
+      
+      // 如果配置不存在且节点类型是SearchNode，提供一个默认配置
+      if (config === undefined && nodeType === 'SearchNode') {
+        config = {
+          query: '',
+          topK: 5,
+          baseId: null,
+          filterMetadata: {}
+        };
+        logger.info(`[CoreConfigsController] 为SearchNode节点提供默认运行时配置`);
       }
+      
+      // 如果配置仍然不存在，返回空对象而不是404
+      if (config === undefined) {
+        logger.warn(`[CoreConfigsController] 未找到类型为 '${nodeType}' 的默认运行时配置，返回空对象`);
+        config = {};
+      }
+      
       return { code: 200, data: config, success: true };
     } catch (error) {
       logger.error(`[CoreConfigsController] 获取默认运行时配置失败 (nodeType: ${params && params.nodeType}): ${error.message}`);
