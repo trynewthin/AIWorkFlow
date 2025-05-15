@@ -2,12 +2,12 @@
  * @file electron/model/nodes/chat.js
  * @description 聊天节点（基于 LangChain JS）
  */
-const { DataType, PipelineType } = require('../../configs/models/pipelineTypes');
+const { DataType, PipelineType } = require('../../coreconfigs/models/pipelineTypes');
 const { ChatOpenAI } = require('@langchain/openai');
 // 导入 LangChain 消息类
 const { SystemMessage, HumanMessage } = require('@langchain/core/messages');
 const BaseNode = require('./BaseNode');
-const Pipeline = require('../../pipeline/Pipeline');
+const Pipeline = require('../../core/pipeline/Pipeline');
 
 /**
  * @class ChatNode

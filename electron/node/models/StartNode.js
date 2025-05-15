@@ -4,8 +4,8 @@
  * @description 开始节点：根据配置的目标管道类型创建初始管道
  */
 const BaseNode = require('./BaseNode');
-const Pipeline = require('../../pipeline/Pipeline');
-const { DataType, PipelineType } = require('../../configs/models/pipelineTypes');
+const Pipeline = require('../../core/pipeline/Pipeline');
+const { DataType, PipelineType } = require('../../coreconfigs/models/pipelineTypes');
 
 class StartNode extends BaseNode {
   /**

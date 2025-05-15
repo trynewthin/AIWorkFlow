@@ -5,7 +5,7 @@
 
 const { randomUUID } = require('crypto');
 const { logger } = require('ee-core/log');
-const { getWorkflowDb } = require('../../../database'); // Adjusted path
+const { getWorkflowDb } = require('../../database'); // Adjusted path
 const Workflow = require('./Workflow'); // Will be in the same 'models' directory
 
 /**
@@ -17,7 +17,7 @@ class WorkflowManager {
    * @constructor
    */
   constructor() {
-    /** @type {import('../../../database/workflow-db').WorkflowDb} */ // Adjusted path for import type
+    /** @type {import('../../database/workflow-db').WorkflowDb} */ // Adjusted path for import type
     this.workflowDb = getWorkflowDb();
   }
 

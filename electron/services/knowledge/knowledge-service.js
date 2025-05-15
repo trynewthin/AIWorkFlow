@@ -1,10 +1,10 @@
 'use strict';
 
 const { getKnowledgeDb, getHNSWDb } = require('../../database');
-const ChunkNode = require('../../core/node/models/ChunkNode');
-const EmbeddingNode = require('../../core/node/models/EmbeddingNode');
+const ChunkNode = require('../../node/models/ChunkNode');
+const EmbeddingNode = require('../../node/models/EmbeddingNode');
 const Pipeline = require('../../core/pipeline/Pipeline');
-const { DataType, PipelineType } = require('../../core/configs/models/pipelineTypes');
+const { DataType, PipelineType } = require('../../coreconfigs/models/pipelineTypes');
 const { randomUUID } = require('crypto');
 const { Document } = require('@langchain/core/documents');
 const fs = require('fs');

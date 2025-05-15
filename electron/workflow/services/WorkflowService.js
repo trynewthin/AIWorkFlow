@@ -118,9 +118,9 @@ class WorkflowService {
   /**
    * @description 执行指定工作流
    * @param {string} workflowId - 工作流 ID
-   * @param {import('../../pipeline/Pipeline')|Object} input - 输入数据或 Pipeline 实例
+   * @param {import('../../core/pipeline/Pipeline')|Object} input - 输入数据或 Pipeline 实例
    * @param {Object} [options] - 执行选项
-   * @returns {Promise<import('../../pipeline/Pipeline')>} 执行结果 Pipeline
+   * @returns {Promise<import('../../core/pipeline/Pipeline')>} 执行结果 Pipeline
    */
   async executeWorkflow(workflowId, input, options = {}) {
     return this.workflowExecutor.execute(workflowId, input, options);

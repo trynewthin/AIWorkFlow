@@ -54,7 +54,9 @@ const PipelineType = {
   /** 搜索结果管道 */
   SEARCH: 'search',
   /** 用户消息管道 */
-  USER_MESSAGE: 'user_message'
+  USER_MESSAGE: 'user_message',
+  /** 文本管道 */
+  TEXT: 'text'
 };
 
 module.exports = {
