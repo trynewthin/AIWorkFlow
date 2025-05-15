@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Separator } from "../../components/ui/separator";
-import { getNodeTypes as getConfigNodeTypes, getNodeConfigByType, getDefaultFlowConfig, getDefaultWorkConfig } from "../../api/config";
+import { configService } from "../../services";
 
 /**
  * @description 节点教程页面
@@ -24,12 +24,16 @@ const NodeGuide = () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await getConfigNodeTypes();
-        if (response.success && Array.isArray(response.data)) {
-          setNodeTypes(response.data);
-          setSelectedNode(response.data[0] || null);
+        const types = await configService.getConfigNodeTypes();
+        if (Array.isArray(types)) {
+          setNodeTypes(types);
+          if (types.length > 0) {
+            setSelectedNode(types[0]);
+          } else {
+            setSelectedNode(null);
+          }
         } else {
-          throw new Error(response.message || '获取节点类型失败');
+          throw new Error('获取到的节点类型数据格式不正确');
         }
       } catch (err) {
         console.error('获取节点类型失败:', err);
@@ -49,38 +53,27 @@ const NodeGuide = () => {
       setNodeConfig(null);
       setFlowConfig(null);
       setWorkConfig(null);
-      setError(null); 
       setLoading(false); 
       return;
     }
 
     const fetchNodeConfigs = async () => {
       setLoading(true);
-      setError(null); // 清除之前选择节点的错误
+      setError(null);
       try {
-        // 获取类配置
-        const resConfig = await getNodeConfigByType(selectedNode);
-        if (!resConfig.success) throw new Error(resConfig.message || `获取 ${selectedNode} 类配置失败`);
-        setNodeConfig(resConfig.data);
+        const [nodeConfigData, flowConfigData, workConfigData] = await Promise.all([
+          configService.getNodeConfigByType(selectedNode),
+          configService.getDefaultFlowConfig(selectedNode),
+          configService.getDefaultWorkConfig(selectedNode)
+        ]);
 
-        // 获取流程配置
-        const resFlow = await getDefaultFlowConfig(selectedNode);
-        if (!resFlow.success) throw new Error(resFlow.message || `获取 ${selectedNode} 流程配置失败`);
-        setFlowConfig(resFlow.data);
-
-        // 获取运行时配置
-        const resWork = await getDefaultWorkConfig(selectedNode);
-        if (!resWork.success) throw new Error(resWork.message || `获取 ${selectedNode} 运行时配置失败`);
-        setWorkConfig(resWork.data);
+        setNodeConfig(nodeConfigData);
+        setFlowConfig(flowConfigData);
+        setWorkConfig(workConfigData);
 
       } catch (err) {
         console.error('获取节点配置失败:', err);
-        setError('获取节点配置失败: ' + err.message);
-        // 出错时不清空已有的数据显示，允许用户看到上一个成功加载的配置
-        // 如果需要完全清空，可以取消下面三行注释
-        // setNodeConfig(null);
-        // setFlowConfig(null);
-        // setWorkConfig(null);
+        setError(`获取 ${selectedNode} 配置失败: ${err.message}`);
       } finally {
         setLoading(false);
       }
@@ -90,7 +83,7 @@ const NodeGuide = () => {
 
   // 格式化展示JSON对象
   const formatConfigDisplay = (config) => {
-    if (config === null || config === undefined) { // 明确检查 null 或 undefined
+    if (config === null || config === undefined) {
       return <p className="text-slate-500 text-xs">此配置信息不可用。</p>;
     }
     if (typeof config === 'object' && Object.keys(config).length === 0) {
@@ -192,35 +185,32 @@ const NodeGuide = () => {
               <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-3">"{selectedNode}" 节点配置</h3>
                 
-                {/* 错误信息优先显示 */}
                 {error && <p className="text-red-500 mb-4">{error}</p>}
 
-                {/* 配置项容器，通过CSS class控制加载时的视觉反馈 */}
                 <div className={`space-y-4 transition-opacity duration-300 ${loading ? 'opacity-60' : 'opacity-100'}`}>
                   <div>
                     <h4 className="font-medium text-md mb-2">基本配置</h4>
-                    <div className="bg-slate-50 p-3 rounded-md text-sm overflow-x-auto min-h-[70px]"> {/* 增加最小高度 */}
+                    <div className="bg-slate-50 p-3 rounded-md text-sm overflow-x-auto min-h-[70px]">
                       {loading && !nodeConfig ? <p className="text-xs text-slate-400">加载中...</p> : formatConfigDisplay(nodeConfig)}
                     </div>
                   </div>
                   
                   <div>
                     <h4 className="font-medium text-md mb-2">流程级配置</h4>
-                    <div className="bg-slate-50 p-3 rounded-md text-sm overflow-x-auto min-h-[70px]"> {/* 增加最小高度 */}
+                    <div className="bg-slate-50 p-3 rounded-md text-sm overflow-x-auto min-h-[70px]">
                       {loading && !flowConfig ? <p className="text-xs text-slate-400">加载中...</p> : formatConfigDisplay(flowConfig)}
                     </div>
                   </div>
                   
                   <div>
                     <h4 className="font-medium text-md mb-2">运行时配置</h4>
-                    <div className="bg-slate-50 p-3 rounded-md text-sm overflow-x-auto min-h-[70px]"> {/* 增加最小高度 */}
+                    <div className="bg-slate-50 p-3 rounded-md text-sm overflow-x-auto min-h-[70px]">
                       {loading && !workConfig ? <p className="text-xs text-slate-400">加载中...</p> : formatConfigDisplay(workConfig)}
                     </div>
                   </div>
                 </div>
               </div>
             )}
-            {/* 在没有选中节点且不在加载时提示选择 */}
             {!selectedNode && !loading && (
               <p className="text-slate-500 mt-6">请选择一个节点类型以查看其配置详情。</p>
             )}

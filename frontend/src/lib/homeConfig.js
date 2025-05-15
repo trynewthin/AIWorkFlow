@@ -3,7 +3,7 @@
  * @type {object}
  */
 import { AudioWaveform, GalleryVerticalEnd, Command, SquareTerminal, Bot, BookOpen, Settings2, Frame, PieChart, Map, Workflow } from "lucide-react";
-import { listWorkflows } from '../api/workflow';
+import { workflowService } from '../services';
 
 const homeConfig = {
   user: {
@@ -92,13 +92,14 @@ const homeConfig = {
         { name: "出行计划", url: "#", icon: Map },
       ];
       
-      // 尝试从后端获取工作流列表
-      const response = await listWorkflows();
+      // 尝试从后端获取工作流列表 (使用新的服务)
+      const workflows = await workflowService.listWorkflows();
       
-      // 检查响应是否成功且包含数据
-      if (response && response.success && response.data && Array.isArray(response.data)) {
+      // 检查响应是否成功且包含数据 (服务的返回已经是处理过的 data 或抛出错误)
+      // 因此，如果执行到这里，说明 workflows 已经是数据了
+      if (workflows && Array.isArray(workflows)) {
         // 将工作流转换为项目格式
-        const workflowProjects = response.data.map(workflow => ({
+        const workflowProjects = workflows.map(workflow => ({
           id: workflow.id, // 保存原始ID以便导航
           name: workflow.name || '未命名工作流',
           url: `/workflow/${workflow.id}`, // 设置为直接导航到工作流详情页的URL
@@ -110,10 +111,12 @@ const homeConfig = {
         return workflowProjects;
       }
       
-      // 如果API调用失败或无数据，返回默认项目列表
+      // 如果API调用失败或无数据 (这种情况理论上会被catch捕获，或者服务返回空数组)
+      // 但为了保险，保留一个回退
+      console.warn('workflowService.listWorkflows 返回的不是预期的数组，或为空，将使用默认项目列表');
       return defaultProjects;
     } catch (error) {
-      console.error('获取工作流列表失败:', error);
+      console.error('通过 workflowService.listWorkflows 获取工作流列表失败:', error);
       // 如果出错，返回默认项目列表
       return [
         { name: "设计工程", url: "#", icon: Frame },

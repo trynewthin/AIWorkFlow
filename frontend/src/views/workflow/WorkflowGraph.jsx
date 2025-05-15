@@ -14,7 +14,7 @@ import ReactFlow, {
   addEdge
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { getWorkflow, getNodeTypes, addNode, getDefaultFlowConfig, getDefaultWorkConfig } from '../../api/workflow';
+import { workflowService, configService } from '../../services';
 import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/ui/PageHeader';
 import { ArrowLeft, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -39,29 +39,24 @@ function WorkflowGraph() {
       setLoading(true);
       setError(null);
       try {
-        const response = await getWorkflow(id);
-        if (response && response.success && response.data) {
-          const wf = response.data;
-          // 构建节点
-          const initialNodes = (wf.nodes || []).map((node, index) => ({
-            id: node.id,
-            type: 'default',
-            position: { x: 100 + index * 250, y: 100 + (index % 2) * 150 },
-            data: { label: node.flow_config?.nodeName || node.id }
-          }));
-          // 构建连线（顺序相连）
-          const initialEdges = [];
-          for (let i = 0; i < (wf.nodes || []).length - 1; i++) {
-            const src = wf.nodes[i].id;
-            const tgt = wf.nodes[i + 1].id;
-            initialEdges.push({ id: `e_${src}_${tgt}`, source: src, target: tgt });
-          }
-
-          setNodes(initialNodes);
-          setEdges(initialEdges);
-        } else {
-          throw new Error(response?.message || '获取工作流失败');
+        const wf = await workflowService.getWorkflow(id);
+        // 构建节点
+        const initialNodes = (wf.nodes || []).map((node, index) => ({
+          id: node.id,
+          type: 'default',
+          position: { x: 100 + index * 250, y: 100 + (index % 2) * 150 },
+          data: { label: node.flow_config?.nodeName || node.id }
+        }));
+        // 构建连线（顺序相连）
+        const initialEdges = [];
+        for (let i = 0; i < (wf.nodes || []).length - 1; i++) {
+          const src = wf.nodes[i].id;
+          const tgt = wf.nodes[i + 1].id;
+          initialEdges.push({ id: `e_${src}_${tgt}`, source: src, target: tgt });
         }
+
+        setNodes(initialNodes);
+        setEdges(initialEdges);
       } catch (err) {
         setError('加载失败：' + err.message);
       } finally {
@@ -75,12 +70,8 @@ function WorkflowGraph() {
   useEffect(() => {
     async function loadNodeTypes() {
       try {
-        const response = await getNodeTypes();
-        if (response && response.success && response.data) {
-          setNodeTypes(response.data);
-        } else {
-          throw new Error(response?.message || '获取节点类型失败');
-        }
+        const types = await workflowService.getNodeTypes();
+        setNodeTypes(types);
       } catch (err) {
         console.error('加载节点类型失败', err);
       }
@@ -91,11 +82,7 @@ function WorkflowGraph() {
   // 添加新节点
   const addNewNodeHandler = async (nodeType) => {
     try {
-      const [defaultFlowConfig, defaultWorkConfig] = await Promise.all([
-        getDefaultFlowConfig(nodeType),
-        getDefaultWorkConfig(nodeType)
-      ]);
-      const result = await addNode(id, nodeType, defaultFlowConfig, defaultWorkConfig, nodes.length);
+      const result = await workflowService.addNode({ workflowId: id, nodeType, index: nodes.length });
       if (result && result.nodeId) {
         const newNode = {
           id: result.nodeId,

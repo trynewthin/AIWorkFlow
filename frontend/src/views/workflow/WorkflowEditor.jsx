@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getWorkflow, updateWorkflow, addNode, updateNode, deleteNode, moveNode, getNodeTypes } from '../../api/workflow';
-import { getDefaultFlowConfig, getDefaultWorkConfig, getNodeConfigByType } from '../../api/workflow';
+import { workflowService, configService } from '../../services';
 import { ArrowLeft, Save, Play, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 
 // UI 组件导入
@@ -37,25 +36,12 @@ function WorkflowEditor() {
       try {
         // 并行加载工作流和节点类型
         const [workflowResponse, nodeTypesResponse] = await Promise.all([
-          getWorkflow(id),
-          getNodeTypes()
+          workflowService.getWorkflow(id),
+          workflowService.getNodeTypes()
         ]);
         
-        let workflowData = null;
-        if (workflowResponse && workflowResponse.success && workflowResponse.data) {
-          workflowData = workflowResponse.data;
-          setWorkflow(workflowData);
-        } else {
-          const errorMessage = workflowResponse && workflowResponse.message ? workflowResponse.message : '获取工作流详情失败';
-          throw new Error(errorMessage);
-        }
-        
-        if (nodeTypesResponse && nodeTypesResponse.success && nodeTypesResponse.data) {
-          setNodeTypes(nodeTypesResponse.data);
-        } else {
-          const errorMessage = nodeTypesResponse && nodeTypesResponse.message ? nodeTypesResponse.message : '获取节点类型失败';
-          throw new Error(errorMessage);
-        }
+        setWorkflow(workflowResponse);
+        setNodeTypes(nodeTypesResponse);
       } catch (err) {
         setError('加载数据失败：' + err.message);
         setWorkflow(null);
@@ -72,34 +58,19 @@ function WorkflowEditor() {
   // 添加新节点
   const addNewNode = async (nodeType) => {
     try {
-      // 获取节点默认配置
-      const [defaultFlowConfig, defaultWorkConfig] = await Promise.all([
-        getDefaultFlowConfig(nodeType),
-        getDefaultWorkConfig(nodeType)
-      ]);
-      
-      // 添加新节点
-      await addNode(
-        workflow.id, 
+      await workflowService.addNode({
+        workflowId: workflow.id, 
         nodeType, 
-        defaultFlowConfig, 
-        defaultWorkConfig,
-        workflow.nodes ? workflow.nodes.length : 0
-      );
+        index: workflow.nodes ? workflow.nodes.length : 0
+      });
       
       // 刷新工作流数据
-      const response = await getWorkflow(id);
-      if (response && response.success && response.data) {
-        const actualWorkflowData = response.data;
-        setWorkflow(actualWorkflowData);
+      const refreshedWorkflow = await workflowService.getWorkflow(id);
+      setWorkflow(refreshedWorkflow);
       
-        // 选择新添加的节点进行编辑
-        if (actualWorkflowData.nodes && actualWorkflowData.nodes.length > 0) {
-          setSelectedNode(actualWorkflowData.nodes[actualWorkflowData.nodes.length - 1]);
-        }
-      } else {
-        console.error('Failed to refresh workflow after adding node:', response?.message);
-        setError('添加节点后刷新工作流失败：' + (response?.message || '未知错误'));
+      // 选择新添加的节点进行编辑
+      if (refreshedWorkflow.nodes && refreshedWorkflow.nodes.length > 0) {
+        setSelectedNode(refreshedWorkflow.nodes[refreshedWorkflow.nodes.length - 1]);
       }
     } catch (err) {
       setError('添加节点失败：' + err.message);
@@ -110,26 +81,19 @@ function WorkflowEditor() {
   // 更新节点配置
   const saveNodeConfig = async (nodeId, flowConfig, workConfig) => {
     try {
-      await updateNode(nodeId, flowConfig, workConfig);
+      await workflowService.updateNode(nodeId, { flowConfig, workConfig });
       
       // 刷新工作流数据
-      const response = await getWorkflow(id);
-      if (response && response.success && response.data) {
-        const actualWorkflowData = response.data;
-        setWorkflow(actualWorkflowData);
+      const refreshedWorkflow = await workflowService.getWorkflow(id);
+      setWorkflow(refreshedWorkflow);
       
-        // 更新选中的节点
-        if (selectedNode && selectedNode.id === nodeId) {
-          const updatedNode = actualWorkflowData.nodes.find(node => node.id === nodeId);
-          if (updatedNode) {
-            setSelectedNode(updatedNode);
-          }
+      // 更新选中的节点
+      if (selectedNode && selectedNode.id === nodeId) {
+        const updatedNode = refreshedWorkflow.nodes.find(node => node.id === nodeId);
+        if (updatedNode) {
+          setSelectedNode(updatedNode);
         }
-      } else {
-        console.error('Failed to refresh workflow after updating node:', response?.message);
-        setError('更新节点后刷新工作流失败：' + (response?.message || '未知错误'));
       }
-      
       alert('节点配置已保存');
     } catch (err) {
       setError('更新节点失败：' + err.message);
@@ -142,21 +106,15 @@ function WorkflowEditor() {
     if (!window.confirm('确定要删除此节点吗？')) return;
     
     try {
-      await deleteNode(nodeId);
+      await workflowService.deleteNode(nodeId);
       
       // 刷新工作流数据
-      const response = await getWorkflow(id);
-      if (response && response.success && response.data) {
-        const actualWorkflowData = response.data;
-        setWorkflow(actualWorkflowData);
+      const refreshedWorkflow = await workflowService.getWorkflow(id);
+      setWorkflow(refreshedWorkflow);
       
-        // 如果删除的是当前选中的节点，则清除选择
-        if (selectedNode && selectedNode.id === nodeId) {
-          setSelectedNode(null);
-        }
-      } else {
-        console.error('Failed to refresh workflow after deleting node:', response?.message);
-        setError('删除节点后刷新工作流失败：' + (response?.message || '未知错误'));
+      // 如果删除的是当前选中的节点，则清除选择
+      if (selectedNode && selectedNode.id === nodeId) {
+        setSelectedNode(null);
       }
     } catch (err) {
       setError('删除节点失败：' + err.message);
@@ -167,17 +125,11 @@ function WorkflowEditor() {
   // 移动节点位置
   const moveNodePosition = async (nodeId, newIndex) => {
     try {
-      await moveNode(nodeId, newIndex);
+      await workflowService.moveNode(nodeId, newIndex);
       
       // 刷新工作流数据
-      const response = await getWorkflow(id);
-      if (response && response.success && response.data) {
-        const actualWorkflowData = response.data;
-        setWorkflow(actualWorkflowData);
-      } else {
-        console.error('Failed to refresh workflow after moving node:', response?.message);
-        setError('移动节点后刷新工作流失败：' + (response?.message || '未知错误'));
-      }
+      const refreshedWorkflow = await workflowService.getWorkflow(id);
+      setWorkflow(refreshedWorkflow);
     } catch (err) {
       setError('移动节点失败：' + err.message);
       console.error('移动节点失败', err);

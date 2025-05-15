@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listWorkflows, deleteWorkflow, createWorkflow, updateWorkflow } from '../../api/workflow';
+// 从新的服务中导入相关函数
+import { workflowService } from '../../services';
 import { PlusCircle, Edit, Trash2, Eye, MoreVertical } from 'lucide-react';
 // 从 @/components/ui/sheet 导入所需组件
 import { Sheet, SheetContent, SheetHeader, SheetFooter, SheetTitle } from '@/components/ui/sheet';
@@ -34,18 +35,9 @@ function WorkflowList() {
     setLoading(true);
     setError(null); // 重置错误状态
     try {
-      const response = await listWorkflows(); // 获取完整的响应
-      if (response && response.success && response.data) {
-        setWorkflows(response.data); // 使用 data 部分设置状态
-      } else {
-        // 如果 success 为 false 或 data 不存在，则设置错误信息
-        const errorMessage = response && response.message ? response.message : '获取工作流列表失败，但未返回明确错误信息。';
-        setError('加载工作流列表失败：' + errorMessage);
-        setWorkflows([]); // 清空或保持上一次状态，视产品逻辑而定
-        console.error('加载工作流列表失败', response);
-      }
+      const workflowData = await workflowService.listWorkflows(); // 使用 workflowService
+      setWorkflows(workflowData || []); // 确保是数组
     } catch (err) {
-      // 这是 ipc.invoke 本身抛出的错误 (例如网络问题或主进程崩溃)
       setError('加载工作流列表发生通信错误：' + err.message);
       setWorkflows([]);
       console.error('加载工作流列表发生通信错误', err);
@@ -64,7 +56,7 @@ function WorkflowList() {
     if (!window.confirm('确定要删除此工作流吗？')) return;
     
     try {
-      await deleteWorkflow(id);
+      await workflowService.deleteWorkflow(id); // 使用 workflowService
       // 重新加载列表
       loadWorkflows();
     } catch (err) {
@@ -76,12 +68,15 @@ function WorkflowList() {
   // 创建新工作流
   const handleCreateWorkflow = async () => {
     if (!newWorkflow.name.trim()) {
-      setError('工作流名称不能为空'); // 考虑使用更友好的提示方式，例如在输入框下方提示
+      setError('工作流名称不能为空'); 
       return;
     }
 
     try {
-      await createWorkflow(newWorkflow.name, newWorkflow.description);
+      await workflowService.createWorkflow({ // 使用 workflowService
+        name: newWorkflow.name, 
+        description: newWorkflow.description 
+      });
       setShowCreateModal(false); // 关闭 Sheet
       setNewWorkflow({ name: '', description: '' }); // 清空表单
       loadWorkflows(); // 重新加载列表
@@ -99,7 +94,7 @@ function WorkflowList() {
   // 新增：保存工作流信息变更
   const handleUpdateWorkflowInfo = async () => {
     if (!currentWorkflowInSheet.name.trim()) {
-      setError('工作流名称不能为空'); // 考虑在Sheet内部提示
+      setError('工作流名称不能为空'); 
       return;
     }
     if (!currentWorkflowInSheet.id) {
@@ -108,7 +103,10 @@ function WorkflowList() {
     }
 
     try {
-      await updateWorkflow(currentWorkflowInSheet.id, currentWorkflowInSheet.name, currentWorkflowInSheet.description);
+      await workflowService.updateWorkflow(currentWorkflowInSheet.id, { // 使用 workflowService
+        name: currentWorkflowInSheet.name, 
+        description: currentWorkflowInSheet.description 
+      });
       setShowInfoSheet(false); // 关闭Sheet
       loadWorkflows(); // 重新加载列表
       setError(null); // 清除之前的错误

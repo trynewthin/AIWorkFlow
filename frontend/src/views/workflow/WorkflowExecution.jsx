@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { getWorkflow, executeWorkflow } from '../../api/workflow';
+import { workflowService } from '../../services';
 import { Play, StopCircle } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
@@ -44,15 +44,8 @@ function WorkflowExecution() {
 
     const loadWorkflow = async () => {
       try {
-        const response = await getWorkflow(id);
-        if (response && response.success && response.data) {
-          setWorkflow(response.data);
-        } else {
-          const errorMessage = response && response.message ? response.message : '获取工作流失败';
-          setError('加载工作流失败：' + errorMessage);
-          setWorkflow(null);
-          console.error('加载工作流失败', response);
-        }
+        const workflowData = await workflowService.getWorkflow(id);
+        setWorkflow(workflowData);
       } catch (err) {
         setError('加载工作流发生通信错误：' + err.message);
         setWorkflow(null);
@@ -79,13 +72,20 @@ function WorkflowExecution() {
 
     try {
       // 解析输入内容
-      let inputData = { text: input };
+      let inputData = input;
+      try {
+        // 如果用户输入的是JSON格式，则解析为对象
+        inputData = JSON.parse(input);
+      } catch (e) {
+        // 如果不是JSON，则作为纯文本处理
+        inputData = { text: input };
+      }
 
       // 执行工作流
-      const result = await executeWorkflow(
+      const result = await workflowService.executeWorkflow(
         workflow.id,
         inputData,
-        executionOptions
+        executionOptions // 传递执行选项
       );
       
       setResult(result);
