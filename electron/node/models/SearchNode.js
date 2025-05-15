@@ -10,6 +10,7 @@ const { Status } = require('../../coreconfigs');
 const { Document } = require('@langchain/core/documents');
 const { HNSWLib } = require('@langchain/community/vectorstores/hnswlib');
 const { OpenAIEmbeddings } = require('@langchain/openai');
+const { TextPipeTools } = require('../../pipeline/tools');
 
 class SearchNode extends BaseNode {
   /**
@@ -27,20 +28,8 @@ class SearchNode extends BaseNode {
     const workConfig = this.getWorkConfig();
     this.hnswDb = getHNSWDb();
     
-    // 确保 HNSWDb 索引已加载或可加载
-    // loadIndex 现在依赖 HNSWDb 内部管理维度，或从持久化配置读取
-    // 也可以选择在 onInit 时就尝试加载，如果 hnswDimension 在 workConfig 中
-    if (workConfig.hnswDimension && (!this.hnswDb.index || !this.hnswDb.index.isIndexInitialized())) { // 假设 isIndexInitialized 存在
-        try {
-            await this.hnswDb.loadIndex({ dimension: workConfig.hnswDimension });
-        } catch (err) {
-            console.warn(`SearchNode onInit: HNSW index auto-loading failed. May need to be built or loaded manually. Error: ${err.message}`);
-            // 即使加载失败，也允许节点初始化，检索时会再次检查
-        }
-    }
-
-    this.registerHandler(PipelineType.CHAT, this._handleSearch.bind(this));
-    this.registerHandler(PipelineType.USER_MESSAGE, this._handleSearch.bind(this));
+    // 注册处理函数
+    this.registerHandler(PipelineType.TEXT, this._handleSearch.bind(this));
   }
 
   /**
@@ -53,55 +42,86 @@ class SearchNode extends BaseNode {
   async _handleSearch(pipeline) {
     this.updateFlowConfig({ status: Status.RUNNING }); // 设置为运行状态
     try {
+      // 获取工作配置，在方法开头就定义，避免后面多次获取
+      const workConfig = this.getWorkConfig();
+      
       /**
        * 将输入文本转换为查询向量
        * @description 仅支持 DataType.TEXT 类型的数据
        */
-      const textItems = pipeline.getByType(DataType.TEXT);
-      if (textItems.length === 0) {
+      // 从文本管道中读取单个字符串，并确保是字符串类型
+      const textStr = TextPipeTools.read(pipeline);
+      if (!textStr) {
         throw new Error('未找到文本数据，无法生成向量并执行检索');
       }
-      // 初始化嵌入器
-      const embedder = new OpenAIEmbeddings();
-      const queryEmbeddings = await Promise.all(
-        textItems.map(entry => embedder.embedQuery(entry.data))
-      );
-
-      const workConfig = this.getWorkConfig();
+      const textStrSafe = String(textStr);
+      console.log('SearchNode 处理查询文本:', textStrSafe);
+      
+      // 创建输出管道
       const outputPipeline = new Pipeline(PipelineType.RETRIEVAL);
 
-      // 确保索引已加载
-      if (!this.hnswDb.index || (typeof this.hnswDb.index.isIndexInitialized === 'function' && !this.hnswDb.index.isIndexInitialized())) {
-        // 如果 HNSWDb 有一个配置好的维度，它可以自己加载
-        // 否则，依赖 workConfig 中的 hnswDimension
-        const dimToLoad = workConfig.hnswDimension || (this.hnswDb.index ? this.hnswDb.index.getDim() : null); // getDim() 是假设的方法
-        if (!dimToLoad) {
-            throw new Error('HNSW 索引维度未知，无法加载索引。');
-        }
+      // 初始化或验证索引
+      if (!this.hnswDb.index) {
+        console.log('SearchNode: 索引未加载，开始加载索引');
         try {
-            await this.hnswDb.loadIndex({ dimension: dimToLoad });
+          await this.hnswDb.loadIndex({ 
+            dimension: workConfig.hnswDimension || 1024 
+          });
+          console.log('SearchNode: 索引加载成功');
         } catch (err) {
-            throw new Error(`HNSW 索引加载失败: ${err.message}`);
+          console.error('SearchNode: 索引加载失败', err);
+          
+          // 如果索引文件不存在，需要先构建索引
+          if (err.message && err.message.includes('索引文件不存在')) {
+            throw new Error('索引文件不存在，请先构建索引后再使用检索功能。可以使用管理界面创建索引或导入知识库。');
+          }
+          
+          throw new Error(`无法加载索引: ${err.message}`);
         }
       }
-      if (!this.hnswDb.index || typeof this.hnswDb.index.searchKnn !== 'function') {
-        throw new Error('HNSW 索引无效或未正确加载。');
+      
+      // 获取索引当前的维度
+      const indexDimension = this.hnswDb.getDimension();
+      console.log(`SearchNode: 当前索引维度为 ${indexDimension}`);
+      
+      // 使用与索引匹配的维度创建嵌入
+      const embedder = new OpenAIEmbeddings({ 
+        modelName: 'text-embedding-v3',
+        dimensions: indexDimension
+      });
+      
+      // 生成查询的嵌入向量
+      const queryEmbedding = await embedder.embedQuery(textStrSafe);
+      
+      // 检查生成的向量维度是否与索引匹配
+      if (queryEmbedding.length !== indexDimension) {
+        console.error(`SearchNode: 维度不匹配，索引期望 ${indexDimension} 维度，但生成了 ${queryEmbedding.length} 维度的向量`);
+        throw new Error(`嵌入向量维度与索引维度不匹配`);
       }
-
-      const retriever = this.hnswDb.getRetriever(); // HNSWDb.getRetriever() 返回包含 retrieve 方法的对象
-
-      for (const queryEmbedding of queryEmbeddings) {
-        // retrieve 方法现在应该返回包含 pageContent 和 metadata (含 knowledgeBaseId) 的文档
-        let documents = await retriever.retrieve(queryEmbedding, workConfig.topK);
-
-        if (workConfig.knowledgeBaseId) {
-          documents = documents.filter(doc => doc.metadata && doc.metadata.knowledgeBaseId === workConfig.knowledgeBaseId);
-        }
-
+      
+      // 执行检索
+      try {
+        const retriever = this.hnswDb.getRetriever();
+        const documents = await retriever.retrieve(queryEmbedding, workConfig.topK || 5);
+        console.log(`SearchNode: 检索到 ${documents.length} 个文档`);
+        
+        // 添加检索结果到输出管道
         for (const doc of documents) {
+          if (workConfig.knowledgeBaseId && 
+              (!doc.metadata || doc.metadata.knowledgeBaseId !== workConfig.knowledgeBaseId)) {
+            continue; // 跳过不匹配知识库ID的文档
+          }
           outputPipeline.add(DataType.RETRIEVAL, doc);
         }
+        
+        if (outputPipeline.getAll().length === 0) {
+          console.warn('SearchNode: 所有检索结果被过滤，未生成输出');
+        }
+      } catch (err) {
+        console.error('SearchNode: 检索过程失败:', err);
+        throw new Error(`检索失败: ${err.message}`);
       }
+      
       this.updateFlowConfig({ status: Status.COMPLETED }); // 设置为完成状态
       return outputPipeline;
     } catch (error) {

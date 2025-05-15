@@ -155,7 +155,7 @@ const nodeConfigurations = {
       description: '将文本向量化并使用 HNSW 索引检索相关文档',
       version: '1.0.0',
       supportedInputPipelines: [PipelineType.TEXT],
-      supportedOutputPipelines: [PipelineType.SEARCH]
+      supportedOutputPipelines: [PipelineType.RETRIEVAL]
     },
     defaultFlowConfig: {
       nodeName: '检索引擎节点',
@@ -165,7 +165,7 @@ const nodeConfigurations = {
     defaultWorkConfig: {
       topK: 5,
       knowledgeBaseId: null,
-      hnswDimension: 1536
+      hnswDimension: 1024
     }
   },
   [NodeKey.START]: {
