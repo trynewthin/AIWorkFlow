@@ -3,7 +3,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listKnowledgeBases, createKnowledgeBase, deleteKnowledgeBase } from '@/api/knowledge';
+import { listKnowledgeBases, createKnowledgeBase, deleteKnowledgeBase } from '@/services/knowledgeService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetFooter, SheetTitle } from '@/components/ui/sheet';

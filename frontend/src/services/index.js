@@ -5,6 +5,6 @@
 
 export * as connectionService from './connectionService';
 export * as uploadService from './uploadService';
-export * as knowledgeBaseService from './knowledgeBaseService';
+export * as knowledgeBaseService from './knowledgeService';
 export * as workflowService from './workflowService';
 export * as configService from './configService'; 

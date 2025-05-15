@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AlertCircle, Cpu, Database, Workflow, BookOpen, Settings, Zap, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { listWorkflows } from '../../api/workflow';
+import { workflowService } from '../../services';
 import { useNavigate } from 'react-router-dom';
 import BlobPattern from '@/components/ui/BlobPattern';
 
@@ -19,12 +19,11 @@ function HomePage() {
     const fetchRecentWorkflows = async () => {
       setLoading(true);
       try {
-        const response = await listWorkflows();
-        if (response && response.success && response.data) {
-          setRecentWorkflows(response.data.slice(0, 3)); // 只取前3个
-        }
+        const data = await workflowService.listWorkflows();
+        setRecentWorkflows(data ? data.slice(0, 3) : []);
       } catch (error) {
         console.error('获取最近工作流失败:', error);
+        setRecentWorkflows([]);
       } finally {
         setLoading(false);
       }

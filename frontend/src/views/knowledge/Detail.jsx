@@ -3,7 +3,13 @@
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { listKnowledgeBases, listDocuments, deleteDocument, getDocumentChunks, ingestFromPath } from '@/api/knowledge';
+import { 
+  listKnowledgeBases, 
+  listDocuments, 
+  deleteDocument, 
+  getDocumentChunks, 
+  uploadAndIngestFile 
+} from '@/services/knowledgeService';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetFooter, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
@@ -30,8 +36,6 @@ import {
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
 import { MoreVertical } from 'lucide-react';
-import { ipc } from '@/utils/ipcRenderer';
-import ipcApiRoute from '@/api/ipcApiRoute';
 
 /**
  * 知识库详情组件
@@ -125,33 +129,16 @@ export default function KnowledgeDetail() {
     
     setIsUploading(true);
     try {
-      // 先将文件上传到服务器临时目录
-      const formData = new FormData();
-      formData.append('file', fileToUpload);
+      // 使用新的服务方法上传并入库文件
+      await uploadAndIngestFile(fileToUpload, kbId);
       
-      // 使用 IPC 上传文件
-      const uploadResult = await ipc.invoke(ipcApiRoute.uploadFile, {
-        sourcePath: fileToUpload.path, // 本地文件路径
-        filename: fileToUpload.name, // 文件名
-        mimetype: fileToUpload.type || 'application/octet-stream' // 文件类型
-      });
-      
-      if (uploadResult && uploadResult.path) {
-        // 上传成功后，调用知识库入库 API
-        await ingestFromPath({
-          knowledgeBaseId: kbId,
-          sourcePath: uploadResult.fullPath, // 使用服务器返回的完整文件路径
-          metadata: { title: fileToUpload.name }
-        });
-        
-        // 入库成功，重置状态和刷新文档列表
-        setIsAddOpen(false);
-        setFileToUpload(null);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-        fetchDocuments();
+      // 入库成功，重置状态和刷新文档列表
+      setIsAddOpen(false);
+      setFileToUpload(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
+      fetchDocuments();
     } catch (e) {
       console.error('文档入库失败:', e);
       alert('文档处理失败: ' + (e.message || '未知错误'));
