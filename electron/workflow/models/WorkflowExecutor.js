@@ -4,7 +4,7 @@
  */
 
 const { logger } = require('ee-core/log');
-const Pipeline = require('../../pipeline/Pipeline'); // Adjusted path
+const Pipeline = require('../../core/pipeline/Pipeline'); // Adjusted path
 const { getNodeFactory } = require('../../node/services/NodeFactory'); // Adjusted path
 const { getWorkflowManager } = require('./WorkflowManager'); // Will be in the same 'models' directory
 const { DataType, PipelineType } = require('../../coreconfigs'); // 指向 electron/core/configs/index.js
