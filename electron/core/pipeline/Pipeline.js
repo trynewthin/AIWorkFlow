@@ -2,7 +2,7 @@
  * @file Pipeline.js
  * @description 管道类，封装多类型数据流，支持节点链式执行，使用对象类型存储数据体
  */
-const { PipelineType, isValidPipelineType, DataType } = require('../../config/pipeline');
+const { PipelineType, isValidPipelineType, DataType } = require('../configs/index');
 
 /**
  * Pipeline 类，封装多类型数据流，支持节点链式执行
@@ -17,8 +17,8 @@ class Pipeline {
       throw new Error(`无效的 Pipeline 类型: ${pipelineType}`);
     }
     this.pipelineType = pipelineType;
-    // 使用对象存储数据体，key 为数据类型，value 为数据内容
-    this.items = {};
+    // 使用数组存储数据体，每个元素是 {type, data} 对象
+    this.items = [];
   }
 
   /**
@@ -31,7 +31,7 @@ class Pipeline {
     if (!Object.values(DataType).includes(type)) {
       throw new Error(`无效的 DataType 类型: ${type}`);
     }
-    this.items[type] = data;
+    this.items.push({ type, data });
     return this;
   }
 
@@ -62,12 +62,13 @@ class Pipeline {
    * @returns {*} 对应类型的数据内容，如果不存在则返回 undefined
    */
   getByType(type) {
-    return this.items[type];
+    const item = this.items.find(it => it.type === type);
+    return item ? item.data : undefined;
   }
 
   /**
    * 获取所有数据体
-   * @returns {Object} 数据类型与数据内容映射对象
+   * @returns {Array<Object>} 包含所有 {type, data} 对象的数据数组
    */
   getAll() {
     return this.items;
@@ -78,7 +79,7 @@ class Pipeline {
    * @returns {Pipeline} 当前Pipeline实例
    */
   clear() {
-    this.items = {};
+    this.items = [];
     return this;
   }
 
@@ -129,16 +130,15 @@ class Pipeline {
     }
 
     const newPipeline = new Pipeline(pipelineType);
-    // 获取原始管道中的所有数据项对象
+    // 获取原始管道中的所有数据项数组
     const items = pipeline.getAll();
     // 如果原始管道没有数据，直接返回空管道
-    const keys = Object.keys(items);
-    if (keys.length === 0) {
+    if (items.length === 0) {
       return newPipeline;
     }
     // 取第一个数据项进行转换
-    const firstData = items[keys[0]];
-    newPipeline.add(dataType, firstData);
+    const firstItem = items[0];
+    newPipeline.add(dataType, firstItem.data);
     return newPipeline;
   }
 }

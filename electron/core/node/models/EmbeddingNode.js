@@ -4,10 +4,10 @@
  */
 
 const { OpenAIEmbeddings } = require("@langchain/openai");
-const { PipelineType, DataType } = require('../../config/pipeline/index');
-const BaseNode = require('./baseNode');
-const Pipeline = require('../pipeline/Pipeline');
-const { Status } = require('../../config/nodes');
+const { DataType, PipelineType } = require('../../configs/models/pipelineTypes');
+const BaseNode = require('./BaseNode');
+const Pipeline = require('../../pipeline/Pipeline');
+const { Status } = require('../../configs/models/enums');
 
 class EmbeddingNode extends BaseNode {
   /**
@@ -57,7 +57,9 @@ class EmbeddingNode extends BaseNode {
   async _handleEmbedding(pipeline) {
     this.updateFlowConfig({ status: Status.RUNNING });
     try {
-      const textItems = pipeline.getByType(DataType.TEXT);
+      // 获取所有 TEXT 类型数据项
+      const textItems = pipeline.getAll()
+        .filter(item => item.type === DataType.TEXT);
       if (textItems.length === 0) {
         throw new Error('未找到文本数据，无法生成嵌入向量');
       }
@@ -65,8 +67,9 @@ class EmbeddingNode extends BaseNode {
       // 创建新的输出管道，使用EMBEDDING类型
       const outputPipeline = new Pipeline(PipelineType.EMBEDDING);
 
-      for (const item of textItems) {
-        const text = item.data;
+      for (const entry of textItems) {
+        // entry 结构: { type, data: string, metadata?: Object }
+        const text = entry.data;
         const vector = await this.embeddings.embedQuery(text);
         outputPipeline.add(DataType.EMBEDDING, vector);
       }
@@ -89,8 +92,9 @@ class EmbeddingNode extends BaseNode {
   async _handleChunk(pipeline) {
     this.updateFlowConfig({ status: Status.RUNNING });
     try {
-      // 获取所有文本块数据
-      const chunkItems = pipeline.getByType(DataType.CHUNK);
+      // 获取所有 CHUNK 类型数据项
+      const chunkItems = pipeline.getAll()
+        .filter(item => item.type === DataType.CHUNK);
       if (chunkItems.length === 0) {
         throw new Error('未找到文本块数据，无法生成嵌入向量');
       }
@@ -99,9 +103,9 @@ class EmbeddingNode extends BaseNode {
       const outputPipeline = new Pipeline(PipelineType.EMBEDDING);
 
       // 将每个文本块转换为向量
-      for (const item of chunkItems) {
-        const chunkText = item.data.text || item.data;
-        const metadata = item.data.metadata || {};
+      for (const entry of chunkItems) {
+        // entry 结构: { type, data: { text: string, metadata?: Object } }
+        const { data: { text: chunkText, metadata = {} } } = entry;
         
         // 生成嵌入向量
         const vector = await this.embeddings.embedQuery(chunkText);
@@ -133,8 +137,9 @@ class EmbeddingNode extends BaseNode {
   async _handlePrompt(pipeline) {
     this.updateFlowConfig({ status: Status.RUNNING });
     try {
-      // 获取提示文本数据
-      const textItems = pipeline.getByType(DataType.TEXT);
+      // 获取所有 TEXT 类型提示文本数据项
+      const textItems = pipeline.getAll()
+        .filter(item => item.type === DataType.TEXT);
       if (textItems.length === 0) {
         throw new Error('未找到提示文本数据，无法生成嵌入向量');
       }
@@ -143,9 +148,9 @@ class EmbeddingNode extends BaseNode {
       const outputPipeline = new Pipeline(PipelineType.EMBEDDING);
 
       // 将每个提示文本转换为向量
-      for (const item of textItems) {
-        const text = item.data;
-        const metadata = item.metadata || {};
+      for (const entry of textItems) {
+        // entry 结构: { type, data: string, metadata?: Object }
+        const { data: text, metadata = {} } = entry;
         
         // 生成嵌入向量
         const vector = await this.embeddings.embedQuery(text);

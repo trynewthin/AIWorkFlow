@@ -1,10 +1,10 @@
 'use strict';
 
 const { getKnowledgeDb, getHNSWDb } = require('../../database');
-const ChunkNode = require('../../model/nodes/ChunkNode');
-const EmbeddingNode = require('../../model/nodes/EmbeddingNode');
-const Pipeline = require('../../model/pipeline/Pipeline');
-const { DataType, PipelineType } = require('../../config/pipeline/index');
+const ChunkNode = require('../../core/node/models/ChunkNode');
+const EmbeddingNode = require('../../core/node/models/EmbeddingNode');
+const Pipeline = require('../../core/pipeline/Pipeline');
+const { DataType, PipelineType } = require('../../core/configs/models/pipelineTypes');
 const { randomUUID } = require('crypto');
 const { Document } = require('@langchain/core/documents');
 const fs = require('fs');
@@ -111,16 +111,16 @@ class KnowledgeService {
     const chunkResult = await this.chunkNode.process(chunkPipeline);
     
     // 获取分块数据
-    const chunks = chunkResult.getByType(DataType.CHUNK);
-    if (!chunks || chunks.length === 0) {
+    const chunkItems = chunkResult.getAll().filter(item => item.type === DataType.CHUNK);
+    if (chunkItems.length === 0) {
       throw new Error('分块失败，未生成有效的文本块');
     }
 
     const docsForIndex = [];
     let vectorDim = null;
 
-    for (let idx = 0; idx < chunks.length; idx++) {
-      const chunk = chunks[idx].data;
+    for (let idx = 0; idx < chunkItems.length; idx++) {
+      const chunk = chunkItems[idx].data;
       const chunkText = chunk.text;
       const chunkMetadata = chunk.metadata || {};
       
@@ -136,9 +136,15 @@ class KnowledgeService {
       // 使用 Pipeline 流生成嵌入向量
       const embedPipeline = Pipeline.of(PipelineType.PROMPT, DataType.TEXT, chunkText);
       const embedResult = await this.embeddingNode.process(embedPipeline);
-      const vector = embedResult.getByType(DataType.EMBEDDING)[0].data.vector;
+      // 获取所有 EMBEDDING 类型管道条目
+      const embedItems = embedResult.getAll().filter(item => item.type === DataType.EMBEDDING);
+      if (embedItems.length === 0) {
+        throw new Error('嵌入失败，未生成有效的向量');
+      }
+      const embeddingData = embedItems[0].data;
+      const vector = Array.isArray(embeddingData) ? embeddingData : embeddingData.vector;
       vectorDim = vector.length;
-      
+
       // 存储向量到数据库
       await this.kbDb.addEmbedding({
         chunk_id: chunkId,
@@ -163,7 +169,7 @@ class KnowledgeService {
       dimension: vectorDim
     });
 
-    return { docId, chunkCount: chunks.length };
+    return { docId, chunkCount: chunkItems.length };
   }
 
   // 获取HNSW检索器

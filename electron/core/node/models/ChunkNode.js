@@ -3,10 +3,10 @@
  * @description 文本分块节点，使用LangChain JS进行文本分块
  */
 const { RecursiveCharacterTextSplitter } = require("langchain/text_splitter");
-const { PipelineType, DataType } = require('../../config/pipeline');
-const BaseNode = require('./baseNode');
-const { Status } = require('../../config/nodes');
-const Pipeline = require('../pipeline/Pipeline');
+const { DataType, PipelineType } = require('../../configs/models/pipelineTypes');
+const BaseNode = require('./BaseNode');
+const { Status } = require('../../configs/models/enums');
+const Pipeline = require('../../pipeline/Pipeline');
 
 class ChunkNode extends BaseNode {
   /**
@@ -47,8 +47,9 @@ class ChunkNode extends BaseNode {
   async _handlePromptForChunking(pipeline) {
     this.updateFlowConfig({ status: Status.RUNNING });
     try {
-      // 从pipeline获取文本内容
-      const textItems = pipeline.getByType(DataType.TEXT);
+      // 从pipeline获取所有 TEXT 类型数据项
+      const textItems = pipeline.getAll()
+        .filter(item => item.type === DataType.TEXT);
       if (textItems.length === 0) {
         throw new Error('未找到文本数据，无法进行分块');
       }
@@ -58,8 +59,8 @@ class ChunkNode extends BaseNode {
       
       // 逐个处理文本
       for (let i = 0; i < textItems.length; i++) {
-        const text = textItems[i].data;
-        const metadata = textItems[i].metadata || {};
+        // 每个 textItem 原始结构: { type, data: string, metadata?: Object }
+        const { data: text, metadata = {} } = textItems[i];
         
         // 使用LangChain分块器进行文本分块
         const chunks = await this.splitter.splitText(text);
@@ -98,9 +99,11 @@ class ChunkNode extends BaseNode {
   async _handleCustomForChunking(pipeline) {
     this.updateFlowConfig({ status: Status.RUNNING });
     try {
-      // 从custom pipeline获取可能的文档或文本内容
-      const textItems = pipeline.getByType(DataType.TEXT) || [];
-      const documents = pipeline.getByType(DataType.DOCUMENT) || [];
+      // 从pipeline获取所有 TEXT 和 DOCUMENT 类型数据项
+      const textItems = pipeline.getAll()
+        .filter(item => item.type === DataType.TEXT);
+      const documents = pipeline.getAll()
+        .filter(item => item.type === DataType.DOCUMENT);
       
       if (textItems.length === 0 && documents.length === 0) {
         throw new Error('未找到文本或文档数据，无法进行分块');
@@ -111,8 +114,8 @@ class ChunkNode extends BaseNode {
       
       // 处理文本项
       for (let i = 0; i < textItems.length; i++) {
-        const text = textItems[i].data;
-        const metadata = textItems[i].metadata || {};
+        // 每个 textItem 原始结构: { type, data: string, metadata?: Object }
+        const { data: text, metadata = {} } = textItems[i];
         
         const chunks = await this.splitter.splitText(text);
         
@@ -132,7 +135,8 @@ class ChunkNode extends BaseNode {
       
       // 处理文档项
       for (let i = 0; i < documents.length; i++) {
-        const doc = documents[i].data;
+        // 每个 documents 元素原始结构: { type, data: Document-like }
+        const { data: doc } = documents[i];
         const content = doc.pageContent || doc.content || doc.text || '';
         const docMetadata = doc.metadata || {};
         
