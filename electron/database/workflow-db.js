@@ -28,6 +28,7 @@ class WorkflowDb extends ModuleDbBase {
     // 表名定义
     this.workflowTable = 'workflow';
     this.nodeTable = 'workflow_node';
+    this.workflowUserTable = 'workflow_user'; // 添加工作流用户关联表名
     
     // 初始化表结构
     this._initTable();
@@ -67,6 +68,18 @@ class WorkflowDb extends ModuleDbBase {
         );
       `;
       this.db.exec(nodeTableSql);
+      
+      // 创建工作流与用户关联表
+      const workflowUserTableSql = `
+        CREATE TABLE IF NOT EXISTS ${this.workflowUserTable} (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          workflow_id TEXT NOT NULL,
+          user_id INTEGER NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (workflow_id) REFERENCES ${this.workflowTable}(id) ON DELETE CASCADE
+        );
+      `;
+      this.db.exec(workflowUserTableSql);
       
       logger.info(`[WorkflowDb] 工作流相关表结构初始化完成`);
     } catch (error) {
@@ -237,7 +250,7 @@ class WorkflowDb extends ModuleDbBase {
         return false;
       }
       
-      // 由于设置了外键级联删除，删除工作流时会自动删除所有关联节点
+      // 由于设置了外键级联删除，删除工作流时会自动删除所有关联节点和用户关联记录
       const stmt = this.db.prepare(
         `DELETE FROM ${this.workflowTable} WHERE id = ?`
       );
@@ -526,6 +539,145 @@ class WorkflowDb extends ModuleDbBase {
       }
     } catch (error) {
       logger.error(`[WorkflowDb] 移动节点失败: ${error.message}`);
+      throw error;
+    }
+  }
+
+  // ===== 工作流用户关联相关操作 =====
+
+  /**
+   * @method addWorkflowUserRelation
+   * @description 添加工作流与用户的关联
+   * @param {string} workflowId 工作流ID
+   * @param {number} userId 用户ID
+   * @returns {number} 新插入关联记录的ID
+   */
+  async addWorkflowUserRelation(workflowId, userId) {
+    try {
+      // 检查工作流是否存在
+      const workflow = await this.getWorkflow(workflowId);
+      if (!workflow) {
+        throw new Error(`工作流不存在: ${workflowId}`);
+      }
+
+      // 检查关联是否已存在
+      const existStmt = this.db.prepare(
+        `SELECT id FROM ${this.workflowUserTable} WHERE workflow_id = ? AND user_id = ?`
+      );
+      const existRelation = existStmt.get(workflowId, userId);
+      
+      // 如果关联已存在，直接返回关联ID
+      if (existRelation) {
+        return existRelation.id;
+      }
+      
+      // 创建新关联
+      const stmt = this.db.prepare(
+        `INSERT INTO ${this.workflowUserTable} (workflow_id, user_id) VALUES (?, ?)`
+      );
+      
+      const info = stmt.run(workflowId, userId);
+      
+      logger.info(`[WorkflowDb] 添加工作流用户关联成功: 工作流 ${workflowId}, 用户 ${userId}`);
+      return info.lastInsertRowid;
+    } catch (error) {
+      logger.error(`[WorkflowDb] 添加工作流用户关联失败: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * @method getWorkflowUser
+   * @description 获取工作流所属用户
+   * @param {string} workflowId 工作流ID
+   * @returns {number|null} 用户ID，不存在则返回null
+   */
+  async getWorkflowUser(workflowId) {
+    try {
+      const stmt = this.db.prepare(
+        `SELECT user_id FROM ${this.workflowUserTable} WHERE workflow_id = ? LIMIT 1`
+      );
+      
+      const relation = stmt.get(workflowId);
+      
+      return relation ? relation.user_id : null;
+    } catch (error) {
+      logger.error(`[WorkflowDb] 获取工作流所属用户失败: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * @method getUserWorkflows
+   * @description 获取用户的所有工作流
+   * @param {number} userId 用户ID
+   * @returns {Array<Object>} 工作流列表
+   */
+  async getUserWorkflows(userId) {
+    try {
+      const stmt = this.db.prepare(
+        `SELECT w.* FROM ${this.workflowTable} w
+         INNER JOIN ${this.workflowUserTable} wu ON w.id = wu.workflow_id
+         WHERE wu.user_id = ?
+         ORDER BY w.created_at DESC`
+      );
+      
+      const workflows = stmt.all(userId);
+      
+      // 解析JSON字段
+      workflows.forEach(workflow => {
+        workflow.config = JSON.parse(workflow.config || '{}');
+      });
+      
+      return workflows;
+    } catch (error) {
+      logger.error(`[WorkflowDb] 获取用户工作流列表失败: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * @method deleteWorkflowUserRelation
+   * @description 删除工作流与用户的关联
+   * @param {string} workflowId 工作流ID
+   * @param {number} userId 用户ID
+   * @returns {boolean} 删除成功返回true
+   */
+  async deleteWorkflowUserRelation(workflowId, userId) {
+    try {
+      const stmt = this.db.prepare(
+        `DELETE FROM ${this.workflowUserTable} WHERE workflow_id = ? AND user_id = ?`
+      );
+      
+      const result = stmt.run(workflowId, userId);
+      
+      logger.info(`[WorkflowDb] 删除工作流用户关联成功: 工作流 ${workflowId}, 用户 ${userId}`);
+      return result.changes > 0;
+    } catch (error) {
+      logger.error(`[WorkflowDb] 删除工作流用户关联失败: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * @method isWorkflowOwner
+   * @description 检查用户是否为工作流的所有者
+   * @param {string} workflowId 工作流ID
+   * @param {number} userId 用户ID
+   * @returns {boolean} 是否为所有者
+   */
+  async isWorkflowOwner(workflowId, userId) {
+    try {
+      const stmt = this.db.prepare(
+        `SELECT COUNT(*) as count FROM ${this.workflowUserTable} 
+         WHERE workflow_id = ? AND user_id = ?`
+      );
+      
+      const result = stmt.get(workflowId, userId);
+      
+      return result.count > 0;
+    } catch (error) {
+      logger.error(`[WorkflowDb] 检查工作流所有权失败: ${error.message}`);
       throw error;
     }
   }

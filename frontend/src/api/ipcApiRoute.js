@@ -30,11 +30,32 @@ const ipcApiRoute = {
   moveNode: 'controller/workflow/moveNode',
   getNodeTypes: 'controller/workflow/getNodeTypes',
   executeWorkflow: 'controller/workflow/executeWorkflow',
+  // 工作流用户相关接口
+  getCurrentUserWorkflows: 'controller/workflow/getCurrentUserWorkflows',
+  checkWorkflowOwnership: 'controller/workflow/checkWorkflowOwnership',
+  transferWorkflowOwnership: 'controller/workflow/transferWorkflowOwnership',
+  getWorkflowOwner: 'controller/workflow/getWorkflowOwner',
   // 配置相关接口
   getConfigNodeTypes: 'controller/config/getNodeTypes',
   getNodeConfigByType: 'controller/config/getNodeConfigByType',
   getDefaultFlowConfig: 'controller/config/getDefaultFlowConfig',
-  getDefaultWorkConfig: 'controller/config/getDefaultWorkConfig'
+  getDefaultWorkConfig: 'controller/config/getDefaultWorkConfig',
+  // 用户相关接口
+  userRegister: 'controller/user/register',
+  userLogin: 'controller/user/login',
+  userLoginByKey: 'controller/user/loginByKey',
+  userLogout: 'controller/user/logout',
+  userGetCurrentUser: 'controller/user/getCurrentUser',
+  userGetAllUsers: 'controller/user/getAllUsers',
+  userUpdateUser: 'controller/user/updateUser',
+  userDeleteUser: 'controller/user/deleteUser',
+  userGenerateKey: 'controller/user/generateKey',
+  userGenerateKeyForCurrentUser: 'controller/user/generateKeyForCurrentUser',
+  userGetUserKeys: 'controller/user/getUserKeys',
+  userGetCurrentUserKeys: 'controller/user/getCurrentUserKeys',
+  userUpdateKey: 'controller/user/updateKey',
+  userDeleteKey: 'controller/user/deleteKey',
+  userVerifyKey: 'controller/user/verifyKey'
 };
 
 export default ipcApiRoute; 

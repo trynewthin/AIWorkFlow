@@ -15,6 +15,7 @@ class UserDb extends ModuleDbBase {
     });
     
     this.userTable = 'user';
+    this.userKeyTable = 'user_key'; // 添加用户密钥表名
     this._initTable();
   }
 
@@ -23,15 +24,29 @@ class UserDb extends ModuleDbBase {
    * @private
    */
   _initTable() {
-    const sql = `
+    // 用户表 SQL
+    const userSql = `
       CREATE TABLE IF NOT EXISTS ${this.userTable} (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL,      -- User name
         password TEXT NOT NULL,      -- User password
+        is_logged_in INTEGER DEFAULT 0, -- 是否当前登录(0:否, 1:是)
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  -- Creation time
       );
     `;
-    this.db.exec(sql);
+    this.db.exec(userSql);
+    
+    // 用户密钥表 SQL
+    const userKeySql = `
+      CREATE TABLE IF NOT EXISTS ${this.userKeyTable} (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,    -- 用户ID
+        key_value TEXT NOT NULL,     -- 用户密钥
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- 创建时间
+        FOREIGN KEY (user_id) REFERENCES ${this.userTable}(id) ON DELETE CASCADE
+      );
+    `;
+    this.db.exec(userKeySql);
   }
 
   /**
@@ -62,6 +77,18 @@ class UserDb extends ModuleDbBase {
   }
 
   /**
+   * 根据用户名查询用户
+   * @param {string} username
+   * @returns {Object|null}
+   */
+  async getUserByUsername(username) {
+    const stmt = this.db.prepare(
+      `SELECT * FROM ${this.userTable} WHERE username = ?`
+    );
+    return stmt.get(username);
+  }
+
+  /**
    * 查询所有用户
    * @returns {Array<Object>}
    */
@@ -78,6 +105,7 @@ class UserDb extends ModuleDbBase {
    * @param {Object} data
    * @param {string} [data.username]
    * @param {string} [data.password]
+   * @param {number} [data.is_logged_in]
    * @returns {number} 更新的记录数
    */
   async updateUser(id, data) {
@@ -91,12 +119,48 @@ class UserDb extends ModuleDbBase {
       fields.push('password = ?');
       values.push(data.password);
     }
+    if (data.is_logged_in !== undefined) {
+      fields.push('is_logged_in = ?');
+      values.push(data.is_logged_in);
+    }
     if (fields.length === 0) return 0;
     values.push(id);
     const sql = `UPDATE ${this.userTable} SET ${fields.join(', ')} WHERE id = ?`;
     const stmt = this.db.prepare(sql);
     const info = stmt.run(...values);
     return info.changes;
+  }
+
+  /**
+   * 设置用户登录状态
+   * @param {number} id 
+   * @param {boolean} isLoggedIn 
+   * @returns {number} 更新的记录数
+   */
+  async setUserLoginStatus(id, isLoggedIn) {
+    return this.updateUser(id, { is_logged_in: isLoggedIn ? 1 : 0 });
+  }
+
+  /**
+   * 重置所有用户的登录状态为未登录
+   * @returns {number} 更新的记录数
+   */
+  async resetAllLoginStatus() {
+    const sql = `UPDATE ${this.userTable} SET is_logged_in = 0`;
+    const stmt = this.db.prepare(sql);
+    const info = stmt.run();
+    return info.changes;
+  }
+
+  /**
+   * 获取当前登录的用户
+   * @returns {Object|null} 登录用户信息
+   */
+  async getCurrentLoggedInUser() {
+    const stmt = this.db.prepare(
+      `SELECT * FROM ${this.userTable} WHERE is_logged_in = 1 LIMIT 1`
+    );
+    return stmt.get();
   }
 
   /**
@@ -109,6 +173,98 @@ class UserDb extends ModuleDbBase {
       `DELETE FROM ${this.userTable} WHERE id = ?`
     );
     const info = stmt.run(id);
+    return info.changes;
+  }
+
+  // ===== 用户密钥相关操作 =====
+
+  /**
+   * 为用户添加密钥
+   * @param {number} userId 
+   * @param {string} keyValue 
+   * @returns {number} 新插入记录的ID
+   */
+  async addUserKey(userId, keyValue) {
+    const stmt = this.db.prepare(
+      `INSERT INTO ${this.userKeyTable} (user_id, key_value) VALUES (?, ?)`
+    );
+    const info = stmt.run(userId, keyValue);
+    return info.lastInsertRowid;
+  }
+
+  /**
+   * 获取用户的所有密钥
+   * @param {number} userId 
+   * @returns {Array<Object>} 密钥列表
+   */
+  async getUserKeys(userId) {
+    const stmt = this.db.prepare(
+      `SELECT * FROM ${this.userKeyTable} WHERE user_id = ?`
+    );
+    return stmt.all(userId);
+  }
+
+  /**
+   * 根据ID获取密钥
+   * @param {number} keyId 
+   * @returns {Object|null} 密钥信息
+   */
+  async getKeyById(keyId) {
+    const stmt = this.db.prepare(
+      `SELECT * FROM ${this.userKeyTable} WHERE id = ?`
+    );
+    return stmt.get(keyId);
+  }
+
+  /**
+   * 根据密钥值获取密钥信息
+   * @param {string} keyValue 
+   * @returns {Object|null} 密钥信息
+   */
+  async getKeyByValue(keyValue) {
+    const stmt = this.db.prepare(
+      `SELECT * FROM ${this.userKeyTable} WHERE key_value = ?`
+    );
+    return stmt.get(keyValue);
+  }
+
+  /**
+   * 更新密钥
+   * @param {number} keyId 
+   * @param {string} newKeyValue 
+   * @returns {number} 更新的记录数
+   */
+  async updateUserKey(keyId, newKeyValue) {
+    const stmt = this.db.prepare(
+      `UPDATE ${this.userKeyTable} SET key_value = ? WHERE id = ?`
+    );
+    const info = stmt.run(newKeyValue, keyId);
+    return info.changes;
+  }
+
+  /**
+   * 删除密钥
+   * @param {number} keyId 
+   * @returns {number} 删除的记录数
+   */
+  async deleteUserKey(keyId) {
+    const stmt = this.db.prepare(
+      `DELETE FROM ${this.userKeyTable} WHERE id = ?`
+    );
+    const info = stmt.run(keyId);
+    return info.changes;
+  }
+
+  /**
+   * 删除用户的所有密钥
+   * @param {number} userId 
+   * @returns {number} 删除的记录数
+   */
+  async deleteAllUserKeys(userId) {
+    const stmt = this.db.prepare(
+      `DELETE FROM ${this.userKeyTable} WHERE user_id = ?`
+    );
+    const info = stmt.run(userId);
     return info.changes;
   }
 }

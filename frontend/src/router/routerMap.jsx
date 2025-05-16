@@ -8,6 +8,7 @@ import WorkflowList from '../views/workflow/WorkflowList';
 import WorkflowEditor from '../views/workflow/WorkflowEditor';
 import WorkflowExecution from '../views/workflow/WorkflowExecution';
 import WorkflowGraph from '../views/workflow/WorkflowGraph';
+import LoginPage from '../views/login';
 
 /**
  * @description 路由配置数组
@@ -20,58 +21,64 @@ import WorkflowGraph from '../views/workflow/WorkflowGraph';
  */
 const routerMap = [
   {
+    path: '/login',
+    element: <LoginPage />,
+    name: 'LoginPage',
+    meta: { title: '登录', requiresAuth: false },
+  },
+  {
     path: '/',
     element: <Dashboard />,    
     name: 'Dashboard',
-    meta: { title: '主页' },
+    meta: { title: '主页', requiresAuth: true },
     children: [
       {
         index: true,
         element: <HomePage />,
         name: 'HomePage',
-        meta: { title: '首页' },
+        meta: { title: '首页', requiresAuth: true },
       },
       {
         path: 'knowledge',
         element: <Knowledge />,
         name: 'Knowledge',
-        meta: { title: '知识库' },
+        meta: { title: '知识库', requiresAuth: true },
       },
       {
         path: 'knowledge/:kbId',
         element: <KnowledgeDetail />,
         name: 'KnowledgeDetail',
-        meta: { title: '知识库详情' },
+        meta: { title: '知识库详情', requiresAuth: true },
       },
       {
         path: 'docs',
         element: <DocsPage />,
         name: 'DocsPage',
-        meta: { title: '教程文档' },
+        meta: { title: '教程文档', requiresAuth: true },
       },
       {
         path: 'docs/node',
         element: <NodeGuide />,
         name: 'NodeGuide',
-        meta: { title: '节点使用教程' },
+        meta: { title: '节点使用教程', requiresAuth: true },
       },
       {
         path: 'workflow',
         element: <WorkflowList />,
         name: 'WorkflowList',
-        meta: { title: '工作流列表' },
+        meta: { title: '工作流列表', requiresAuth: true },
       },
       {
         path: 'workflow/:id',
         element: <WorkflowEditor />,
         name: 'WorkflowEditor',
-        meta: { title: '编辑工作流' },
+        meta: { title: '编辑工作流', requiresAuth: true },
       },
       {
         path: 'workflow/:id/execute',
         element: <WorkflowExecution />,
         name: 'WorkflowExecution',
-        meta: { title: '执行工作流' },
+        meta: { title: '执行工作流', requiresAuth: true },
       },
     ]
   },
@@ -79,7 +86,7 @@ const routerMap = [
     path: 'workflow/:id/graph',
     element: <WorkflowGraph />,
     name: 'WorkflowGraph',
-    meta: { title: '工作流可视化' },
+    meta: { title: '工作流可视化', requiresAuth: true },
   },
 ];
 

@@ -6,6 +6,7 @@
 const { logger } = require('ee-core/log');
 const { getWorkflowService } = require('../services/WorkflowService');
 const workflowService = getWorkflowService(); // 获取服务实例
+const { getUserDb } = require('../../database'); // 导入用户数据库服务
 
 const { getDefaultFlowConfig, getDefaultWorkConfig } = require('../../coreconfigs/services');
 
@@ -16,6 +17,7 @@ const { getDefaultFlowConfig, getDefaultWorkConfig } = require('../../coreconfig
 class WorkflowController {
   constructor(ctx) {
     this.ctx = ctx;
+    this.userDb = getUserDb();
   }
 
   /**
@@ -279,6 +281,151 @@ class WorkflowController {
     } catch (error) {
       logger.error(`[WorkflowController] 执行工作流失败: ${error.message}`);
       return { code: 500, message: `执行工作流失败: ${error.message}`, success: false };
+    }
+  }
+
+  /**
+   * 获取当前用户的工作流列表
+   */
+  async getCurrentUserWorkflows() {
+    try {
+      // 此方法直接调用 workflowService.listWorkflows()，已经在服务层筛选了当前用户的工作流
+      const workflows = await workflowService.listWorkflows();
+      return { code: 200, data: workflows, success: true };
+    } catch (error) {
+      logger.error(`[WorkflowController] 获取当前用户工作流列表失败: ${error.message}`);
+      return { code: 500, message: `获取当前用户工作流列表失败: ${error.message}`, success: false };
+    }
+  }
+
+  /**
+   * 检查工作流所有权
+   */
+  async checkWorkflowOwnership(params) {
+    try {
+      const { workflowId } = params;
+      
+      if (!workflowId) {
+        return { code: 400, message: '工作流ID不能为空', success: false };
+      }
+      
+      // 获取当前登录用户
+      const currentUser = await this.userDb.getCurrentLoggedInUser();
+      if (!currentUser) {
+        return { code: 401, message: '未登录', success: false };
+      }
+      
+      // 通过工作流数据库服务检查所有权
+      const isOwner = await workflowService.workflowManager.workflowDb.isWorkflowOwner(workflowId, currentUser.id);
+      
+      return { 
+        code: 200, 
+        data: { 
+          isOwner,
+          userId: currentUser.id,
+          workflowId
+        }, 
+        success: true 
+      };
+    } catch (error) {
+      logger.error(`[WorkflowController] 检查工作流所有权失败: ${error.message}`);
+      return { code: 500, message: `检查工作流所有权失败: ${error.message}`, success: false };
+    }
+  }
+
+  /**
+   * 转移工作流所有权
+   */
+  async transferWorkflowOwnership(params) {
+    try {
+      const { workflowId, newUserId } = params;
+      
+      if (!workflowId) {
+        return { code: 400, message: '工作流ID不能为空', success: false };
+      }
+      
+      if (!newUserId) {
+        return { code: 400, message: '新所有者ID不能为空', success: false };
+      }
+      
+      // 获取当前登录用户
+      const currentUser = await this.userDb.getCurrentLoggedInUser();
+      if (!currentUser) {
+        return { code: 401, message: '未登录', success: false };
+      }
+      
+      // 检查当前用户是否为工作流所有者
+      const isOwner = await workflowService.workflowManager.workflowDb.isWorkflowOwner(workflowId, currentUser.id);
+      if (!isOwner) {
+        return { code: 403, message: '只有工作流所有者可以转移所有权', success: false };
+      }
+      
+      // 检查新所有者是否存在
+      const newUser = await this.userDb.getUserById(newUserId);
+      if (!newUser) {
+        return { code: 404, message: '新所有者不存在', success: false };
+      }
+      
+      // 删除当前所有权关联
+      await workflowService.workflowManager.workflowDb.deleteWorkflowUserRelation(workflowId, currentUser.id);
+      
+      // 添加新的所有权关联
+      await workflowService.workflowManager.workflowDb.addWorkflowUserRelation(workflowId, newUserId);
+      
+      return { 
+        code: 200, 
+        data: { 
+          workflowId,
+          previousOwnerId: currentUser.id,
+          newOwnerId: newUserId
+        }, 
+        success: true 
+      };
+    } catch (error) {
+      logger.error(`[WorkflowController] 转移工作流所有权失败: ${error.message}`);
+      return { code: 500, message: `转移工作流所有权失败: ${error.message}`, success: false };
+    }
+  }
+
+  /**
+   * 获取工作流所有者信息
+   */
+  async getWorkflowOwner(params) {
+    try {
+      const { workflowId } = params;
+      
+      if (!workflowId) {
+        return { code: 400, message: '工作流ID不能为空', success: false };
+      }
+      
+      // 获取工作流所属用户ID
+      const userId = await workflowService.workflowManager.workflowDb.getWorkflowUser(workflowId);
+      
+      if (!userId) {
+        return { code: 404, message: '工作流不存在或没有所有者', success: false };
+      }
+      
+      // 获取用户信息（不包含密码）
+      const user = await this.userDb.getUserById(userId);
+      
+      if (!user) {
+        return { code: 404, message: '所有者用户不存在', success: false };
+      }
+      
+      // 移除密码
+      const { password, ...safeUser } = user;
+      
+      return { 
+        code: 200, 
+        data: { 
+          workflowId,
+          owner: safeUser
+        }, 
+        success: true 
+      };
+    } catch (error) {
+      logger.error(`[WorkflowController] 获取工作流所有者失败: ${error.message}`);
+      return { code: 500, message: `获取工作流所有者失败: ${error.message}`, success: false };
     }
   }
 }

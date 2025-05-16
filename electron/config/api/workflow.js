@@ -46,5 +46,26 @@ module.exports = {
   'controller/workflow/executeWorkflow': {
     controller: 'workflow',
     action: 'executeWorkflow'
+  },
+  // 新增用户相关的工作流接口
+  'controller/workflow/getCurrentUserWorkflows': {
+    controller: 'workflow',
+    action: 'getCurrentUserWorkflows',
+    desc: '获取当前登录用户的工作流列表'
+  },
+  'controller/workflow/checkWorkflowOwnership': {
+    controller: 'workflow',
+    action: 'checkWorkflowOwnership',
+    desc: '检查当前用户是否为工作流所有者'
+  },
+  'controller/workflow/transferWorkflowOwnership': {
+    controller: 'workflow',
+    action: 'transferWorkflowOwnership',
+    desc: '转移工作流所有权到其他用户'
+  },
+  'controller/workflow/getWorkflowOwner': {
+    controller: 'workflow',
+    action: 'getWorkflowOwner',
+    desc: '获取工作流所有者信息'
   }
 }; 

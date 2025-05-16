@@ -6,6 +6,8 @@
 const { getWorkflowManager } = require('../models/WorkflowManager'); // Adjusted path, assuming getWorkflowManager is exported
 const { getWorkflowExecutor } = require('../models/WorkflowExecutor');
 const { getNodeFactory } = require('../../node/services/NodeFactory'); // Adjusted path
+const { getUserDb } = require('../../database'); // 导入用户数据库服务
+const { logger } = require('ee-core/log');
 
 class WorkflowService {
   constructor() {
@@ -15,6 +17,23 @@ class WorkflowService {
     this.workflowExecutor = getWorkflowExecutor();
     /** @type {import('../../node/services/NodeFactory').NodeFactory} 节点工厂实例 */
     this.nodeFactory = getNodeFactory();
+    /** @type {import('../../database').UserDb} 用户数据库服务实例 */
+    this.userDb = getUserDb();
+  }
+
+  /**
+   * @private
+   * @description 获取当前登录用户ID
+   * @returns {Promise<number|null>} 当前登录用户ID，无登录用户则返回null
+   */
+  async _getCurrentUserId() {
+    try {
+      const currentUser = await this.userDb.getCurrentLoggedInUser();
+      return currentUser ? currentUser.id : null;
+    } catch (error) {
+      logger.error('获取当前用户ID失败:', error);
+      return null;
+    }
   }
 
   /**
@@ -25,7 +44,19 @@ class WorkflowService {
    * @returns {Promise<import('../models/Workflow')>} 创建的工作流对象
    */
   async createWorkflow(name, description = '', config = {}) {
-    return this.workflowManager.createWorkflow(name, description, config);
+    // 获取当前登录用户ID
+    const currentUserId = await this._getCurrentUserId();
+    if (!currentUserId) {
+      throw new Error('没有登录用户，无法创建工作流');
+    }
+
+    // 创建工作流
+    const workflow = await this.workflowManager.createWorkflow(name, description, config);
+    
+    // 添加工作流与用户的关联
+    await this.workflowManager.workflowDb.addWorkflowUserRelation(workflow.id, currentUserId);
+    
+    return workflow;
   }
 
   /**
@@ -34,6 +65,19 @@ class WorkflowService {
    * @returns {Promise<import('../models/Workflow')|null>} 工作流对象或 null
    */
   async getWorkflow(id) {
+    // 获取当前登录用户ID
+    const currentUserId = await this._getCurrentUserId();
+    if (!currentUserId) {
+      throw new Error('没有登录用户，无法获取工作流');
+    }
+
+    // 检查权限
+    const isOwner = await this.workflowManager.workflowDb.isWorkflowOwner(id, currentUserId);
+    if (!isOwner) {
+      logger.warn(`用户 ${currentUserId} 尝试访问非其所有的工作流 ${id}`);
+      return null;
+    }
+
     return this.workflowManager.getWorkflow(id);
   }
 
@@ -42,7 +86,26 @@ class WorkflowService {
    * @returns {Promise<Array<import('../models/Workflow')>>} 工作流列表
    */
   async listWorkflows() {
-    return this.workflowManager.listWorkflows();
+    // 获取当前登录用户ID
+    const currentUserId = await this._getCurrentUserId();
+    if (!currentUserId) {
+      logger.warn('没有登录用户，返回空工作流列表');
+      return [];
+    }
+
+    // 获取用户的所有工作流
+    const userWorkflows = await this.workflowManager.workflowDb.getUserWorkflows(currentUserId);
+    
+    // 转换为工作流模型对象
+    const workflows = [];
+    for (const workflowData of userWorkflows) {
+      const workflow = await this.workflowManager.getWorkflow(workflowData.id);
+      if (workflow) {
+        workflows.push(workflow);
+      }
+    }
+    
+    return workflows;
   }
 
   /**
@@ -52,6 +115,19 @@ class WorkflowService {
    * @returns {Promise<boolean>} 更新是否成功
    */
   async updateWorkflow(id, data) {
+    // 获取当前登录用户ID
+    const currentUserId = await this._getCurrentUserId();
+    if (!currentUserId) {
+      throw new Error('没有登录用户，无法更新工作流');
+    }
+
+    // 检查权限
+    const isOwner = await this.workflowManager.workflowDb.isWorkflowOwner(id, currentUserId);
+    if (!isOwner) {
+      logger.warn(`用户 ${currentUserId} 尝试更新非其所有的工作流 ${id}`);
+      return false;
+    }
+
     return this.workflowManager.updateWorkflow(id, data);
   }
 
@@ -61,6 +137,20 @@ class WorkflowService {
    * @returns {Promise<boolean>} 删除是否成功
    */
   async deleteWorkflow(id) {
+    // 获取当前登录用户ID
+    const currentUserId = await this._getCurrentUserId();
+    if (!currentUserId) {
+      throw new Error('没有登录用户，无法删除工作流');
+    }
+
+    // 检查权限
+    const isOwner = await this.workflowManager.workflowDb.isWorkflowOwner(id, currentUserId);
+    if (!isOwner) {
+      logger.warn(`用户 ${currentUserId} 尝试删除非其所有的工作流 ${id}`);
+      return false;
+    }
+
+    // 删除工作流（表内的外键约束会自动删除用户关联）
     return this.workflowManager.deleteWorkflow(id);
   }
 
@@ -74,6 +164,18 @@ class WorkflowService {
    * @returns {Promise<string>} 新增节点的 ID
    */
   async addNode(workflowId, nodeType, flowConfig = {}, workConfig = {}, index = -1) {
+    // 获取当前登录用户ID
+    const currentUserId = await this._getCurrentUserId();
+    if (!currentUserId) {
+      throw new Error('没有登录用户，无法添加节点');
+    }
+
+    // 检查权限
+    const isOwner = await this.workflowManager.workflowDb.isWorkflowOwner(workflowId, currentUserId);
+    if (!isOwner) {
+      throw new Error(`无权限添加节点到工作流 ${workflowId}`);
+    }
+
     return this.workflowManager.addNode(workflowId, nodeType, flowConfig, workConfig, index);
   }
 
@@ -85,6 +187,24 @@ class WorkflowService {
    * @returns {Promise<boolean>} 更新是否成功
    */
   async updateNode(nodeId, flowConfig, workConfig) {
+    // 获取节点信息
+    const node = await this.workflowManager.workflowDb.getNode(nodeId);
+    if (!node) {
+      return false;
+    }
+
+    // 获取当前登录用户ID
+    const currentUserId = await this._getCurrentUserId();
+    if (!currentUserId) {
+      throw new Error('没有登录用户，无法更新节点');
+    }
+
+    // 检查权限
+    const isOwner = await this.workflowManager.workflowDb.isWorkflowOwner(node.workflow_id, currentUserId);
+    if (!isOwner) {
+      throw new Error(`无权限更新节点 ${nodeId}`);
+    }
+
     return this.workflowManager.updateNode(nodeId, flowConfig, workConfig);
   }
 
@@ -94,6 +214,24 @@ class WorkflowService {
    * @returns {Promise<boolean>} 删除是否成功
    */
   async deleteNode(nodeId) {
+    // 获取节点信息
+    const node = await this.workflowManager.workflowDb.getNode(nodeId);
+    if (!node) {
+      return false;
+    }
+
+    // 获取当前登录用户ID
+    const currentUserId = await this._getCurrentUserId();
+    if (!currentUserId) {
+      throw new Error('没有登录用户，无法删除节点');
+    }
+
+    // 检查权限
+    const isOwner = await this.workflowManager.workflowDb.isWorkflowOwner(node.workflow_id, currentUserId);
+    if (!isOwner) {
+      throw new Error(`无权限删除节点 ${nodeId}`);
+    }
+
     return this.workflowManager.deleteNode(nodeId);
   }
 
@@ -104,6 +242,24 @@ class WorkflowService {
    * @returns {Promise<boolean>} 移动是否成功
    */
   async moveNode(nodeId, newIndex) {
+    // 获取节点信息
+    const node = await this.workflowManager.workflowDb.getNode(nodeId);
+    if (!node) {
+      return false;
+    }
+
+    // 获取当前登录用户ID
+    const currentUserId = await this._getCurrentUserId();
+    if (!currentUserId) {
+      throw new Error('没有登录用户，无法移动节点');
+    }
+
+    // 检查权限
+    const isOwner = await this.workflowManager.workflowDb.isWorkflowOwner(node.workflow_id, currentUserId);
+    if (!isOwner) {
+      throw new Error(`无权限移动节点 ${nodeId}`);
+    }
+
     return this.workflowManager.moveNode(nodeId, newIndex);
   }
 
@@ -123,6 +279,18 @@ class WorkflowService {
    * @returns {Promise<import('../../core/pipeline/Pipeline')>} 执行结果 Pipeline
    */
   async executeWorkflow(workflowId, input, options = {}) {
+    // 获取当前登录用户ID
+    const currentUserId = await this._getCurrentUserId();
+    if (!currentUserId) {
+      throw new Error('没有登录用户，无法执行工作流');
+    }
+
+    // 检查权限
+    const isOwner = await this.workflowManager.workflowDb.isWorkflowOwner(workflowId, currentUserId);
+    if (!isOwner) {
+      throw new Error(`无权限执行工作流 ${workflowId}`);
+    }
+
     return this.workflowExecutor.execute(workflowId, input, options);
   }
 }

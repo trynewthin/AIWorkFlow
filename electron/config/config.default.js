@@ -11,6 +11,7 @@ const knowledgeRoutes = require('./api/knowledge');
 const uploadRoutes = require('./api/upload');
 const configRoutes = require('./api/config');
 const workflowRoutes = require('./api/workflow');
+const userRoutes = require('./api/user');
 
 /**
  * 默认配置
@@ -81,7 +82,8 @@ module.exports = () => {
       ...knowledgeRoutes,
       ...uploadRoutes,
       ...configRoutes,
-      ...workflowRoutes
+      ...workflowRoutes,
+      ...userRoutes
     }
   }
 }

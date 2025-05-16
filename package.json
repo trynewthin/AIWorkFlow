@@ -39,13 +39,17 @@
   },
   "dependencies": {
     "@langchain/community": "^0.3.42",
+    "@radix-ui/react-tabs": "^1.1.11",
+    "@radix-ui/react-toast": "^1.2.13",
     "autoprefixer": "^10.4.21",
     "better-sqlite3": "^11.9.1",
+    "class-variance-authority": "^0.7.1",
     "dotenv": "^16.5.0",
     "ee-core": "^4.1.4",
     "electron-updater": "^6.3.8",
     "hnswlib-node": "^3.0.0",
     "langchain": "^0.3.24",
+    "lucide-react": "^0.510.0",
     "node-gyp": "^11.2.0",
     "openai": "^4.97.0",
     "vue-flow": "^0.3.0"

@@ -269,4 +269,100 @@ export async function executeWorkflow(workflowId, input = {}, options = {}) {
     console.error(`IPC call to ${apiRoutes.executeWorkflow} for id ${workflowId} failed:`, error);
     throw error;
   }
+}
+
+/**
+ * @async
+ * @function getCurrentUserWorkflows
+ * @description 获取当前登录用户的工作流列表
+ * @returns {Promise<Array<object>>} 当前用户的工作流对象列表
+ * @throws {Error} IPC调用失败或后端业务逻辑错误时
+ */
+export async function getCurrentUserWorkflows() {
+  try {
+    const result = await ipc.invoke(apiRoutes.getCurrentUserWorkflows);
+    if (result && result.success) {
+      return result.data;
+    } else {
+      const errorMessage = result ? result.message : '获取当前用户工作流列表失败';
+      console.error('getCurrentUserWorkflows service error:', errorMessage, 'Raw result:', result);
+      throw new Error(errorMessage);
+    }
+  } catch (error) {
+    console.error(`IPC call to ${apiRoutes.getCurrentUserWorkflows} failed:`, error);
+    throw error;
+  }
+}
+
+/**
+ * @async
+ * @function checkWorkflowOwnership
+ * @description 检查当前用户是否为工作流所有者
+ * @param {string} workflowId - 工作流ID
+ * @returns {Promise<{isOwner: boolean}>} 包含所有权信息的对象
+ * @throws {Error} IPC调用失败或后端业务逻辑错误时
+ */
+export async function checkWorkflowOwnership(workflowId) {
+  try {
+    const result = await ipc.invoke(apiRoutes.checkWorkflowOwnership, { workflowId });
+    if (result && result.success) {
+      return result.data;
+    } else {
+      const errorMessage = result ? result.message : '检查工作流所有权失败';
+      console.error('checkWorkflowOwnership service error:', errorMessage, 'Raw result:', result);
+      throw new Error(errorMessage);
+    }
+  } catch (error) {
+    console.error(`IPC call to ${apiRoutes.checkWorkflowOwnership} for id ${workflowId} failed:`, error);
+    throw error;
+  }
+}
+
+/**
+ * @async
+ * @function transferWorkflowOwnership
+ * @description 转移工作流所有权到其他用户
+ * @param {string} workflowId - 工作流ID
+ * @param {number} newUserId - 新所有者用户ID
+ * @returns {Promise<boolean>} 转移成功则返回true
+ * @throws {Error} IPC调用失败或后端业务逻辑错误时
+ */
+export async function transferWorkflowOwnership(workflowId, newUserId) {
+  try {
+    const result = await ipc.invoke(apiRoutes.transferWorkflowOwnership, { workflowId, newUserId });
+    if (result && result.success) {
+      return result.data;
+    } else {
+      const errorMessage = result ? result.message : '转移工作流所有权失败';
+      console.error('transferWorkflowOwnership service error:', errorMessage, 'Raw result:', result);
+      throw new Error(errorMessage);
+    }
+  } catch (error) {
+    console.error(`IPC call to ${apiRoutes.transferWorkflowOwnership} for id ${workflowId} failed:`, error);
+    throw error;
+  }
+}
+
+/**
+ * @async
+ * @function getWorkflowOwner
+ * @description 获取工作流所有者信息
+ * @param {string} workflowId - 工作流ID
+ * @returns {Promise<object>} 所有者用户信息
+ * @throws {Error} IPC调用失败或后端业务逻辑错误时
+ */
+export async function getWorkflowOwner(workflowId) {
+  try {
+    const result = await ipc.invoke(apiRoutes.getWorkflowOwner, { workflowId });
+    if (result && result.success) {
+      return result.data;
+    } else {
+      const errorMessage = result ? result.message : '获取工作流所有者信息失败';
+      console.error('getWorkflowOwner service error:', errorMessage, 'Raw result:', result);
+      throw new Error(errorMessage);
+    }
+  } catch (error) {
+    console.error(`IPC call to ${apiRoutes.getWorkflowOwner} for id ${workflowId} failed:`, error);
+    throw error;
+  }
 } 

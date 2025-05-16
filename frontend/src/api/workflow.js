@@ -160,4 +160,40 @@ export function getDefaultFlowConfig(nodeType) {
  */
 export function getDefaultWorkConfig(nodeType) {
   return ipc.invoke(ipcApiRoute.getDefaultWorkConfig, { nodeType });
+}
+
+/**
+ * 获取当前用户的工作流列表
+ * @returns {Promise<Array<Object>>} 当前用户的工作流列表
+ */
+export function getCurrentUserWorkflows() {
+  return ipc.invoke(ipcApiRoute.getCurrentUserWorkflows, {});
+}
+
+/**
+ * 检查工作流所有权
+ * @param {string} workflowId - 工作流ID
+ * @returns {Promise<Object>} 所有权信息，包含 isOwner 等字段
+ */
+export function checkWorkflowOwnership(workflowId) {
+  return ipc.invoke(ipcApiRoute.checkWorkflowOwnership, { workflowId });
+}
+
+/**
+ * 转移工作流所有权
+ * @param {string} workflowId - 工作流ID
+ * @param {number} newUserId - 新所有者ID
+ * @returns {Promise<Object>} 转移结果
+ */
+export function transferWorkflowOwnership(workflowId, newUserId) {
+  return ipc.invoke(ipcApiRoute.transferWorkflowOwnership, { workflowId, newUserId });
+}
+
+/**
+ * 获取工作流所有者信息
+ * @param {string} workflowId - 工作流ID
+ * @returns {Promise<Object>} 所有者信息
+ */
+export function getWorkflowOwner(workflowId) {
+  return ipc.invoke(ipcApiRoute.getWorkflowOwner, { workflowId });
 } 
