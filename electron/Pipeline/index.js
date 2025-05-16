@@ -4,7 +4,9 @@
  */
 
 const Pipeline = require('./Pipeline');
+const PipeTools = require('./tools');
 
 module.exports = {
-  Pipeline
+  Pipeline,
+  PipeTools
 };
