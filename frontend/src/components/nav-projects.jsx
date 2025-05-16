@@ -88,7 +88,7 @@ export function NavProjects({
         ) : projects.length === 0 ? (
           <SidebarMenuItem>
             <SidebarMenuButton disabled>
-              <span className="text-sm">暂无项目</span>
+              <span className="text-xs">暂无项目</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         ) : (

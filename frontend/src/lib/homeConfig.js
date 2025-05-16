@@ -6,16 +6,11 @@ import { AudioWaveform, GalleryVerticalEnd, Command, SquareTerminal, Bot, BookOp
 import { workflowService } from '../services';
 
 const homeConfig = {
-  user: {
-    name: "用户名称",
-    email: "user@example.com",
-    avatar: "/avatars/user.jpg",
-  },
   teams: [
     {
       name: "我的团队",
       logo: GalleryVerticalEnd,
-      plan: "高级版",
+      plan: "",
     },
     {
       name: "个人项目",
