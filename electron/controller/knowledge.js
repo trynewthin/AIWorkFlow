@@ -2,6 +2,6 @@
 'use strict';
 
 // 引入子目录中的 KnowledgeController
-const KnowledgeController = require('./knowledge/index.js');
+const KnowledgeController = require('../knowledge/controllers');
 
 module.exports = KnowledgeController; 

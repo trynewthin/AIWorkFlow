@@ -2,6 +2,6 @@
 'use strict';
 
 // 引入子目录中的 UploadController
-const UploadController = require('./upload/index.js');
+const UploadController = require('../upload/controllers');
 
 module.exports = UploadController; 

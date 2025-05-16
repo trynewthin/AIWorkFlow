@@ -1,6 +1,6 @@
 'use strict';
 
-const uploadService = require('../../services/upload/upload-service');
+const uploadService = require('../services/upload-service');
 
 /**
  * 上传控制器

@@ -1,6 +1,6 @@
 'use strict';
 
-const knowledgeService = require('../../services/knowledge/knowledge-service');
+const knowledgeService = require('../services/knowledge-service');
 
 /**
  * 知识库控制器
