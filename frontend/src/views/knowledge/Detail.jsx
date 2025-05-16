@@ -2,7 +2,7 @@
  * 知识库详情页
  */
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { 
   listKnowledgeBases, 
   listDocuments, 
@@ -11,15 +11,13 @@ import {
   uploadAndIngestFile 
 } from '@/services/knowledgeService';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetFooter, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetFooter, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { 
   Card, 
   CardHeader, 
   CardTitle, 
-  CardDescription, 
-  CardContent, 
-  CardFooter 
+  CardContent
 } from '@/components/ui/card';
 import {
   Dialog,
@@ -35,7 +33,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
-import { MoreVertical } from 'lucide-react';
+import { MoreVertical, PlusCircle, ChevronLeft } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
 
 /**
  * 知识库详情组件
@@ -43,6 +42,7 @@ import { MoreVertical } from 'lucide-react';
  */
 export default function KnowledgeDetail() {
   const { kbId } = useParams();
+  const navigate = useNavigate();
   const [kbName, setKbName] = useState('');
   const [documents, setDocuments] = useState([]);
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -149,54 +149,62 @@ export default function KnowledgeDetail() {
 
   return (
     <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-2xl font-bold">知识库：{kbName}</h3>
-        <Sheet open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <SheetContent side="right">
-            <SheetHeader>
-              <SheetTitle>添加文档</SheetTitle>
-            </SheetHeader>
-            <div className="grid gap-4 p-4">
-              <div className="space-y-2">
-                <label htmlFor="file-upload" className="block text-sm font-medium">
-                  选择文件
-                </label>
-                <Input 
-                  id="file-upload" 
-                  type="file" 
-                  ref={fileInputRef}
-                  onChange={handleFileChange} 
-                  disabled={isUploading} 
-                />
-              </div>
-              {fileToUpload && (
-                <div className="text-sm">
-                  已选择: {fileToUpload.name}
-                </div>
-              )}
-              {isUploading && (
-                <div className="text-sm text-yellow-600">
-                  文件上传中，请稍候...这可能需要一些时间
-                </div>
-              )}
+      {/* 使用PageHeader组件 */}
+      <PageHeader 
+        title={`知识库：${kbName}`}
+        onBack={() => navigate('/knowledge')}
+      >
+        <Button onClick={() => setIsAddOpen(true)}>
+          <PlusCircle className="w-4 h-4 mr-2" /> 添加文档
+        </Button>
+      </PageHeader>
+
+      {/* 添加文档表单 */}
+      <Sheet open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <SheetContent side="right">
+          <SheetHeader>
+            <SheetTitle>添加文档</SheetTitle>
+          </SheetHeader>
+          <div className="grid gap-4 p-4">
+            <div className="space-y-2">
+              <label htmlFor="file-upload" className="block text-sm font-medium">
+                选择文件
+              </label>
+              <Input 
+                id="file-upload" 
+                type="file" 
+                ref={fileInputRef}
+                onChange={handleFileChange} 
+                disabled={isUploading} 
+              />
             </div>
-            <SheetFooter className="flex-row items-center justify-end space-x-2">
-              <Button variant="outline" onClick={() => {
-                setIsAddOpen(false);
-                setFileToUpload(null);
-                if (fileInputRef.current) {
-                  fileInputRef.current.value = '';
-                }
-              }} disabled={isUploading}>
-                取消
-              </Button>
-              <Button onClick={handleFileUpload} disabled={!fileToUpload || isUploading}>
-                {isUploading ? '处理中...' : '上传'}
-              </Button>
-            </SheetFooter>
-          </SheetContent>
-        </Sheet>
-      </div>
+            {fileToUpload && (
+              <div className="text-sm">
+                已选择: {fileToUpload.name}
+              </div>
+            )}
+            {isUploading && (
+              <div className="text-sm text-yellow-600">
+                文件上传中，请稍候...这可能需要一些时间
+              </div>
+            )}
+          </div>
+          <SheetFooter className="flex-row items-center justify-end space-x-2">
+            <Button variant="outline" onClick={() => {
+              setIsAddOpen(false);
+              setFileToUpload(null);
+              if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+              }
+            }} disabled={isUploading}>
+              取消
+            </Button>
+            <Button onClick={handleFileUpload} disabled={!fileToUpload || isUploading}>
+              {isUploading ? '处理中...' : '上传'}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
       
       {/* 删除确认对话框 */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

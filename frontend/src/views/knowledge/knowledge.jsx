@@ -22,6 +22,7 @@ import {
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
 import { MoreVertical, PlusCircle } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
 
 /**
  * @description 知识库列表组件
@@ -116,13 +117,12 @@ export default function Knowledge() {
         </DialogContent>
       </Dialog>
       
-      {/* 增加页面顶部按钮区域 */}
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">知识库列表</h2>
+      {/* 使用PageHeader组件替换自定义的标题和按钮区域 */}
+      <PageHeader title="知识库列表">
         <Button onClick={() => setIsCreateOpen(true)}>
           <PlusCircle className="w-4 h-4 mr-2" /> 创建知识库
         </Button>
-      </div>
+      </PageHeader>
       
       {/* 加载状态 */}
       {loading && <div className="text-center py-4">正在加载...</div>}
