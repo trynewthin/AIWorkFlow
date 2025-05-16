@@ -16,6 +16,7 @@ const pageTitles = {
   'id': '工作流编辑',
   'execute': '工作流执行',
   'graph': '工作流可视化',
+  'user': '用户中心',
 };
 
 export default pageTitles; 

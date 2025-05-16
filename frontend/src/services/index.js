@@ -8,3 +8,4 @@ export * as uploadService from './uploadService';
 export * as knowledgeBaseService from './knowledgeService';
 export * as workflowService from './workflowService';
 export * as configService from './configService'; 
+export * as userService from './userService'; 

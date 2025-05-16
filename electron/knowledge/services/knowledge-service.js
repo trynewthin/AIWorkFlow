@@ -9,6 +9,7 @@ const { randomUUID } = require('crypto');
 const { Document } = require('@langchain/core/documents');
 const fs = require('fs');
 const path = require('path');
+const UserService = require('../../users/services/user-service');
 
 /**
  * 知识库服务（基于HNSW索引的超集实现）
@@ -23,6 +24,8 @@ class KnowledgeService {
     this.chunkNode = new ChunkNode();
     // 创建嵌入节点实例 (尚未初始化)
     this.embeddingNode = new EmbeddingNode();
+    // 创建用户服务实例
+    this.userService = new UserService();
   }
 
   /**
@@ -37,8 +40,30 @@ class KnowledgeService {
     // 此处可以添加检查，确保节点已成功初始化，例如检查 this.chunkNode.isInitialized()
   }
 
+  /**
+   * 获取当前登录用户
+   * @private
+   * @returns {Promise<{id: number, username: string} | null>} 当前登录用户信息
+   */
+  async _getCurrentUser() {
+    const result = await this.userService.getCurrentUser();
+    if (!result.success) {
+      return null;
+    }
+    return result.user;
+  }
+
   // 创建新的知识库
-  async createKnowledgeBase({ name, description = '', owner = 'default' }) {
+  async createKnowledgeBase({ name, description = '', owner = null }) {
+    // 如果未指定拥有者，则使用当前登录用户
+    if (!owner) {
+      const currentUser = await this._getCurrentUser();
+      if (!currentUser) {
+        throw new Error('未登录，无法创建知识库');
+      }
+      owner = currentUser.username;
+    }
+
     const kbId = randomUUID();
     await this.kbDb.addKnowledgeBase({ id: kbId, name, description, owner });
     return { id: kbId, name, description, owner };
@@ -46,18 +71,67 @@ class KnowledgeService {
 
   // 列出所有知识库
   async listKnowledgeBases() {
-    return this.kbDb.db.prepare(`SELECT * FROM ${this.kbDb.kbTable}`).all();
+    // 获取当前用户
+    const currentUser = await this._getCurrentUser();
+    if (!currentUser) {
+      throw new Error('未登录，无法获取知识库列表');
+    }
+
+    // 只返回当前用户拥有的知识库
+    return this.kbDb.db.prepare(
+      `SELECT * FROM ${this.kbDb.kbTable} WHERE owner = ?`
+    ).all(currentUser.username);
   }
 
   // 列出指定知识库下的所有文档
   async listDocuments(knowledgeBaseId) {
+    // 验证用户权限
+    await this._checkKnowledgeBaseOwnership(knowledgeBaseId);
+    
     return this.kbDb.db.prepare(
       `SELECT * FROM ${this.kbDb.documentTable} WHERE knowledge_base_id = ?`
     ).all(knowledgeBaseId);
   }
 
+  /**
+   * 验证当前用户是否拥有知识库访问权限
+   * @private
+   * @param {string} knowledgeBaseId 知识库ID
+   * @throws {Error} 如果用户没有权限
+   */
+  async _checkKnowledgeBaseOwnership(knowledgeBaseId) {
+    const currentUser = await this._getCurrentUser();
+    if (!currentUser) {
+      throw new Error('未登录，无法访问知识库');
+    }
+
+    const kb = this.kbDb.db.prepare(
+      `SELECT * FROM ${this.kbDb.kbTable} WHERE id = ?`
+    ).get(knowledgeBaseId);
+
+    if (!kb) {
+      throw new Error('知识库不存在');
+    }
+
+    if (kb.owner !== currentUser.username) {
+      throw new Error('无权访问此知识库');
+    }
+  }
+
   // 获取指定文档的分块信息
   async getDocumentChunks(documentId) {
+    // 首先检索文档信息，验证所属知识库的所有权
+    const doc = this.kbDb.db.prepare(
+      `SELECT * FROM ${this.kbDb.documentTable} WHERE id = ?`
+    ).get(documentId);
+    
+    if (!doc) {
+      throw new Error('文档不存在');
+    }
+    
+    // 验证知识库所有权
+    await this._checkKnowledgeBaseOwnership(doc.knowledge_base_id);
+    
     return this.kbDb.getChunksByDocument(documentId);
   }
 
@@ -84,6 +158,9 @@ class KnowledgeService {
 
   // 文档分块并构建HNSW索引
   async ingestFromPath({ knowledgeBaseId, sourcePath, metadata = {} }) {
+    // 验证用户权限
+    await this._checkKnowledgeBaseOwnership(knowledgeBaseId);
+    
     // 确保节点已初始化 (如果服务未强制调用 initService，则可在此处按需初始化)
     if (!this.chunkNode.isInitialized()) await this.chunkNode.init();
     if (!this.embeddingNode.isInitialized()) await this.embeddingNode.init();
@@ -191,6 +268,18 @@ class KnowledgeService {
 
   // 删除指定文档及关联数据
   async deleteDocument(documentId) {
+    // 首先检索文档信息，验证所属知识库的所有权
+    const doc = this.kbDb.db.prepare(
+      `SELECT * FROM ${this.kbDb.documentTable} WHERE id = ?`
+    ).get(documentId);
+    
+    if (!doc) {
+      throw new Error('文档不存在');
+    }
+    
+    // 验证知识库所有权
+    await this._checkKnowledgeBaseOwnership(doc.knowledge_base_id);
+    
     // 获取要删除的所有分块
     const chunks = await this.kbDb.getChunksByDocument(documentId);
     console.log(`准备删除文档 ${documentId}，包含 ${chunks.length} 个分块`);
@@ -261,6 +350,9 @@ class KnowledgeService {
 
   // 删除指定知识库及其所有关联数据
   async deleteKnowledgeBase(knowledgeBaseId) {
+    // 验证用户权限
+    await this._checkKnowledgeBaseOwnership(knowledgeBaseId);
+    
     const docs = await this.listDocuments(knowledgeBaseId);
     for (const doc of docs) {
       await this.deleteDocument(doc.id);

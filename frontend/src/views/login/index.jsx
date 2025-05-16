@@ -57,7 +57,7 @@ export default function LoginPage() {
       </div>
       
       {/* 登录表单容器 */}
-      <div className="w-full max-w-4xl z-20 bg-background rounded-xl shadow-2xl" style={{ transform: "scale(0.85)", transformOrigin: "center center" }}>
+      <div className="w-full max-w-4xl z-20 bg-background/80 backdrop-blur-xl rounded-xl shadow-[0_0_25px_rgba(60,60,100,0.3)] border border-white/20">
         <LoginForm />
       </div>
       
@@ -66,15 +66,17 @@ export default function LoginPage() {
           position: absolute;
           width: 100%;
           height: 100%;
+          pointer-events: none;
         }
         
         .icon {
           position: absolute;
-          color: rgba(255, 255, 255, 0.2);
-          filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.1));
-          opacity: 0.3;
+          color: rgba(255, 255, 255, 0.7);
+          filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.4));
+          opacity: 0.8;
           animation: float var(--duration) ease-in-out infinite;
           animation-delay: var(--delay);
+          z-index: 2;
         }
         
         .icon:nth-child(1) { top: 15%; left: 20%; }

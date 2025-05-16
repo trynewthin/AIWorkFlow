@@ -44,21 +44,21 @@ function HomePage() {
         <div className="absolute inset-0 w-full h-full">
           <BlobPattern />
         </div>
-        <div className="relative z-10 p-8 text-white">
+        <div className="relative z-1 p-8 text-white">
           <h1 className="text-3xl font-bold mb-2">欢迎使用 AI 工作流平台</h1>
           <p className="text-xl opacity-90">构建、管理和执行智能化工作流</p>
           
           <div className="flex gap-4 mt-6">
             <Button 
               onClick={() => navigateTo('/workflow')} 
-              className="bg-white text-blue-600 hover:bg-blue-50 relative
-                        ring-1 ring-gray-300/70 ring-offset-3 ring-offset-transparent
-                        hover:ring-2 hover:ring-gray-400/90
+              className="bg-black text-white hover:bg-gray-800 relative
+                        ring-1 ring-gray-800/50 ring-offset-2 ring-offset-transparent
+                        hover:ring-2 hover:ring-gray-700
                         transition-all duration-300 ease-in-out"
             >
               开始创建 <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
-            <Button onClick={() => navigateTo('/docs')} variant="outline" className="border-white text-white hover:bg-white/20">
+            <Button onClick={() => navigateTo('/docs')} variant="ghost" className="text-white hover:bg-transparent hover:text-gray-200 hover:bg-opacity-10">
               查看教程
             </Button>
           </div>

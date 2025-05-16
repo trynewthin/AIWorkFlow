@@ -21,7 +21,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
-import { MoreVertical } from 'lucide-react';
+import { MoreVertical, PlusCircle } from 'lucide-react';
 
 /**
  * @description 知识库列表组件
@@ -34,6 +34,7 @@ export default function Knowledge() {
   const [newDesc, setNewDesc] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   // 拉取知识库列表
@@ -49,11 +50,14 @@ export default function Knowledge() {
   }, []);
 
   const fetchBases = async () => {
+    setLoading(true);
     try {
       const res = await listKnowledgeBases();
       setKnowledgeBases(res);
     } catch (e) {
       console.error('获取知识库列表失败:', e);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -111,42 +115,61 @@ export default function Knowledge() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {knowledgeBases.map((kb) => (
-          <div
-            key={kb.id}
-            className="relative border rounded-lg p-4 shadow hover:cursor-pointer"
-            onClick={(e) => {
-              // 如果正在处理删除操作，则不要导航
-              if (e.defaultPrevented) return;
-              navigate(`/knowledge/${kb.id}`);
-            }}
-          >
-            <div className="text-lg font-bold truncate">{kb.name}</div>
-            <div className="text-sm text-muted-foreground truncate">{kb.description}</div>
-            {/* 卡片操作菜单 */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  className="absolute top-2 right-2 p-1 rounded hover:bg-gray-100"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MoreVertical className="size-5 text-gray-600" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" sideOffset={4} className="w-32">
-                <DropdownMenuItem onClick={(e) => { 
-                  e.preventDefault(); 
-                  setDeleteTarget(kb.id); 
-                  setIsDeleteDialogOpen(true); 
-                }}>
-                  删除
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        ))}
+      
+      {/* 增加页面顶部按钮区域 */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold">知识库列表</h2>
+        <Button onClick={() => setIsCreateOpen(true)}>
+          <PlusCircle className="w-4 h-4 mr-2" /> 创建知识库
+        </Button>
       </div>
+      
+      {/* 加载状态 */}
+      {loading && <div className="text-center py-4">正在加载...</div>}
+      
+      {/* 空状态提示 */}
+      {!loading && knowledgeBases.length === 0 ? (
+        <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+          <p className="text-gray-500">暂无知识库，点击右上角添加新知识库</p>
+        </div>
+      ) : (
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {knowledgeBases.map((kb) => (
+            <div
+              key={kb.id}
+              className="relative border rounded-lg p-4 shadow hover:cursor-pointer"
+              onClick={(e) => {
+                // 如果正在处理删除操作，则不要导航
+                if (e.defaultPrevented) return;
+                navigate(`/knowledge/${kb.id}`);
+              }}
+            >
+              <div className="text-lg font-bold truncate">{kb.name}</div>
+              <div className="text-sm text-muted-foreground truncate">{kb.description}</div>
+              {/* 卡片操作菜单 */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="absolute top-2 right-2 p-1 rounded hover:bg-gray-100"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreVertical className="size-5 text-gray-600" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" sideOffset={4} className="w-32">
+                  <DropdownMenuItem onClick={(e) => { 
+                    e.preventDefault(); 
+                    setDeleteTarget(kb.id); 
+                    setIsDeleteDialogOpen(true); 
+                  }}>
+                    删除
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

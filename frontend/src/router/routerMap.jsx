@@ -9,6 +9,7 @@ import WorkflowEditor from '../views/workflow/WorkflowEditor';
 import WorkflowExecution from '../views/workflow/WorkflowExecution';
 import WorkflowGraph from '../views/workflow/WorkflowGraph';
 import LoginPage from '../views/login';
+import UserPage from '../views/user';
 
 /**
  * @description 路由配置数组
@@ -79,6 +80,12 @@ const routerMap = [
         element: <WorkflowExecution />,
         name: 'WorkflowExecution',
         meta: { title: '执行工作流', requiresAuth: true },
+      },
+      {
+        path: 'user',
+        element: <UserPage />,
+        name: 'UserPage',
+        meta: { title: '用户中心', requiresAuth: true },
       },
     ]
   },

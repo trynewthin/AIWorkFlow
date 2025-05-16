@@ -66,7 +66,7 @@ export function LoginForm({
         toast.success("登录成功", {
           description: `欢迎回来，${result.user.username}`
         })
-        navigate("/dashboard")
+        navigate("/")
       }
     } catch (error) {
       toast.error("登录失败", {
