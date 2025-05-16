@@ -10,7 +10,7 @@ const { Status } = require('../../coreconfigs');
 const { Document } = require('@langchain/core/documents');
 const { HNSWLib } = require('@langchain/community/vectorstores/hnswlib');
 const { OpenAIEmbeddings } = require('@langchain/openai');
-const { TextPipeTools } = require('../../pipeline/tools');
+const { TextPipeTools, RetrievalPipeTools } = require('../../pipeline/tools');
 
 class SearchNode extends BaseNode {
   /**
@@ -57,8 +57,8 @@ class SearchNode extends BaseNode {
       const textStrSafe = String(textStr);
       console.log('SearchNode 处理查询文本:', textStrSafe);
       
-      // 创建输出管道
-      const outputPipeline = new Pipeline(PipelineType.RETRIEVAL);
+      // 创建输出管道 - 使用RetrievalPipeTools.createPipe来初始化管道，确保包含查询文本
+      const outputPipeline = RetrievalPipeTools.createPipe(textStrSafe);
 
       // 初始化或验证索引
       if (!this.hnswDb.index) {
@@ -105,8 +105,38 @@ class SearchNode extends BaseNode {
         const documents = await retriever.retrieve(queryEmbedding, workConfig.topK || 5);
         console.log(`SearchNode: 检索到 ${documents.length} 个文档`);
         
+        // 二次筛选：基于相似度得分和距离阈值
+        const minScore = workConfig.minScore !== undefined ? workConfig.minScore : 0.6;
+        const maxDistance = workConfig.maxDistance !== undefined ? workConfig.maxDistance : 0.5;
+        const strictFiltering = workConfig.strictFiltering !== undefined ? workConfig.strictFiltering : false;
+        
+        // 应用过滤条件
+        let filteredDocuments = documents;
+        if (minScore > 0 || maxDistance < Infinity) {
+          console.log(`SearchNode: 应用相似度过滤 - 最小得分: ${minScore}, 最大距离: ${maxDistance}, 严格过滤: ${strictFiltering}`);
+          
+          filteredDocuments = documents.filter(doc => {
+            const score = doc.score || 0;
+            // 从得分反推距离: 假设得分 = 1/(1+distance)
+            const distance = score > 0 ? (1/score - 1) : Infinity;
+            
+            // 记录过滤过程，帮助调试
+            console.log(`文档过滤 - 内容预览: "${doc.pageContent.substring(0, 30)}...", 得分: ${score.toFixed(4)}, 距离: ${distance.toFixed(4)}`);
+            
+            if (strictFiltering) {
+              // 严格模式：同时满足两个条件
+              return score >= minScore && distance <= maxDistance;
+            } else {
+              // 宽松模式：满足任一条件即可
+              return score >= minScore || distance <= maxDistance;
+            }
+          });
+          
+          console.log(`SearchNode: 过滤后剩余 ${filteredDocuments.length}/${documents.length} 个文档`);
+        }
+        
         // 添加检索结果到输出管道
-        for (const doc of documents) {
+        for (const doc of filteredDocuments) {
           if (workConfig.knowledgeBaseId && 
               (!doc.metadata || doc.metadata.knowledgeBaseId !== workConfig.knowledgeBaseId)) {
             continue; // 跳过不匹配知识库ID的文档
@@ -114,8 +144,8 @@ class SearchNode extends BaseNode {
           outputPipeline.add(DataType.RETRIEVAL, doc);
         }
         
-        if (outputPipeline.getAll().length === 0) {
-          console.warn('SearchNode: 所有检索结果被过滤，未生成输出');
+        if (outputPipeline.getAll().length === 1) { // 只有1表示只有文本，没有检索结果
+          console.warn('SearchNode: 所有检索结果被过滤，未生成有效的检索输出');
         }
       } catch (err) {
         console.error('SearchNode: 检索过程失败:', err);

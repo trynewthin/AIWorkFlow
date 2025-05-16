@@ -158,16 +158,28 @@ class KnowledgeService {
         metadata: { 
           chunkId, 
           documentId: docId,
+          knowledgeBaseId, // 确保添加知识库ID到元数据
+          title: metadata.title || path.basename(sourcePath),
           ...chunkMetadata
         }
       }));
     }
 
-    // 构建并持久化HNSW索引
-    await this.hnswDb.buildIndex(docsForIndex, {
-      modelName: this.embeddingNode.getWorkConfig().model,
-      dimension: vectorDim
-    });
+    // 构建并持久化HNSW索引，使用追加模式避免重建
+    try {
+      console.log(`将 ${docsForIndex.length} 个新文档分块添加到索引`);
+      await this.hnswDb.buildIndex(docsForIndex, {
+        modelName: this.embeddingNode.getWorkConfig().model,
+        dimension: vectorDim
+      }, true); // 使用append=true，追加到现有索引
+      
+      // 输出调试信息
+      const indexInfo = this.hnswDb.debugInfo();
+      console.log(`索引更新后状态: ${JSON.stringify(indexInfo, null, 2)}`);
+    } catch (error) {
+      console.error(`索引构建错误:`, error);
+      throw new Error(`索引构建失败: ${error.message}`);
+    }
 
     return { docId, chunkCount: chunkItems.length };
   }
@@ -179,20 +191,72 @@ class KnowledgeService {
 
   // 删除指定文档及关联数据
   async deleteDocument(documentId) {
+    // 获取要删除的所有分块
     const chunks = await this.kbDb.getChunksByDocument(documentId);
-    // 删除向量
+    console.log(`准备删除文档 ${documentId}，包含 ${chunks.length} 个分块`);
+    
+    // 从数据库删除关联数据
     const deleteEmbStmt = this.kbDb.db.prepare(
       `DELETE FROM ${this.kbDb.embeddingTable} WHERE chunk_id = ?`
     );
     chunks.forEach(chunk => deleteEmbStmt.run(chunk.id));
+    
     // 删除分块记录
     this.kbDb.db.prepare(
       `DELETE FROM ${this.kbDb.chunkTable} WHERE document_id = ?`
     ).run(documentId);
+    
     // 删除文档记录
     this.kbDb.db.prepare(
       `DELETE FROM ${this.kbDb.documentTable} WHERE id = ?`
     ).run(documentId);
+    
+    // 删除文档后，需要重建HNSW索引，不能简单地移除特定点
+    // 因为HNSW索引是有序的，移除点会导致索引错乱
+    try {
+      console.log(`文档删除成功，准备重建HNSW索引...`);
+      
+      // 重新获取所有分块和嵌入
+      const result = await this.kbDb.getAllChunksWithEmbeddings();
+      if (!result || !result.documents || result.documents.length === 0) {
+        console.log(`所有文档已删除，清空索引`);
+        // 如果没有剩余文档，创建一个空索引
+        try {
+          const indexPath = path.join(this.hnswDb.indexDir, 'hnsw_index.bin');
+          // 清空索引状态
+          this.hnswDb.documents = [];
+          this.hnswDb.index = null;
+          
+          // 如果需要，可以删除索引文件
+          if (fs.existsSync(indexPath)) {
+            fs.unlinkSync(indexPath);
+            console.log(`索引文件已删除: ${indexPath}`);
+          }
+        } catch (err) {
+          console.error(`清空索引失败: ${err.message}`);
+          // 这里不抛出错误，因为数据库已经删除了，即使索引清理失败也不致命
+        }
+        return; // 没有剩余文档，不需要重建索引
+      }
+      
+      // 准备用于重建索引的文档
+      const docsForIndex = result.documents;
+      console.log(`准备重建索引，剩余文档数: ${docsForIndex.length}`);
+      
+      // 获取嵌入模型参数
+      const embeddingConfig = this.embeddingNode.getWorkConfig();
+      
+      // 强制重建索引（append=false），确保索引与当前文档一致
+      await this.hnswDb.buildIndex(docsForIndex, {
+        modelName: embeddingConfig.model,
+        dimension: embeddingConfig.dimensions || 1024
+      }, false); // 重建模式，不是追加模式
+      
+      console.log(`索引重建完成，当前索引包含 ${this.hnswDb.documents.length} 个文档`);
+    } catch (error) {
+      console.error(`删除文档后重建索引失败: ${error.message}`);
+      throw new Error(`删除文档成功，但重建索引失败: ${error.message}`);
+    }
   }
 
   // 删除指定知识库及其所有关联数据

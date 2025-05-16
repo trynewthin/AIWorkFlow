@@ -15,7 +15,7 @@ const nodeConfigurations = {
       tag: 'chat',
       description: '使用 LangChain JS 进行对话生成',
       version: '1.0.0',
-      supportedInputPipelines: [PipelineType.TEXT],
+      supportedInputPipelines: [PipelineType.TEXT,PipelineType.RETRIEVAL],
       supportedOutputPipelines: [PipelineType.TEXT]
     },
     defaultFlowConfig: {
@@ -165,7 +165,10 @@ const nodeConfigurations = {
     defaultWorkConfig: {
       topK: 5,
       knowledgeBaseId: null,
-      hnswDimension: 1024
+      hnswDimension: 1024,
+      minScore: 0.6, //值越高要求越严格
+      maxDistance: 0.5, //值越小要求越严格
+      strictFiltering: false //true为严格模式，需要同时满足两个条件，false为宽松模式，满足任一条件即可
     }
   },
   [NodeKey.START]: {
