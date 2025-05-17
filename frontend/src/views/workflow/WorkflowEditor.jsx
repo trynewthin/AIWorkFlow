@@ -147,11 +147,6 @@ function WorkflowEditor() {
     setSelectedNode(node);
   };
 
-  // 前往可视化页面
-  const goToVisualPage = () => {
-    navigate(`/workflow/${id}/graph`);
-  };
-
   // 返回列表页面
   const goToListPage = () => {
     navigate('/workflow');
@@ -187,9 +182,6 @@ function WorkflowEditor() {
     <div className="container mx-auto p-4">
       {/* 顶部工具栏 */}
       <PageHeader title="编辑工作流" onBack={goToListPage}>
-        <Button variant="outline" onClick={goToVisualPage}>
-          可视化模式
-        </Button>
         <Button variant="default" onClick={goToExecutePage}>
           <Play className="w-4 h-4 mr-2" /> 执行
         </Button>

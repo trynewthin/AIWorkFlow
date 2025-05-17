@@ -7,7 +7,6 @@ import NodeGuide from '../views/odocs/nodeGuide';
 import WorkflowList from '../views/workflow/WorkflowList';
 import WorkflowEditor from '../views/workflow/WorkflowEditor';
 import WorkflowExecution from '../views/workflow/WorkflowExecution';
-import WorkflowGraph from '../views/workflow/WorkflowGraph';
 import LoginPage from '../views/login';
 import UserPage from '../views/user';
 
@@ -88,12 +87,6 @@ const routerMap = [
         meta: { title: '用户中心', requiresAuth: true },
       },
     ]
-  },
-  {
-    path: 'workflow/:id/graph',
-    element: <WorkflowGraph />,
-    name: 'WorkflowGraph',
-    meta: { title: '工作流可视化', requiresAuth: true },
   },
 ];
 
