@@ -1,8 +1,9 @@
 /**
- * @file frontend/src/services/userService.js
+ * @file frontend/src/services/userService.ts
  * @description 用户服务，提供用户相关功能的封装和错误处理
  */
 import * as userApi from '../api/user';
+import { User, UserKey, ApiResponse, LoginResult } from '../api/user';
 
 /**
  * @async
@@ -10,10 +11,10 @@ import * as userApi from '../api/user';
  * @description 用户注册
  * @param {string} username 用户名
  * @param {string} password 密码
- * @returns {Promise<{success: boolean, userId: number, message: string}>}
+ * @returns {Promise<ApiResponse<User>>}
  * @throws {Error} 注册失败时抛出异常
  */
-export async function register(username, password) {
+export async function register(username: string, password: string): Promise<ApiResponse<User>> {
   try {
     const result = await userApi.register(username, password);
     if (result && result.success) {
@@ -35,10 +36,10 @@ export async function register(username, password) {
  * @description 用户登录
  * @param {string} username 用户名
  * @param {string} password 密码
- * @returns {Promise<{success: boolean, user: Object, message: string}>}
+ * @returns {Promise<ApiResponse<LoginResult>>}
  * @throws {Error} 登录失败时抛出异常
  */
-export async function login(username, password) {
+export async function login(username: string, password: string): Promise<ApiResponse<LoginResult>> {
   try {
     const result = await userApi.login(username, password);
     if (result && result.success) {
@@ -59,10 +60,10 @@ export async function login(username, password) {
  * @function loginByKey
  * @description 通过密钥登录
  * @param {string} keyValue 密钥值
- * @returns {Promise<{success: boolean, user: Object, message: string}>}
+ * @returns {Promise<ApiResponse<LoginResult>>}
  * @throws {Error} 登录失败时抛出异常
  */
-export async function loginByKey(keyValue) {
+export async function loginByKey(keyValue: string): Promise<ApiResponse<LoginResult>> {
   try {
     const result = await userApi.loginByKey(keyValue);
     if (result && result.success) {
@@ -82,10 +83,10 @@ export async function loginByKey(keyValue) {
  * @async
  * @function logout
  * @description 用户登出
- * @returns {Promise<{success: boolean, message: string}>}
+ * @returns {Promise<ApiResponse<boolean>>}
  * @throws {Error} 登出失败时抛出异常
  */
-export async function logout() {
+export async function logout(): Promise<ApiResponse<boolean>> {
   try {
     const result = await userApi.logout();
     if (result && result.success) {
@@ -105,10 +106,10 @@ export async function logout() {
  * @async
  * @function getCurrentUser
  * @description 获取当前登录用户
- * @returns {Promise<{success: boolean, user: Object, message: string}>}
+ * @returns {Promise<ApiResponse<User>>}
  * @throws {Error} 获取失败时抛出异常
  */
-export async function getCurrentUser() {
+export async function getCurrentUser(): Promise<ApiResponse<User>> {
   try {
     const result = await userApi.getCurrentUser();
     if (result && result.success) {
@@ -130,10 +131,10 @@ export async function getCurrentUser() {
  * @description 检查用户是否已登录
  * @returns {Promise<boolean>} 是否已登录
  */
-export async function isLoggedIn() {
+export async function isLoggedIn(): Promise<boolean> {
   try {
     const result = await getCurrentUser();
-    return result && result.success && result.user;
+    return !!(result && result.success && result.data);
   } catch (error) {
     return false;
   }
@@ -143,10 +144,10 @@ export async function isLoggedIn() {
  * @async
  * @function getAllUsers
  * @description 获取所有用户
- * @returns {Promise<{success: boolean, users: Array, message: string}>}
+ * @returns {Promise<ApiResponse<User[]>>}
  * @throws {Error} 获取失败时抛出异常
  */
-export async function getAllUsers() {
+export async function getAllUsers(): Promise<ApiResponse<User[]>> {
   try {
     const result = await userApi.getAllUsers();
     if (result && result.success) {
@@ -167,11 +168,11 @@ export async function getAllUsers() {
  * @function updateUser
  * @description 更新用户信息
  * @param {number} userId 用户ID
- * @param {Object} userData 用户数据
- * @returns {Promise<{success: boolean, message: string}>}
+ * @param {Partial<User>} userData 用户数据
+ * @returns {Promise<ApiResponse<User>>}
  * @throws {Error} 更新失败时抛出异常
  */
-export async function updateUser(userId, userData) {
+export async function updateUser(userId: number, userData: Partial<User>): Promise<ApiResponse<User>> {
   try {
     const result = await userApi.updateUser(userId, userData);
     if (result && result.success) {
@@ -192,10 +193,10 @@ export async function updateUser(userId, userData) {
  * @function deleteUser
  * @description 删除用户
  * @param {number} userId 用户ID
- * @returns {Promise<{success: boolean, message: string}>}
+ * @returns {Promise<ApiResponse<boolean>>}
  * @throws {Error} 删除失败时抛出异常
  */
-export async function deleteUser(userId) {
+export async function deleteUser(userId: number): Promise<ApiResponse<boolean>> {
   try {
     const result = await userApi.deleteUser(userId);
     if (result && result.success) {
@@ -216,10 +217,10 @@ export async function deleteUser(userId) {
  * @function generateKey
  * @description 为用户生成密钥
  * @param {number} userId 用户ID
- * @returns {Promise<{success: boolean, keyId: number, keyValue: string, message: string}>}
+ * @returns {Promise<ApiResponse<UserKey>>}
  * @throws {Error} 生成失败时抛出异常
  */
-export async function generateKey(userId) {
+export async function generateKey(userId: number): Promise<ApiResponse<UserKey>> {
   try {
     const result = await userApi.generateKey(userId);
     if (result && result.success) {
@@ -239,10 +240,10 @@ export async function generateKey(userId) {
  * @async
  * @function generateKeyForCurrentUser
  * @description 为当前登录用户生成密钥
- * @returns {Promise<{success: boolean, keyId: number, keyValue: string, message: string}>}
+ * @returns {Promise<ApiResponse<UserKey>>}
  * @throws {Error} 生成失败时抛出异常
  */
-export async function generateKeyForCurrentUser() {
+export async function generateKeyForCurrentUser(): Promise<ApiResponse<UserKey>> {
   try {
     const result = await userApi.generateKeyForCurrentUser();
     if (result && result.success) {
@@ -263,10 +264,10 @@ export async function generateKeyForCurrentUser() {
  * @function getUserKeys
  * @description 获取用户密钥列表
  * @param {number} userId 用户ID
- * @returns {Promise<{success: boolean, keys: Array, message: string}>}
+ * @returns {Promise<ApiResponse<UserKey[]>>}
  * @throws {Error} 获取失败时抛出异常
  */
-export async function getUserKeys(userId) {
+export async function getUserKeys(userId: number): Promise<ApiResponse<UserKey[]>> {
   try {
     const result = await userApi.getUserKeys(userId);
     if (result && result.success) {
@@ -286,10 +287,10 @@ export async function getUserKeys(userId) {
  * @async
  * @function getCurrentUserKeys
  * @description 获取当前登录用户的密钥列表
- * @returns {Promise<{success: boolean, keys: Array, message: string}>}
+ * @returns {Promise<ApiResponse<UserKey[]>>}
  * @throws {Error} 获取失败时抛出异常
  */
-export async function getCurrentUserKeys() {
+export async function getCurrentUserKeys(): Promise<ApiResponse<UserKey[]>> {
   try {
     const result = await userApi.getCurrentUserKeys();
     if (result && result.success) {
@@ -310,10 +311,10 @@ export async function getCurrentUserKeys() {
  * @function updateKey
  * @description 更新密钥
  * @param {number} keyId 密钥ID
- * @returns {Promise<{success: boolean, keyValue: string, message: string}>}
+ * @returns {Promise<ApiResponse<UserKey>>}
  * @throws {Error} 更新失败时抛出异常
  */
-export async function updateKey(keyId) {
+export async function updateKey(keyId: number): Promise<ApiResponse<UserKey>> {
   try {
     const result = await userApi.updateKey(keyId);
     if (result && result.success) {
@@ -334,10 +335,10 @@ export async function updateKey(keyId) {
  * @function deleteKey
  * @description 删除密钥
  * @param {number} keyId 密钥ID
- * @returns {Promise<{success: boolean, message: string}>}
+ * @returns {Promise<ApiResponse<boolean>>}
  * @throws {Error} 删除失败时抛出异常
  */
-export async function deleteKey(keyId) {
+export async function deleteKey(keyId: number): Promise<ApiResponse<boolean>> {
   try {
     const result = await userApi.deleteKey(keyId);
     if (result && result.success) {
@@ -358,10 +359,10 @@ export async function deleteKey(keyId) {
  * @function verifyKey
  * @description 验证密钥
  * @param {string} keyValue 密钥值
- * @returns {Promise<{success: boolean, userId: number, message: string}>}
+ * @returns {Promise<ApiResponse<boolean>>}
  * @throws {Error} 验证失败时抛出异常
  */
-export async function verifyKey(keyValue) {
+export async function verifyKey(keyValue: string): Promise<ApiResponse<boolean>> {
   try {
     const result = await userApi.verifyKey(keyValue);
     if (result && result.success) {

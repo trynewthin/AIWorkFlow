@@ -2,21 +2,50 @@ import { ipc } from '../utils/ipcRenderer';
 import apiRoutes from '../api/ipcApiRoute';
 
 /**
+ * 文件详情接口
+ */
+export interface FileDetails {
+  sourcePath: string;
+  filename: string;
+  mimetype: string;
+}
+
+/**
+ * 文件信息接口
+ */
+export interface FileInfo {
+  id: string;
+  originalName: string;
+  filename: string;
+  path: string;
+  size: number;
+  mimetype: string;
+  uploadDate: string;
+  lastAccessed?: string;
+}
+
+/**
+ * API响应接口
+ */
+export interface ApiResponse<T = any> {
+  success: boolean;
+  message: string;
+  data?: T;
+}
+
+/**
  * @async
  * @function uploadFile
  * @description 上传文件服务。前端应提供文件的源路径、原始文件名和MIME类型。
- * @param {{ sourcePath: string, filename: string, mimetype: string }} fileDetails - 文件详情对象
- * @param {string} fileDetails.sourcePath - 文件的完整源路径 (例如，通过 Electron 的 dialog.showOpenDialog 获取)
- * @param {string} fileDetails.filename - 原始文件名
- * @param {string} fileDetails.mimetype - 文件的 MIME 类型
- * @returns {Promise<object>} 后端返回的上传结果，通常包含文件信息
+ * @param {FileDetails} fileDetails - 文件详情对象
+ * @returns {Promise<FileInfo>} 后端返回的上传结果，通常包含文件信息
  * @throws {Error} IPC调用失败或后端返回错误时
  */
-export async function uploadFile(fileDetails) {
+export async function uploadFile(fileDetails: FileDetails): Promise<FileInfo> {
   try {
-    const result = await ipc.invoke(apiRoutes.uploadFile, fileDetails);
+    const result = await ipc?.invoke(apiRoutes.uploadFile, fileDetails) as ApiResponse<FileInfo>;
     if (result && result.success) {
-      return result.data;
+      return result.data as FileInfo;
     } else {
       const errorMessage = result ? result.message : '上传文件失败';
       console.error('uploadFile service error:', errorMessage, 'Raw result:', result);
@@ -32,14 +61,14 @@ export async function uploadFile(fileDetails) {
  * @async
  * @function listFiles
  * @description 获取已上传文件列表服务
- * @returns {Promise<Array<object>>} 文件列表
+ * @returns {Promise<Array<FileInfo>>} 文件列表
  * @throws {Error} IPC调用失败或后端返回错误时
  */
-export async function listFiles() {
+export async function listFiles(): Promise<FileInfo[]> {
   try {
-    const result = await ipc.invoke(apiRoutes.listFiles);
+    const result = await ipc?.invoke(apiRoutes.listFiles) as ApiResponse<FileInfo[]>;
     if (result && result.success) {
-      return result.data;
+      return result.data as FileInfo[];
     } else {
       const errorMessage = result ? result.message : '获取文件列表失败';
       console.error('listFiles service error:', errorMessage, 'Raw result:', result);
@@ -56,15 +85,15 @@ export async function listFiles() {
  * @function getFileInfo
  * @description 根据文件ID获取文件信息服务
  * @param {string} fileId - 文件ID
- * @returns {Promise<object>} 文件信息对象
+ * @returns {Promise<FileInfo>} 文件信息对象
  * @throws {Error} IPC调用失败或后端返回错误时
  */
-export async function getFileInfo(fileId) {
+export async function getFileInfo(fileId: string): Promise<FileInfo> {
   try {
     // 后端控制器期望直接接收 id 字符串作为参数
-    const result = await ipc.invoke(apiRoutes.getFileInfo, fileId);
+    const result = await ipc?.invoke(apiRoutes.getFileInfo, fileId) as ApiResponse<FileInfo>;
     if (result && result.success) {
-      return result.data;
+      return result.data as FileInfo;
     } else {
       const errorMessage = result ? result.message : '获取文件信息失败';
       console.error('getFileInfo service error:', errorMessage, 'Raw result:', result);
@@ -84,10 +113,10 @@ export async function getFileInfo(fileId) {
  * @returns {Promise<boolean>} 删除成功则为 true
  * @throws {Error} IPC调用失败或后端返回错误时
  */
-export async function deleteFile(fileId) {
+export async function deleteFile(fileId: string): Promise<boolean> {
   try {
     // 后端控制器期望直接接收 id 字符串作为参数
-    const result = await ipc.invoke(apiRoutes.deleteFile, fileId);
+    const result = await ipc?.invoke(apiRoutes.deleteFile, fileId) as ApiResponse<boolean>;
     if (result && result.success) {
       return true; // 后端控制器直接返回 { success: true }
     } else {
@@ -109,12 +138,12 @@ export async function deleteFile(fileId) {
  * @returns {Promise<string>} 文件的绝对路径
  * @throws {Error} IPC调用失败或后端返回错误时
  */
-export async function getFilePath(fileId) {
+export async function getFilePath(fileId: string): Promise<string> {
   try {
     // 后端控制器期望直接接收 id 字符串作为参数
-    const result = await ipc.invoke(apiRoutes.getFilePath, fileId);
+    const result = await ipc?.invoke(apiRoutes.getFilePath, fileId) as ApiResponse<string>;
     if (result && result.success) { // 假设成功时 data 包含路径
-      return result.data;
+      return result.data as string;
     } else {
       // 如果后端不遵循 {success, data, message} 结构，且直接返回路径或错误
       // 此处需要根据实际返回调整

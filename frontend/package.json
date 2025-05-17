@@ -17,23 +17,27 @@
   "dependencies": {
     "@douyinfe/semi-icons": "^2.72.3",
     "@douyinfe/semi-ui": "^2.72.3",
-    "nanoid": "^4.0.2",
-    "react": "^18",
-    "react-dom": "^18",
-    "@flowgram.ai/ts-config": "0.1.8",
     "@flowgram.ai/eslint-config": "0.1.8",
+    "@flowgram.ai/fixed-layout-editor": "0.1.8",
     "@flowgram.ai/fixed-semi-materials": "0.1.8",
     "@flowgram.ai/minimap-plugin": "0.1.8",
-    "@flowgram.ai/fixed-layout-editor": "0.1.8"
+    "@flowgram.ai/ts-config": "0.1.8",
+    "nanoid": "^4.0.2",
+    "react": "^18",
+    "react-dom": "^18"
   },
   "devDependencies": {
     "@rsbuild/core": "^1.2.16",
     "@rsbuild/plugin-react": "^1.1.1",
+    "@tailwindcss/postcss": "^4.1.7",
     "@types/node": "^18",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "autoprefixer": "^10.4.21",
+    "cross-env": "~7.0.3",
     "eslint": "^8.54.0",
-    "cross-env": "~7.0.3"
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.1.7"
   },
   "publishConfig": {
     "access": "public",

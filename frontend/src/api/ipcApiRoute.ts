@@ -1,7 +1,73 @@
 /**
  * IPC 通信路由
+ * 定义所有IPC通信的路由字符串
  */
-const ipcApiRoute = {
+interface IPCApiRoutes {
+  // 连接检查
+  checkConnection: string;
+  
+  // 上传文件相关接口
+  uploadFile: string;
+  listFiles: string;
+  getFileInfo: string;
+  deleteFile: string;
+  getFilePath: string;
+  
+  // 知识库相关接口
+  listBases: string;
+  createBase: string;
+  listDocuments: string;
+  getDocumentChunks: string;
+  ingestFromPath: string;
+  getRetriever: string;
+  deleteDocument: string;
+  deleteBase: string;
+  
+  // 工作流相关接口
+  createWorkflow: string;
+  getWorkflow: string;
+  listWorkflows: string;
+  updateWorkflow: string;
+  deleteWorkflow: string;
+  addNode: string;
+  updateNode: string;
+  deleteNode: string;
+  moveNode: string;
+  getNodeTypes: string;
+  executeWorkflow: string;
+  
+  // 工作流用户相关接口
+  getCurrentUserWorkflows: string;
+  checkWorkflowOwnership: string;
+  transferWorkflowOwnership: string;
+  getWorkflowOwner: string;
+  
+  // 配置相关接口
+  getConfigNodeTypes: string;
+  getNodeConfigByType: string;
+  getDefaultFlowConfig: string;
+  getDefaultWorkConfig: string;
+  getAllPipelineTypes: string;
+  
+  // 用户相关接口
+  userRegister: string;
+  userLogin: string;
+  userLoginByKey: string;
+  userLogout: string;
+  userGetCurrentUser: string;
+  userGetAllUsers: string;
+  userUpdateUser: string;
+  userDeleteUser: string;
+  userGenerateKey: string;
+  userGenerateKeyForCurrentUser: string;
+  userGetUserKeys: string;
+  userGetCurrentUserKeys: string;
+  userUpdateKey: string;
+  userDeleteKey: string;
+  userVerifyKey: string;
+}
+
+const ipcApiRoute: IPCApiRoutes = {
   checkConnection: 'controller/connection/check',
   // 上传文件相关接口
   uploadFile: 'controller/upload/uploadFile',
@@ -40,6 +106,7 @@ const ipcApiRoute = {
   getNodeConfigByType: 'controller/config/getNodeConfigByType',
   getDefaultFlowConfig: 'controller/config/getDefaultFlowConfig',
   getDefaultWorkConfig: 'controller/config/getDefaultWorkConfig',
+  getAllPipelineTypes: 'controller/config/getAllPipelineTypes',
   // 用户相关接口
   userRegister: 'controller/user/register',
   userLogin: 'controller/user/login',

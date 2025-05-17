@@ -13,7 +13,8 @@ export const Editor = () => {
   const editorProps = useEditorProps(initialData, nodeRegistries);
   return (
     <FixedLayoutEditorProvider {...editorProps}>
-      <div className="demo-fixed-container">
+      <div className="demo-fixed-container bg-gray-100 p-4">
+        <div className="mb-4 text-blue-600 font-bold text-xl">AIWorkFlow 工作流编辑器</div>
         <EditorRenderer>{/* add child panel here */}</EditorRenderer>
       </div>
       <Tools />

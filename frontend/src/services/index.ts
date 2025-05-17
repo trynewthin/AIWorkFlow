@@ -1,5 +1,5 @@
 /**
- * @file frontend/src/services/index.js
+ * @file frontend/src/services/index.ts
  * @description 服务模块的统一导出出口
  */
 

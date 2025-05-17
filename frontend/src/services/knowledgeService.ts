@@ -1,16 +1,55 @@
 import { ipc } from '../utils/ipcRenderer';
 import ipcApiRoute from '../api/ipcApiRoute';
+import { 
+  KnowledgeBase, 
+  Document, 
+  DocumentChunk, 
+  ApiResponse, 
+  CreateKnowledgeBaseParams,
+  IngestParams
+} from '../api/knowledge';
+import { adaptApiResponse } from '../utils/apiAdapter';
+
+/**
+ * 文件上传参数接口
+ */
+interface UploadFileParams {
+  sourcePath: string;
+  filename: string;
+  mimetype: string;
+}
+
+/**
+ * 文件上传结果接口
+ */
+interface UploadFileResult {
+  success: boolean;
+  message: string;
+  fullPath: string;
+  filename: string;
+  size?: number;
+}
+
+/**
+ * 用于上传的文件接口
+ */
+interface UploadFile {
+  path: string;
+  name: string;
+  type?: string;
+  size?: number;
+}
 
 /**
  * @async
  * @function listKnowledgeBases
  * @description 获取所有知识库列表
- * @returns {Promise<Array<object>>} 知识库对象列表
+ * @returns {Promise<ApiResponse<KnowledgeBase[]>>} 知识库对象列表
  * @throws {Error} IPC调用失败或后端业务逻辑错误时
  */
-export async function listKnowledgeBases() {
+export async function listKnowledgeBases(): Promise<ApiResponse<KnowledgeBase[]>> {
   try {
-    const result = await ipc.invoke(ipcApiRoute.listBases);
+    const result = await ipc?.invoke(ipcApiRoute.listBases) as ApiResponse<KnowledgeBase[]>;
     if (result) {
       return result;
     } else {
@@ -28,12 +67,12 @@ export async function listKnowledgeBases() {
  * @function listDocuments
  * @description 获取指定知识库下的所有文档
  * @param {string} knowledgeBaseId - 知识库ID
- * @returns {Promise<Array<object>>} 文档对象列表
+ * @returns {Promise<ApiResponse<Document[]>>} 文档对象列表
  * @throws {Error} IPC调用失败或后端业务逻辑错误时
  */
-export async function listDocuments(knowledgeBaseId) {
+export async function listDocuments(knowledgeBaseId: string): Promise<ApiResponse<Document[]>> {
   try {
-    const result = await ipc.invoke(ipcApiRoute.listDocuments, knowledgeBaseId);
+    const result = await ipc?.invoke(ipcApiRoute.listDocuments, knowledgeBaseId) as ApiResponse<Document[]>;
     if (result) {
       return result;
     } else {
@@ -51,12 +90,12 @@ export async function listDocuments(knowledgeBaseId) {
  * @function getDocumentChunks
  * @description 获取指定文档的分块列表
  * @param {string} documentId - 文档ID
- * @returns {Promise<Array<object>>} 文档分块对象列表
+ * @returns {Promise<ApiResponse<DocumentChunk[]>>} 文档分块对象列表
  * @throws {Error} IPC调用失败或后端业务逻辑错误时
  */
-export async function getDocumentChunks(documentId) {
+export async function getDocumentChunks(documentId: string): Promise<ApiResponse<DocumentChunk[]>> {
   try {
-    const result = await ipc.invoke(ipcApiRoute.getDocumentChunks, documentId);
+    const result = await ipc?.invoke(ipcApiRoute.getDocumentChunks, documentId) as ApiResponse<DocumentChunk[]>;
     if (result) {
       return result;
     } else {
@@ -73,34 +112,38 @@ export async function getDocumentChunks(documentId) {
  * @async
  * @function uploadAndIngestFile
  * @description 上传文件并将其导入知识库
- * @param {Object} file - 要上传的文件对象（通常来自input[type=file]）
+ * @param {UploadFile} file - 要上传的文件对象（通常来自input[type=file]）
  * @param {string} knowledgeBaseId - 要导入的知识库ID
- * @returns {Promise<Object>} 处理结果
+ * @returns {Promise<ApiResponse<Document>>} 处理结果
  * @throws {Error} IPC调用失败或后端业务逻辑错误时
  */
-export async function uploadAndIngestFile(file, knowledgeBaseId) {
+export async function uploadAndIngestFile(file: UploadFile, knowledgeBaseId: string): Promise<ApiResponse<Document>> {
   if (!file || !knowledgeBaseId) {
     throw new Error('文件和知识库ID不能为空');
   }
 
   try {
     // 1. 先将文件上传到服务器临时目录
-    const uploadResult = await ipc.invoke(ipcApiRoute.uploadFile, {
+    const uploadResultRaw = await ipc?.invoke(ipcApiRoute.uploadFile, {
       sourcePath: file.path, // 本地文件路径
       filename: file.name,   // 文件名
       mimetype: file.type || 'application/octet-stream' // 文件类型
-    });
+    } as UploadFileParams);
     
-    if (!uploadResult || !uploadResult.fullPath) {
-      throw new Error('文件上传失败');
+    const uploadResult = adaptApiResponse<UploadFileResult>(uploadResultRaw, '文件上传失败');
+    
+    if (!uploadResult.success || !uploadResult.data?.fullPath) {
+      throw new Error(uploadResult.message || '文件上传失败');
     }
     
     // 2. 上传成功后，调用知识库入库API
-    const ingestResult = await ipc.invoke(ipcApiRoute.ingestFromPath, {
+    const ingestResultRaw = await ipc?.invoke(ipcApiRoute.ingestFromPath, {
       knowledgeBaseId: knowledgeBaseId,
-      sourcePath: uploadResult.fullPath, // 使用服务器返回的完整文件路径
+      sourcePath: uploadResult.data.fullPath, // 使用服务器返回的完整文件路径
       metadata: { title: file.name }
-    });
+    } as IngestParams);
+    
+    const ingestResult = adaptApiResponse<Document>(ingestResultRaw, '文档入库失败');
     
     return ingestResult;
   } catch (error) {
@@ -114,12 +157,12 @@ export async function uploadAndIngestFile(file, knowledgeBaseId) {
  * @function deleteDocument
  * @description 删除指定文档
  * @param {string} documentId - 要删除的文档ID
- * @returns {Promise<Object>} 删除结果
+ * @returns {Promise<ApiResponse<boolean>>} 删除结果
  * @throws {Error} IPC调用失败或后端业务逻辑错误时
  */
-export async function deleteDocument(documentId) {
+export async function deleteDocument(documentId: string): Promise<ApiResponse<boolean>> {
   try {
-    const result = await ipc.invoke(ipcApiRoute.deleteDocument, documentId);
+    const result = await ipc?.invoke(ipcApiRoute.deleteDocument, documentId) as ApiResponse<boolean>;
     if (result) {
       return result;
     } else {
@@ -136,13 +179,13 @@ export async function deleteDocument(documentId) {
  * @async
  * @function createKnowledgeBase
  * @description 创建新的知识库
- * @param {Object} params - 知识库创建参数，包括name和description
- * @returns {Promise<Object>} 创建结果
+ * @param {CreateKnowledgeBaseParams} params - 知识库创建参数，包括name和description
+ * @returns {Promise<ApiResponse<KnowledgeBase>>} 创建结果
  * @throws {Error} IPC调用失败或后端业务逻辑错误时
  */
-export async function createKnowledgeBase(params) {
+export async function createKnowledgeBase(params: CreateKnowledgeBaseParams): Promise<ApiResponse<KnowledgeBase>> {
   try {
-    const result = await ipc.invoke(ipcApiRoute.createBase, params);
+    const result = await ipc?.invoke(ipcApiRoute.createBase, params) as ApiResponse<KnowledgeBase>;
     if (result) {
       return result;
     } else {
@@ -160,12 +203,12 @@ export async function createKnowledgeBase(params) {
  * @function deleteKnowledgeBase
  * @description 删除指定知识库
  * @param {string} baseId - 要删除的知识库ID
- * @returns {Promise<Object>} 删除结果
+ * @returns {Promise<ApiResponse<boolean>>} 删除结果
  * @throws {Error} IPC调用失败或后端业务逻辑错误时
  */
-export async function deleteKnowledgeBase(baseId) {
+export async function deleteKnowledgeBase(baseId: string): Promise<ApiResponse<boolean>> {
   try {
-    const result = await ipc.invoke(ipcApiRoute.deleteBase, baseId);
+    const result = await ipc?.invoke(ipcApiRoute.deleteBase, baseId) as ApiResponse<boolean>;
     if (result) {
       return result;
     } else {
@@ -182,19 +225,21 @@ export async function deleteKnowledgeBase(baseId) {
  * @async
  * @function ingestFromPath
  * @description 从指定路径导入文档到知识库
- * @param {Object} params - 入库参数，包括knowledgeBaseId、sourcePath和metadata
- * @returns {Promise<Object>} 处理结果
+ * @param {IngestParams} params - 入库参数，包括knowledgeBaseId、sourcePath和metadata
+ * @returns {Promise<ApiResponse<Document>>} 处理结果
  * @throws {Error} IPC调用失败或后端业务逻辑错误时
  */
-export async function ingestFromPath(params) {
+export async function ingestFromPath(params: IngestParams): Promise<ApiResponse<Document>> {
   try {
-    const result = await ipc.invoke(ipcApiRoute.ingestFromPath, params);
-    if (result) {
-      return result;
-    } else {
-      console.error('ingestFromPath service error: Empty result');
-      throw new Error('文档入库失败');
+    // 确保使用了正确的参数结构
+    if (!params.sourcePath) {
+      throw new Error('sourcePath参数不能为空');
     }
+    
+    const result = await ipc?.invoke(ipcApiRoute.ingestFromPath, params);
+    const adaptedResult = adaptApiResponse<Document>(result, '文档入库失败');
+    
+    return adaptedResult;
   } catch (error) {
     console.error(`IPC call to ${ipcApiRoute.ingestFromPath} failed:`, error);
     throw error;

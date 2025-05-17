@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 .demo-fixed-node {
   align-items: flex-start;
   background-color: #fff;

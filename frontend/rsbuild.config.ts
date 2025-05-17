@@ -32,4 +32,10 @@ export default defineConfig({
     //   root: '../public/dist',
     // },
   },
+  tools: {
+    postcss: {
+      // 使用 postcss.config.js 的配置
+      // 不需要在这里定义插件，因为已经在 postcss.config.js 中定义
+    },
+  },
 });
