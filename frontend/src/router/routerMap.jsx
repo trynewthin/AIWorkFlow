@@ -5,7 +5,7 @@ import KnowledgeDetail from '../views/knowledge/Detail';
 import DocsPage from '../views/odocs';
 import NodeGuide from '../views/odocs/nodeGuide';
 import WorkflowList from '../views/workflow/WorkflowList';
-import WorkflowEditor from '../views/workflow/WorkflowEditor';
+import WorkflowEditor from '../views/workflow/Editor';
 import WorkflowExecution from '../views/workflow/WorkflowExecution';
 import LoginPage from '../views/login';
 import UserPage from '../views/user';

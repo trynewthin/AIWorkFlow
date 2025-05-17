@@ -3,7 +3,7 @@
  * 导出所有工作流相关组件和功能
  */
 import WorkflowList from './WorkflowList';
-import WorkflowEditor from './WorkflowEditor';
+import WorkflowEditor from './Editor';
 import WorkflowExecution from './WorkflowExecution';
 
 export {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { workflowService, configService } from '../../services';
+import { workflowService, configService } from '../../../services';
 import { ArrowLeft, Save, Play, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 
 // UI 组件导入
