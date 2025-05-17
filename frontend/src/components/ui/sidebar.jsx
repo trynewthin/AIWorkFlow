@@ -54,9 +54,23 @@ function SidebarProvider({
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
 
-  // This is the internal state of the sidebar.
-  // We use openProp and setOpenProp for control from outside the component.
-  const [_open, _setOpen] = React.useState(defaultOpen)
+  // 初始化时从Cookie读取侧边栏状态
+  const getSavedState = React.useCallback(() => {
+    if (typeof document !== 'undefined') {
+      const cookies = document.cookie.split(';')
+      const savedState = cookies
+        .find(cookie => cookie.trim().startsWith(`${SIDEBAR_COOKIE_NAME}=`))
+      
+      if (savedState) {
+        const value = savedState.split('=')[1]
+        return value === 'true'
+      }
+    }
+    return defaultOpen
+  }, [defaultOpen])
+
+  // 使用保存的状态初始化侧边栏
+  const [_open, _setOpen] = React.useState(() => getSavedState())
   const open = openProp ?? _open
   const setOpen = React.useCallback((value) => {
     const openState = typeof value === "function" ? value(open) : value
