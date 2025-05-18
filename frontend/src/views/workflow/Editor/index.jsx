@@ -14,6 +14,8 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 // 导入节点列表面板组件
 import NodesList, { WorkflowNodes } from './NodesList';
+// 导入编辑器顶部组件
+import ButtonHeader from '@/components/header';
 
 /**
  * @component WorkflowEditor
@@ -187,39 +189,32 @@ function WorkflowEditor() {
     <div className="flex flex-col overflow-hidden">
       {/* 主要编辑区域 - 占满剩余空间 */}
       <div className="flex-1 flex flex-col p-4 overflow-hidden">
-        <div className="flex-shrink-0 mb-4 flex justify-between items-center">
+        <ButtonHeader 
+          title={workflow.name || "工作流编辑器"} 
+          onBackClick={goToListPage}
+        >
+          <Sheet open={isNodeListOpen} onOpenChange={setIsNodeListOpen}>
+            <SheetTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="bg-black text-white hover:bg-gray-800 hover:text-white border-black hover:shadow-md transition-all"
+              >
+                <Plus className="w-4 h-4 mr-2" /> 添加节点
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[320px] sm:w-[360px] p-6 border-l shadow-lg">
+              <NodesList nodeTypes={nodeTypes} addNewNode={addNewNode} />
+            </SheetContent>
+          </Sheet>
+          
           <Button 
             variant="outline" 
             className="bg-black text-white hover:bg-gray-800 hover:text-white border-black hover:shadow-md transition-all"
-            onClick={goToListPage}
+            onClick={goToExecutePage}
           >
-            <ArrowLeft className="w-4 h-4" />
+            <Play className="w-4 h-4 mr-2" /> 执行
           </Button>
-          
-          <div className="flex gap-2">
-            <Sheet open={isNodeListOpen} onOpenChange={setIsNodeListOpen}>
-              <SheetTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className="bg-black text-white hover:bg-gray-800 hover:text-white border-black hover:shadow-md transition-all"
-                >
-                  <Plus className="w-4 h-4 mr-2" /> 添加节点
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[320px] sm:w-[360px] p-6 border-l shadow-lg">
-                <NodesList nodeTypes={nodeTypes} addNewNode={addNewNode} />
-              </SheetContent>
-            </Sheet>
-            
-            <Button 
-              variant="outline" 
-              className="bg-black text-white hover:bg-gray-800 hover:text-white border-black hover:shadow-md transition-all"
-              onClick={goToExecutePage}
-            >
-              <Play className="w-4 h-4 mr-2" /> 执行
-            </Button>
-          </div>
-        </div>
+        </ButtonHeader>
         
         <Card className="max-h-[calc(100vh-140px)] min-h-[460px] flex flex-col overflow-hidden shadow-sm">
           <CardHeader className="flex-shrink-0 pb-2">
