@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'; // 导入 Button 组件，如�
 import { Textarea } from '@/components/ui/textarea'; // 导入 Textarea 组件
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardAction } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import PageHeader from '@/components/ui/PageHeader';
+import { ButtonHeader } from '@/components/header';
 
 /**
  * @component WorkflowList
@@ -137,13 +137,18 @@ function WorkflowList() {
     navigate(`/workflow/${id}/execute`);
   };
 
+  // 返回按钮处理函数
+  const handleBackClick = () => {
+    navigate('/');
+  };
+
   return (
     <div className="container mx-auto p-4">
-      <PageHeader title="工作流列表">
+      <ButtonHeader title="工作流列表" onBackClick={handleBackClick}>
         <Button onClick={() => setShowCreateModal(true)}>
           <PlusCircle className="w-4 h-4 mr-2" /> 创建工作流
         </Button>
-      </PageHeader>
+      </ButtonHeader>
 
       {/* 错误提示 */}
       {error && (
