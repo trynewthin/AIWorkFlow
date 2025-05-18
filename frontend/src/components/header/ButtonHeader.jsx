@@ -11,11 +11,11 @@ import { Button } from '@/components/ui/button';
  */
 const ButtonHeader = ({ title, onBackClick, children }) => {
   return (
-    <div className="flex-shrink-0 mb-4 flex justify-between items-center">
+    <div className="flex-shrink-0 mb-4 flex justify-between items-center w-full h-16">
       <div className="flex items-center gap-4">
         <Button 
           variant="outline" 
-          className="bg-black text-white hover:bg-gray-800 hover:text-white border-black hover:shadow-md transition-all"
+          className="bg-black text-white hover:bg-gray-800 hover:text-white border-black hover:shadow-md transition-all w-10 h-10 p-0"
           onClick={onBackClick}
         >
           <ArrowLeft className="w-4 h-4" />
