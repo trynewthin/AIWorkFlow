@@ -443,20 +443,46 @@ class WorkflowService {
         return '';
       }
       
+      // 如果输入是字符串，直接返回
       if (typeof input === 'string') {
         return input;
       }
       
+      // 处理对象类型的输入
       if (typeof input === 'object') {
-        // 如果是Pipeline对象
-        if (input.type && input.dataType && input.hasOwnProperty('data')) {
-          return typeof input.data === 'object' ? 
-            JSON.stringify(input.data, null, 2) : String(input.data);
+        // 如果是含有text字段的普通对象，直接返回text内容
+        if (input.text !== undefined) {
+          return input.text;
         }
         
+        // 如果是Pipeline对象
+        if (input && typeof input.getPipelineType === 'function' && typeof input.getAll === 'function') {
+          const items = input.getAll();
+          if (items && items.length > 0) {
+            const firstItem = items[0];
+            
+            // 如果数据是对象且包含text字段，提取text字段
+            if (typeof firstItem.data === 'object' && firstItem.data !== null && firstItem.data.text !== undefined) {
+              return firstItem.data.text;
+            }
+            
+            // 其他情况返回原始数据或其字符串表示
+            return typeof firstItem.data === 'object' ? 
+              JSON.stringify(firstItem.data, null, 2) : String(firstItem.data);
+          }
+          return '[空管道数据]';
+        }
+        
+        // 处理其他对象类型，优先提取常见的内容字段
+        if (input.content !== undefined) {
+          return input.content;
+        }
+        
+        // 最后默认进行JSON字符串化
         return JSON.stringify(input, null, 2);
       }
       
+      // 其他基本类型直接转为字符串
       return String(input);
     } catch (error) {
       logger.warn(`[WorkflowService] 格式化输入数据失败: ${error.message}`);
@@ -482,9 +508,22 @@ class WorkflowService {
       
       if (typeof output === 'object') {
         // 如果是Pipeline对象
-        if (output.type && output.dataType && output.hasOwnProperty('data')) {
-          return typeof output.data === 'object' ? 
-            JSON.stringify(output.data, null, 2) : String(output.data);
+        if (output && typeof output.getPipelineType === 'function' && typeof output.getAll === 'function') {
+          const items = output.getAll();
+          if (items && items.length > 0) {
+            // 尝试找到TEXT类型的数据（优先）
+            const textItem = items.find(item => item.type === 'TEXT' || item.type === 'text');
+            if (textItem) {
+              return typeof textItem.data === 'object' ? 
+                JSON.stringify(textItem.data, null, 2) : String(textItem.data);
+            }
+            
+            // 否则返回第一个数据项
+            const firstItem = items[0];
+            return typeof firstItem.data === 'object' ? 
+              JSON.stringify(firstItem.data, null, 2) : String(firstItem.data);
+          }
+          return '[空管道数据]';
         }
         
         return JSON.stringify(output, null, 2);

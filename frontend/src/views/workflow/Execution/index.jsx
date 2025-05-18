@@ -120,12 +120,35 @@ function WorkflowExecution() {
       const messages = await workflowService.getConversationMessages(convId);
       
       // 处理消息，格式化为SimpleMode组件需要的格式
-      const formattedMessages = messages.map(msg => ({
-        role: msg.content.role,
-        content: msg.content.content,
-        time: new Date(msg.created_at),
-        id: msg.id
-      }));
+      const formattedMessages = messages.map(msg => {
+        // 处理消息内容，解析可能的JSON字符串
+        let parsedContent = msg.content.content;
+        if (msg.content.role === 'user') {
+          try {
+            // 检查是否是JSON字符串
+            if (typeof parsedContent === 'string' && 
+                (parsedContent.trim().startsWith('{') || parsedContent.trim().startsWith('['))) {
+              const jsonContent = JSON.parse(parsedContent);
+              // 优先使用text字段
+              if (jsonContent.text !== undefined) {
+                parsedContent = jsonContent.text;
+              } else if (jsonContent.content !== undefined) {
+                parsedContent = jsonContent.content;
+              }
+            }
+          } catch (e) {
+            // 解析失败，使用原始内容
+            console.log('解析消息内容失败，使用原始内容', e);
+          }
+        }
+
+        return {
+          role: msg.content.role,
+          content: parsedContent,
+          time: new Date(msg.created_at),
+          id: msg.id
+        };
+      });
       
       setConversationMessages(formattedMessages);
       
@@ -207,12 +230,18 @@ function WorkflowExecution() {
     try {
       // 解析输入内容
       let inputData = input;
-      try {
-        // 如果用户输入的是JSON格式，则解析为对象
-        inputData = JSON.parse(input);
-      } catch (e) {
-        // 如果不是JSON，则作为纯文本处理
-        inputData = { text: input };
+      // 在专家模式下才尝试解析JSON
+      if (mode === 'expert') {
+        try {
+          // 如果用户输入的是JSON格式，则解析为对象
+          inputData = JSON.parse(input);
+        } catch (e) {
+          // 如果不是JSON，则作为纯文本处理
+          inputData = { text: input };
+        }
+      } else {
+        // 简单模式下直接使用纯文本
+        inputData = input;
       }
 
       console.log('执行工作流:', workflow.id, '输入:', inputData, '选项:', executionOptions);
@@ -298,7 +327,9 @@ function WorkflowExecution() {
           <Tabs value={mode} onValueChange={setMode}>
             <TabsList className="grid w-64 grid-cols-2">
               <TabsTrigger value="simple">对话模式</TabsTrigger>
+              {/*
               <TabsTrigger value="expert">专家模式</TabsTrigger>
+              */}
             </TabsList>
           </Tabs>
         </div>
@@ -312,8 +343,11 @@ function WorkflowExecution() {
         </Button>
       </ButtonHeader>
 
-      {mode === 'simple' ? (
-        <SimpleMode 
+      {/* 内容区 - 根据模式显示不同的视图 */}
+      {loading ? (
+        <div className="p-4 text-center">加载中...</div>
+      ) : mode === 'simple' ? (
+        <SimpleMode
           input={input}
           setInput={setInput}
           executing={executing}
@@ -329,9 +363,10 @@ function WorkflowExecution() {
           switchConversation={switchConversation}
           loadingConversation={loadingConversation}
           recordConversation={executionOptions.recordConversation}
+          showMessageTime={false}
         />
       ) : (
-        <ExpertMode 
+        <ExpertMode
           input={input}
           setInput={setInput}
           executing={executing}
@@ -339,10 +374,7 @@ function WorkflowExecution() {
           result={result}
           handleExecute={handleExecute}
           handleCancel={handleCancel}
-          executionOptions={executionOptions}
-          setExecutionOptions={setExecutionOptions}
           workflow={workflow}
-          conversationId={conversationId}
         />
       )}
     </div>

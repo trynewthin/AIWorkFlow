@@ -225,14 +225,27 @@ class WorkflowExecutor {
         return '[空管道]';
       }
       
-      let result = `管道类型: ${pipeline.type}, 数据类型: ${pipeline.dataType}\n`;
+      let result = `管道类型: ${pipeline.getPipelineType()}\n`;
       
-      if (pipeline.data === undefined || pipeline.data === null) {
-        result += '数据: null';
-      } else if (typeof pipeline.data === 'object') {
-        result += `数据:\n${JSON.stringify(pipeline.data, null, 2)}`;
+      // 获取所有数据项
+      const items = pipeline.getAll();
+      
+      if (!items || items.length === 0) {
+        result += '数据: 空';
       } else {
-        result += `数据: ${pipeline.data}`;
+        // 遍历数据项
+        result += '数据项:\n';
+        items.forEach((item, index) => {
+          result += `[${index}] 类型: ${item.type}, `;
+          
+          if (item.data === undefined || item.data === null) {
+            result += '内容: null\n';
+          } else if (typeof item.data === 'object') {
+            result += `内容:\n${JSON.stringify(item.data, null, 2)}\n`;
+          } else {
+            result += `内容: ${item.data}\n`;
+          }
+        });
       }
       
       return result;

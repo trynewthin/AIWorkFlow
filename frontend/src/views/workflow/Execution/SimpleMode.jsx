@@ -28,7 +28,8 @@ const SimpleMode = ({
   conversations = [],
   switchConversation,
   loadingConversation,
-  recordConversation
+  recordConversation,
+  showMessageTime = false // 是否显示消息时间，默认不显示
 }) => {
   // 用于滚动到底部的引用
   const scrollRef = useRef(null);
@@ -78,6 +79,38 @@ const SimpleMode = ({
       return lastMessage.content.substring(0, 30) + (lastMessage.content.length > 30 ? '...' : '');
     }
     return '无消息';
+  };
+  
+  // 格式化时间，使用中国时区
+  const formatTimeWithTimezone = (dateString) => {
+    try {
+      // 创建日期对象
+      const date = new Date(dateString);
+      
+      // 获取中国时区(UTC+8)的时间
+      const options = { 
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit', 
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+        timeZone: 'Asia/Shanghai'
+      };
+      
+      return new Intl.DateTimeFormat('zh-CN', options).format(date);
+    } catch (error) {
+      // 使用简单的格式化作为备用方案
+      try {
+        const date = new Date(dateString);
+        // 手动添加8小时到UTC时间（中国时区UTC+8）
+        const utcPlusEight = new Date(date.getTime() + 8 * 60 * 60 * 1000);
+        return format(utcPlusEight, 'yyyy-MM-dd HH:mm:ss');
+      } catch (fallbackError) {
+        return dateString;
+      }
+    }
   };
   
   return (
@@ -174,13 +207,31 @@ const SimpleMode = ({
                 }
                 
                 if (message.role === 'user') {
+                  // 处理消息内容，检测是否为JSON格式
+                  let displayContent = message.content;
+                  try {
+                    // 尝试解析JSON字符串
+                    if (typeof message.content === 'string' && message.content.trim().startsWith('{')) {
+                      const parsed = JSON.parse(message.content);
+                      // 优先显示text字段内容
+                      if (parsed.text !== undefined) {
+                        displayContent = parsed.text;
+                      } else if (parsed.content !== undefined) {
+                        displayContent = parsed.content;
+                      }
+                    }
+                  } catch (e) {
+                    // 解析失败，使用原始内容
+                    displayContent = message.content;
+                  }
+                  
                   return (
                     <div key={index} className="flex justify-end">
                       <div className="bg-blue-500 text-white rounded-lg p-3 max-w-[80%]">
-                        {message.content}
-                        {message.time && (
+                        {displayContent}
+                        {showMessageTime && (
                           <div className="text-right mt-1 text-xs opacity-70">
-                            {format(new Date(message.time), 'HH:mm:ss')}
+                            {formatTimeWithTimezone(message.time)}
                           </div>
                         )}
                       </div>
@@ -195,9 +246,9 @@ const SimpleMode = ({
                         <pre className="whitespace-pre-wrap font-sans text-sm">
                           {message.content}
                         </pre>
-                        {message.time && (
+                        {showMessageTime && (
                           <div className="text-left mt-1 text-xs text-gray-500">
-                            {format(new Date(message.time), 'HH:mm:ss')}
+                            {formatTimeWithTimezone(message.time)}
                           </div>
                         )}
                       </div>

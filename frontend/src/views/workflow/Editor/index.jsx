@@ -11,6 +11,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 // 导入节点列表面板组件
 import NodesList, { WorkflowNodes } from './NodesList';
@@ -215,19 +216,21 @@ function WorkflowEditor() {
           </Button>
         </ButtonHeader>
         
-        <Card className="max-h-[calc(100vh-140px)] min-h-[460px] flex flex-col overflow-hidden shadow-sm">
+        <Card className="max-h-[50%] min-h-[460px] flex flex-col overflow-hidden shadow-sm">
           <CardHeader className="flex-shrink-0 pb-2">
             <CardTitle>节点列表</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 overflow-hidden p-0">
-            <WorkflowNodes 
-              nodes={workflow.nodes || []}
-              selectedNodeId={selectedNode ? selectedNode.id : null}
-              onNodeSelect={handleNodeSelect}
-              onNodeMove={moveNodePosition}
-              onNodeDelete={removeNode}
-              onNodeConfigSave={saveNodeConfig}
-            />
+            <ScrollArea className="h-full">
+              <WorkflowNodes 
+                nodes={workflow.nodes || []}
+                selectedNodeId={selectedNode ? selectedNode.id : null}
+                onNodeSelect={handleNodeSelect}
+                onNodeMove={moveNodePosition}
+                onNodeDelete={removeNode}
+                onNodeConfigSave={saveNodeConfig}
+              />
+            </ScrollArea>
           </CardContent>
         </Card>
       </div>
