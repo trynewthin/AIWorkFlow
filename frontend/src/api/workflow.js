@@ -196,4 +196,104 @@ export function transferWorkflowOwnership(workflowId, newUserId) {
  */
 export function getWorkflowOwner(workflowId) {
   return ipc.invoke(ipcApiRoute.getWorkflowOwner, { workflowId });
+}
+
+/**
+ * 创建工作流对话轮次
+ * @param {string} workflowId - 工作流ID
+ * @returns {Promise<{conversationId: string}>} 对话轮次ID
+ */
+export function createWorkflowConversation(workflowId) {
+  return ipc.invoke(ipcApiRoute.createWorkflowConversation, { workflowId });
+}
+
+/**
+ * 获取工作流当前关联的对话轮次
+ * @param {string} workflowId - 工作流ID
+ * @returns {Promise<{conversationId: string}>} 对话轮次ID
+ */
+export function getWorkflowCurrentConversation(workflowId) {
+  return ipc.invoke(ipcApiRoute.getWorkflowCurrentConversation, { workflowId });
+}
+
+/**
+ * 获取工作流的所有对话轮次
+ * @param {string} workflowId - 工作流ID
+ * @returns {Promise<Array<Object>>} 对话轮次列表
+ */
+export function getWorkflowConversations(workflowId) {
+  return ipc.invoke(ipcApiRoute.getWorkflowConversations, { workflowId });
+}
+
+/**
+ * 获取对话消息历史
+ * @param {string} conversationId - 对话轮次ID
+ * @returns {Promise<Array<Object>>} 消息列表
+ */
+export function getConversationMessages(conversationId) {
+  return ipc.invoke(ipcApiRoute.getConversationMessages, { conversationId });
+}
+
+/**
+ * 添加用户消息到对话
+ * @param {string} conversationId - 对话轮次ID
+ * @param {string} content - 消息内容
+ * @returns {Promise<{messageId: string}>} 消息ID
+ */
+export function addUserMessage(conversationId, content) {
+  return ipc.invoke(ipcApiRoute.addUserMessage, { conversationId, content });
+}
+
+/**
+ * 添加AI消息到对话
+ * @param {string} conversationId - 对话轮次ID
+ * @param {string} content - 消息内容
+ * @returns {Promise<{messageId: string}>} 消息ID
+ */
+export function addAIMessage(conversationId, content) {
+  return ipc.invoke(ipcApiRoute.addAIMessage, { conversationId, content });
+}
+
+/**
+ * 删除对话轮次
+ * @param {string} conversationId - 对话轮次ID
+ * @returns {Promise<boolean>} 是否删除成功
+ */
+export function deleteConversation(conversationId) {
+  return ipc.invoke(ipcApiRoute.deleteConversation, { conversationId });
+}
+
+/**
+ * 获取对话统计信息
+ * @param {string} conversationId - 对话轮次ID
+ * @returns {Promise<Object>} 统计信息对象
+ */
+export function getConversationStats(conversationId) {
+  return ipc.invoke(ipcApiRoute.getConversationStats, { conversationId });
+}
+
+/**
+ * 导出对话历史为JSON
+ * @param {string} conversationId - 对话轮次ID
+ * @returns {Promise<string>} JSON格式的对话历史
+ */
+export function exportConversationAsJson(conversationId) {
+  return ipc.invoke(ipcApiRoute.exportConversationAsJson, { conversationId });
+}
+
+/**
+ * 执行工作流并记录对话（便捷方法）
+ * @param {string} workflowId - 工作流ID
+ * @param {Object} input - 输入数据
+ * @param {string} [conversationId] - 可选的对话轮次ID，不提供则使用工作流当前对话或创建新对话
+ * @param {boolean} [recordNodeExecution=false] - 是否记录节点执行过程
+ * @returns {Promise<{result: Object, conversationId: string}>} 执行结果和使用的对话ID
+ */
+export function executeWorkflowWithConversation(workflowId, input, conversationId, recordNodeExecution = false) {
+  return ipc.invoke(ipcApiRoute.executeWorkflowWithConversation, { 
+    workflowId, 
+    input, 
+    conversationId,
+    recordNodeExecution
+  });
 } 

@@ -7,6 +7,7 @@ const { getWorkflowManager } = require('../models/WorkflowManager'); // Adjusted
 const { getWorkflowExecutor } = require('../models/WorkflowExecutor');
 const { getNodeFactory } = require('../../node/services/NodeFactory'); // Adjusted path
 const { getUserDb } = require('../../database'); // 导入用户数据库服务
+const { getConversationService } = require('./ConversationService'); // 导入对话服务
 const { logger } = require('ee-core/log');
 
 class WorkflowService {
@@ -19,6 +20,8 @@ class WorkflowService {
     this.nodeFactory = getNodeFactory();
     /** @type {import('../../database').UserDb} 用户数据库服务实例 */
     this.userDb = getUserDb();
+    /** @type {import('./ConversationService').ConversationService} 对话服务实例 */
+    this.conversationService = getConversationService();
   }
 
   /**
@@ -272,10 +275,109 @@ class WorkflowService {
   }
 
   /**
-   * @description 执行指定工作流
+   * @description 创建工作流对话轮次
+   * @param {string} workflowId 工作流ID
+   * @returns {Promise<string>} 对话轮次ID
+   */
+  async createWorkflowConversation(workflowId) {
+    // 获取当前登录用户ID
+    const currentUserId = await this._getCurrentUserId();
+    if (!currentUserId) {
+      throw new Error('没有登录用户，无法创建对话');
+    }
+    
+    // 检查工作流权限
+    const isOwner = await this.workflowManager.workflowDb.isWorkflowOwner(workflowId, currentUserId);
+    if (!isOwner) {
+      throw new Error(`无权限为工作流 ${workflowId} 创建对话`);
+    }
+    
+    // 创建对话轮次
+    const conversationId = await this.conversationService.createConversation(workflowId);
+    
+    // 将对话ID关联到工作流配置
+    await this._updateWorkflowConversationId(workflowId, conversationId);
+    
+    logger.info(`[WorkflowService] 为工作流 ${workflowId} 创建对话轮次: ${conversationId}`);
+    return conversationId;
+  }
+  
+  /**
+   * @private
+   * @description 更新工作流配置中的当前对话ID
+   * @param {string} workflowId 工作流ID
+   * @param {string} conversationId 对话轮次ID
+   */
+  async _updateWorkflowConversationId(workflowId, conversationId) {
+    const workflow = await this.workflowManager.getWorkflow(workflowId);
+    if (!workflow) {
+      throw new Error(`工作流不存在: ${workflowId}`);
+    }
+    
+    const updatedConfig = {
+      ...workflow.config,
+      currentConversationId: conversationId
+    };
+    
+    await this.workflowManager.updateWorkflow(workflowId, { config: updatedConfig });
+  }
+  
+  /**
+   * @description 获取工作流当前关联的对话轮次
+   * @param {string} workflowId 工作流ID
+   * @returns {Promise<string|null>} 对话轮次ID，不存在则返回null
+   */
+  async getWorkflowCurrentConversation(workflowId) {
+    // 获取当前登录用户ID
+    const currentUserId = await this._getCurrentUserId();
+    if (!currentUserId) {
+      throw new Error('没有登录用户，无法获取对话');
+    }
+    
+    // 检查工作流权限
+    const isOwner = await this.workflowManager.workflowDb.isWorkflowOwner(workflowId, currentUserId);
+    if (!isOwner) {
+      throw new Error(`无权限访问工作流 ${workflowId} 的对话`);
+    }
+    
+    const workflow = await this.workflowManager.getWorkflow(workflowId);
+    if (!workflow) {
+      return null;
+    }
+    
+    return workflow.config.currentConversationId || null;
+  }
+  
+  /**
+   * @description 获取工作流的所有对话轮次
+   * @param {string} workflowId 工作流ID
+   * @returns {Promise<Array<Object>>} 对话轮次列表
+   */
+  async getWorkflowConversations(workflowId) {
+    // 获取当前登录用户ID
+    const currentUserId = await this._getCurrentUserId();
+    if (!currentUserId) {
+      throw new Error('没有登录用户，无法获取对话');
+    }
+    
+    // 检查工作流权限
+    const isOwner = await this.workflowManager.workflowDb.isWorkflowOwner(workflowId, currentUserId);
+    if (!isOwner) {
+      throw new Error(`无权限访问工作流 ${workflowId} 的对话`);
+    }
+    
+    return this.conversationService.getWorkflowConversations(workflowId);
+  }
+  
+  /**
+   * @description 执行指定工作流，并可选记录对话
    * @param {string} workflowId - 工作流 ID
    * @param {import('../../core/pipeline/Pipeline')|Object} input - 输入数据或 Pipeline 实例
-   * @param {Object} [options] - 执行选项
+   * @param {Object} [options={}] - 执行选项
+   * @param {boolean} [options.recordConversation=false] - 是否记录对话
+   * @param {string} [options.conversationId] - 对话轮次ID，为空则使用工作流关联的当前对话ID
+   * @param {boolean} [options.recordNodeExecution=false] - 是否记录节点执行信息
+   * @param {boolean} [options.recordIntermediateResults=false] - 是否记录中间结果
    * @returns {Promise<import('../../core/pipeline/Pipeline')>} 执行结果 Pipeline
    */
   async executeWorkflow(workflowId, input, options = {}) {
@@ -290,8 +392,109 @@ class WorkflowService {
     if (!isOwner) {
       throw new Error(`无权限执行工作流 ${workflowId}`);
     }
+    
+    // 记录对话相关处理
+    if (options.recordConversation) {
+      // 获取或创建对话轮次ID
+      let conversationId = options.conversationId;
+      if (!conversationId) {
+        const workflow = await this.workflowManager.getWorkflow(workflowId);
+        conversationId = workflow.config.currentConversationId;
+        
+        // 如果没有关联的对话轮次，创建新的
+        if (!conversationId) {
+          conversationId = await this.createWorkflowConversation(workflowId);
+        }
+      }
+      
+      // 更新选项中的对话ID
+      options.conversationId = conversationId;
+      
+      // 记录用户输入
+      const userContent = this._formatInputForConversation(input);
+      await this.conversationService.addUserMessage(conversationId, userContent);
+      
+      logger.info(`[WorkflowService] 记录用户输入到对话 ${conversationId}`);
+    }
 
-    return this.workflowExecutor.execute(workflowId, input, options);
+    // 执行工作流
+    const resultPipeline = await this.workflowExecutor.execute(workflowId, input, options);
+    
+    // 记录AI回复
+    if (options.recordConversation && options.conversationId) {
+      const aiContent = this._formatOutputForConversation(resultPipeline);
+      await this.conversationService.addAIMessage(options.conversationId, aiContent);
+      
+      logger.info(`[WorkflowService] 记录AI回复到对话 ${options.conversationId}`);
+    }
+
+    return resultPipeline;
+  }
+  
+  /**
+   * @private
+   * @description 格式化输入数据用于对话记录
+   * @param {any} input 输入数据
+   * @returns {string} 格式化后的内容
+   */
+  _formatInputForConversation(input) {
+    try {
+      if (input === null || input === undefined) {
+        return '';
+      }
+      
+      if (typeof input === 'string') {
+        return input;
+      }
+      
+      if (typeof input === 'object') {
+        // 如果是Pipeline对象
+        if (input.type && input.dataType && input.hasOwnProperty('data')) {
+          return typeof input.data === 'object' ? 
+            JSON.stringify(input.data, null, 2) : String(input.data);
+        }
+        
+        return JSON.stringify(input, null, 2);
+      }
+      
+      return String(input);
+    } catch (error) {
+      logger.warn(`[WorkflowService] 格式化输入数据失败: ${error.message}`);
+      return '[无法解析的输入数据]';
+    }
+  }
+  
+  /**
+   * @private
+   * @description 格式化输出数据用于对话记录
+   * @param {any} output 输出数据
+   * @returns {string} 格式化后的内容
+   */
+  _formatOutputForConversation(output) {
+    try {
+      if (output === null || output === undefined) {
+        return '';
+      }
+      
+      if (typeof output === 'string') {
+        return output;
+      }
+      
+      if (typeof output === 'object') {
+        // 如果是Pipeline对象
+        if (output.type && output.dataType && output.hasOwnProperty('data')) {
+          return typeof output.data === 'object' ? 
+            JSON.stringify(output.data, null, 2) : String(output.data);
+        }
+        
+        return JSON.stringify(output, null, 2);
+      }
+      
+      return String(output);
+    } catch (error) {
+      logger.warn(`[WorkflowService] 格式化输出数据失败: ${error.message}`);
+      return '[无法解析的输出数据]';
+    }
   }
 }
 

@@ -25,8 +25,17 @@ function WorkflowExecution() {
   const [executionOptions, setExecutionOptions] = useState({
     debug: false,
     timeout: 60000,
-    validateStartEnd: true
+    validateStartEnd: true,
+    recordConversation: true, // 默认记录对话
+    recordNodeExecution: false // 默认不记录节点执行过程
   });
+  
+  // 对话相关状态
+  const [conversationId, setConversationId] = useState(null);
+  const [conversations, setConversations] = useState([]);
+  const [activeConversation, setActiveConversation] = useState(null);
+  const [conversationMessages, setConversationMessages] = useState([]);
+  const [loadingConversation, setLoadingConversation] = useState(false);
 
   // 路由参数和导航
   const { id } = useParams();
@@ -56,6 +65,9 @@ function WorkflowExecution() {
         } catch (error) {
           console.error('加载模式设置失败:', error);
         }
+        
+        // 加载工作流的对话历史
+        loadWorkflowConversations(workflowData.id);
       } catch (err) {
         setError('加载工作流发生通信错误：' + err.message);
         toast.error('加载工作流发生通信错误：' + err.message);
@@ -75,6 +87,65 @@ function WorkflowExecution() {
       setWorkflow(null);
     }
   }, [id, location]);
+  
+  // 加载工作流的对话历史
+  const loadWorkflowConversations = async (workflowId) => {
+    try {
+      // 获取工作流的所有对话轮次
+      const conversationsList = await workflowService.getWorkflowConversations(workflowId);
+      setConversations(conversationsList);
+      
+      // 获取当前关联的对话
+      const currentConversationId = await workflowService.getWorkflowCurrentConversation(workflowId);
+      
+      if (currentConversationId) {
+        setConversationId(currentConversationId);
+        setActiveConversation(conversationsList.find(c => c.id === currentConversationId) || null);
+        
+        // 加载当前对话的消息
+        await loadConversationMessages(currentConversationId);
+      }
+    } catch (error) {
+      console.error('加载对话历史失败:', error);
+      toast.error('加载对话历史失败: ' + error.message);
+    }
+  };
+  
+  // 加载对话消息
+  const loadConversationMessages = async (convId) => {
+    if (!convId) return;
+    
+    setLoadingConversation(true);
+    try {
+      const messages = await workflowService.getConversationMessages(convId);
+      
+      // 处理消息，格式化为SimpleMode组件需要的格式
+      const formattedMessages = messages.map(msg => ({
+        role: msg.content.role,
+        content: msg.content.content,
+        time: new Date(msg.created_at),
+        id: msg.id
+      }));
+      
+      setConversationMessages(formattedMessages);
+      
+      // 如果对话为空，添加一条系统欢迎消息
+      if (formattedMessages.length === 0 && workflow) {
+        setConversationMessages([
+          { 
+            role: 'system', 
+            content: `欢迎使用工作流"${workflow.name || '未命名工作流'}"，请输入内容开始执行。`,
+            time: new Date()
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error('加载对话消息失败:', error);
+      toast.error('加载对话消息失败: ' + error.message);
+    } finally {
+      setLoadingConversation(false);
+    }
+  };
 
   // 保存模式设置到localStorage
   useEffect(() => {
@@ -86,6 +157,46 @@ function WorkflowExecution() {
       }
     }
   }, [id, mode]);
+  
+  // 创建新对话
+  const createNewConversation = async () => {
+    if (!workflow) return;
+    
+    try {
+      // 创建新对话轮次
+      const newConversationId = await workflowService.createWorkflowConversation(workflow.id);
+      setConversationId(newConversationId);
+      
+      // 刷新对话列表
+      await loadWorkflowConversations(workflow.id);
+      
+      // 重置消息和输入
+      setInput('');
+      setResult(null);
+      setError(null);
+      
+      toast.success('新对话创建成功');
+    } catch (error) {
+      console.error('创建新对话失败:', error);
+      toast.error('创建新对话失败: ' + error.message);
+    }
+  };
+  
+  // 切换到指定的对话
+  const switchConversation = async (convId) => {
+    if (convId === conversationId) return;
+    
+    setConversationId(convId);
+    setActiveConversation(conversations.find(c => c.id === convId) || null);
+    
+    // 加载选中对话的消息
+    await loadConversationMessages(convId);
+    
+    // 重置输入和结果
+    setInput('');
+    setResult(null);
+    setError(null);
+  };
 
   // 执行工作流
   const handleExecute = async () => {
@@ -106,14 +217,51 @@ function WorkflowExecution() {
 
       console.log('执行工作流:', workflow.id, '输入:', inputData, '选项:', executionOptions);
 
-      // 执行工作流
-      const result = await workflowService.executeWorkflow(
-        workflow.id,
-        inputData,
-        executionOptions // 传递执行选项
-      );
-      
-      setResult(result);
+      // 如果启用了对话记录，使用executeWorkflowWithConversation
+      if (executionOptions.recordConversation) {
+        // 确保有对话ID
+        let usedConversationId = conversationId;
+        if (!usedConversationId) {
+          // 如果没有当前对话，创建新对话
+          usedConversationId = await workflowService.createWorkflowConversation(workflow.id);
+          setConversationId(usedConversationId);
+        }
+        
+        // 添加用户消息到本地状态，以立即显示
+        const userMessage = { role: 'user', content: input, time: new Date() };
+        setConversationMessages(prev => [...prev, userMessage]);
+        
+        // 执行工作流并记录对话
+        const { result: execResult, conversationId: resultConvId } = await workflowService.executeWorkflowWithConversation(
+          workflow.id,
+          inputData,
+          {
+            conversationId: usedConversationId,
+            recordNodeExecution: executionOptions.recordNodeExecution
+          }
+        );
+        
+        setResult(execResult);
+        
+        // 如果返回了新的对话ID（可能是自动创建的），更新状态
+        if (resultConvId && resultConvId !== usedConversationId) {
+          setConversationId(resultConvId);
+          // 刷新对话列表
+          await loadWorkflowConversations(workflow.id);
+        }
+        
+        // 刷新消息列表，以获取AI回复
+        await loadConversationMessages(resultConvId || usedConversationId);
+      } else {
+        // 不记录对话，使用普通执行
+        const execResult = await workflowService.executeWorkflow(
+          workflow.id,
+          inputData,
+          executionOptions // 传递执行选项
+        );
+        
+        setResult(execResult);
+      }
     } catch (err) {
       setError('执行失败：' + err.message);
       toast.error('执行失败：' + err.message);
@@ -149,16 +297,19 @@ function WorkflowExecution() {
         <div className="flex items-center space-x-2">
           <Tabs value={mode} onValueChange={setMode}>
             <TabsList className="grid w-64 grid-cols-2">
-              <TabsTrigger value="simple">普通模式</TabsTrigger>
+              <TabsTrigger value="simple">对话模式</TabsTrigger>
               <TabsTrigger value="expert">专家模式</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
         <WorkflowConfig 
-            executionOptions={executionOptions}
-            setExecutionOptions={setExecutionOptions}
-            workflow={workflow}
-          />
+          executionOptions={executionOptions}
+          setExecutionOptions={setExecutionOptions}
+          workflow={workflow}
+        />
+        <Button variant="outline" onClick={createNewConversation}>
+          新对话
+        </Button>
       </ButtonHeader>
 
       {mode === 'simple' ? (
@@ -171,6 +322,13 @@ function WorkflowExecution() {
           handleExecute={handleExecute}
           handleCancel={handleCancel}
           workflow={workflow}
+          messages={conversationMessages}
+          setMessages={setConversationMessages}
+          conversationId={conversationId}
+          conversations={conversations}
+          switchConversation={switchConversation}
+          loadingConversation={loadingConversation}
+          recordConversation={executionOptions.recordConversation}
         />
       ) : (
         <ExpertMode 
@@ -184,6 +342,7 @@ function WorkflowExecution() {
           executionOptions={executionOptions}
           setExecutionOptions={setExecutionOptions}
           workflow={workflow}
+          conversationId={conversationId}
         />
       )}
     </div>

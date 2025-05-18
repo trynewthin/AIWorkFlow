@@ -25,6 +25,7 @@ const NodeKey = {
   CHUNK: 'ChunkNode',
   EMBEDDING: 'EmbeddingNode',
   END: 'EndNode',
+  MEMORY: 'MemoryNode',
   MERGE: 'MergeNode',
   PROMPT: 'PromptNode',
   SEARCH: 'SearchNode',

@@ -6,7 +6,7 @@ const { DataType, PipelineType } = require('../../coreconfigs/models/pipelineTyp
 const { ChatOpenAI } = require('@langchain/openai');
 // 导入 LangChain 消息类
 const { SystemMessage, HumanMessage } = require('@langchain/core/messages');
-const BaseNode = require('./BaseNode');
+const BaseNode = require('./baseNode');
 const Pipeline = require('../../pipeline/Pipeline');
 const { RetrievalPipeTools } = require('../../pipeline/tools');
 
@@ -168,7 +168,7 @@ class ChatNode extends BaseNode {
     const separator = originalPrompt ? '\n\n' : '';
     
     // 添加使用说明
-    const instruction = '请基于以上参考文档回答用户的问题。如果参考文档中没有相关信息，请基于你自己的知识回答，但需明确告知用户哪些内容来自参考文档，哪些是你自己的知识。';
+    const instruction = '请基于以上参考文档回答用户的问题。如果参考文档中没有相关信息，请直接视为不知道。';
     
     return originalPrompt + separator + contextText + '\n\n' + instruction;
   }

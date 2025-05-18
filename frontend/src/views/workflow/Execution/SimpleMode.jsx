@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, StopCircle, Send } from 'lucide-react';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Play, StopCircle, Send, MessageSquare, Plus, RefreshCw } from 'lucide-react';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 /**
  * @component SimpleMode
@@ -18,34 +21,27 @@ const SimpleMode = ({
   result, 
   handleExecute, 
   handleCancel,
-  workflow
+  workflow,
+  messages = [],
+  setMessages,
+  conversationId,
+  conversations = [],
+  switchConversation,
+  loadingConversation,
+  recordConversation
 }) => {
-  // 聊天历史记录
-  const [messages, setMessages] = useState([]);
   // 用于滚动到底部的引用
   const scrollRef = useRef(null);
   const messagesEndRef = useRef(null);
   
-  // 初始化欢迎消息
-  useEffect(() => {
-    if (workflow && messages.length === 0) {
-      setMessages([
-        { 
-          role: 'system', 
-          content: `欢迎使用工作流"${workflow.name || '未命名工作流'}"，请输入内容开始执行。` 
-        }
-      ]);
-    }
-  }, [workflow, messages.length]);
+  // 侧边栏状态
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // 提交用户输入
   const handleSubmit = () => {
     if (!input.trim() || executing) return;
     
-    // 添加用户消息到历史
-    setMessages(prev => [...prev, { role: 'user', content: input }]);
-    
-    // 执行工作流
+    // 执行工作流 (主组件会处理消息记录)
     handleExecute();
   };
   
@@ -57,71 +53,6 @@ const SimpleMode = ({
     }
   };
   
-  // 提取结果中的数据内容
-  const extractDataContent = (result) => {
-    if (!result) return '';
-    
-    try {
-      // 如果结果已经是对象
-      if (typeof result === 'object') {
-        // 提取 items 数组中的 data 字段
-        if (result.items && Array.isArray(result.items)) {
-          return result.items.map(item => item.data).join('\n');
-        }
-      }
-      
-      // 如果结果是字符串，尝试解析为 JSON
-      if (typeof result === 'string') {
-        try {
-          const parsed = JSON.parse(result);
-          if (parsed.items && Array.isArray(parsed.items)) {
-            return parsed.items.map(item => item.data).join('\n');
-          }
-        } catch (e) {
-          // 如果解析失败，返回原始字符串
-          return result;
-        }
-      }
-      
-      // 默认返回 JSON 字符串化的结果
-      return typeof result === 'object' ? JSON.stringify(result, null, 2) : result.toString();
-    } catch (error) {
-      console.error('提取结果数据失败:', error);
-      return String(result);
-    }
-  };
-  
-  // 当执行状态变化或结果更新时，更新消息列表
-  useEffect(() => {
-    // 执行开始时，添加一条正在执行的消息
-    if (executing && messages.length > 0 && messages[messages.length - 1]?.role !== 'loading') {
-      setMessages(prev => [...prev, { role: 'loading', content: '正在处理...' }]);
-    }
-    
-    // 执行结束且有结果时，添加结果消息
-    if (!executing && result && messages.length > 0 && messages[messages.length - 1]?.role !== 'assistant') {
-      // 移除loading消息
-      const newMessages = messages.filter(m => m.role !== 'loading');
-      setMessages([
-        ...newMessages, 
-        { 
-          role: 'assistant', 
-          content: extractDataContent(result)
-        }
-      ]);
-    }
-    
-    // 执行出错时
-    if (!executing && error && messages.length > 0 && messages[messages.length - 1]?.role !== 'error') {
-      // 移除loading消息
-      const newMessages = messages.filter(m => m.role !== 'loading');
-      setMessages([
-        ...newMessages, 
-        { role: 'error', content: error }
-      ]);
-    }
-  }, [executing, result, error, messages]);
-  
   // 消息更新后滚动到底部
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -129,100 +60,243 @@ const SimpleMode = ({
     }
   }, [messages]);
   
+  // 格式化对话时间
+  const formatConversationTime = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      return format(date, 'yyyy-MM-dd HH:mm:ss');
+    } catch (error) {
+      return dateString;
+    }
+  };
+  
+  // 截取对话预览内容
+  const getConversationPreview = (conversation) => {
+    const messages = conversations.find(c => c.id === conversation.id)?.messages || [];
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      return lastMessage.content.substring(0, 30) + (lastMessage.content.length > 30 ? '...' : '');
+    }
+    return '无消息';
+  };
+  
   return (
-    <Card className="flex flex-col h-[calc(100vh-190px)] mt-4">
-      {/* 聊天历史区域 */}
-      <ScrollArea 
-        ref={scrollRef} 
-        className="flex-1 py-1 px-4 max-h-[80%] min-h-[76%] overflow-y-auto"
-      >
-        <div className="space-y-4">
-          {messages.map((message, index) => {
-            if (message.role === 'system') {
-              return (
-                <div key={index} className="bg-gray-100 rounded-lg p-3 mx-12 text-center text-sm text-gray-500">
-                  {message.content}
-                </div>
-              );
-            }
-            
-            if (message.role === 'user') {
-              return (
-                <div key={index} className="flex justify-end">
-                  <div className="bg-blue-500 text-white rounded-lg p-3 max-w-[80%]">
-                    {message.content}
+    <div className="flex h-[calc(100vh-190px)] mt-4">
+      {/* 对话历史侧边栏 */}
+      {sidebarOpen && (
+        <Card className="w-64 mr-2 flex-shrink-0 flex flex-col h-full overflow-hidden">
+          <CardHeader className="px-3 py-2">
+            <CardTitle className="text-md flex justify-between items-center">
+              <span>对话历史</span>
+              <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <Separator />
+          <ScrollArea className="flex-1">
+            {conversations.length === 0 ? (
+              <div className="p-4 text-center text-gray-500">没有历史对话</div>
+            ) : (
+              <div className="p-2 space-y-2">
+                {conversations.map(conversation => (
+                  <div 
+                    key={conversation.id}
+                    className={cn(
+                      "p-2 rounded cursor-pointer hover:bg-gray-100 transition-colors",
+                      conversation.id === conversationId ? "bg-gray-100" : ""
+                    )}
+                    onClick={() => switchConversation(conversation.id)}
+                  >
+                    <div className="flex items-center">
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      <span className="text-sm font-medium truncate flex-1">
+                        {format(new Date(conversation.created_at), 'MM-dd HH:mm')}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1 truncate">
+                      {conversation.id === conversationId ? '当前对话' : getConversationPreview(conversation)}
+                    </p>
                   </div>
-                </div>
-              );
-            }
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </Card>
+      )}
+      
+      {/* 聊天主界面 */}
+      <Card className="flex flex-col flex-1">
+        <CardHeader className="px-4 py-2 border-b flex-row justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Button 
+              variant={sidebarOpen ? "secondary" : "outline"} 
+              size="sm" 
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+              <MessageSquare className="h-4 w-4 mr-1" />
+              <span className="text-sm">历史</span>
+            </Button>
             
-            if (message.role === 'assistant') {
-              return (
-                <div key={index} className="flex justify-start">
-                  <div className="bg-gray-200 rounded-lg p-3 max-w-[80%]">
-                    <pre className="whitespace-pre-wrap font-sans text-sm">
+            {conversationId && (
+              <div className="text-sm text-gray-500">
+                ID: {conversationId.substring(0, 8)}...
+              </div>
+            )}
+          </div>
+          
+          <div className="flex space-x-2">
+            <Button variant="ghost" size="sm" onClick={() => window.location.reload()}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        
+        {/* 聊天历史区域 */}
+        <ScrollArea 
+          ref={scrollRef} 
+          className="flex-1 py-1 px-4 overflow-y-auto"
+        >
+          {loadingConversation ? (
+            <div className="flex justify-center my-4">
+              <div className="animate-spin h-5 w-5 border-2 border-gray-500 rounded-full border-t-transparent"></div>
+              <span className="ml-2">加载对话历史...</span>
+            </div>
+          ) : (
+            <div className="space-y-4 py-4">
+              {messages.map((message, index) => {
+                if (message.role === 'system') {
+                  return (
+                    <div key={index} className="bg-gray-100 rounded-lg p-3 mx-12 text-center text-sm text-gray-500">
                       {message.content}
-                    </pre>
-                  </div>
-                </div>
-              );
-            }
-            
-            if (message.role === 'error') {
-              return (
-                <div key={index} className="flex justify-start">
-                  <Alert variant="destructive" className="max-w-[80%]">
-                    <AlertDescription>{message.content}</AlertDescription>
-                  </Alert>
-                </div>
-              );
-            }
-            
-            if (message.role === 'loading') {
-              return (
-                <div key={index} className="flex justify-start">
+                    </div>
+                  );
+                }
+                
+                if (message.role === 'user') {
+                  return (
+                    <div key={index} className="flex justify-end">
+                      <div className="bg-blue-500 text-white rounded-lg p-3 max-w-[80%]">
+                        {message.content}
+                        {message.time && (
+                          <div className="text-right mt-1 text-xs opacity-70">
+                            {format(new Date(message.time), 'HH:mm:ss')}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+                
+                if (message.role === 'assistant') {
+                  return (
+                    <div key={index} className="flex justify-start">
+                      <div className="bg-gray-200 rounded-lg p-3 max-w-[80%]">
+                        <pre className="whitespace-pre-wrap font-sans text-sm">
+                          {message.content}
+                        </pre>
+                        {message.time && (
+                          <div className="text-left mt-1 text-xs text-gray-500">
+                            {format(new Date(message.time), 'HH:mm:ss')}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+                
+                if (message.role === 'error') {
+                  return (
+                    <div key={index} className="flex justify-start">
+                      <Alert variant="destructive" className="max-w-[80%]">
+                        <AlertDescription>{message.content}</AlertDescription>
+                      </Alert>
+                    </div>
+                  );
+                }
+                
+                if (message.role === 'loading') {
+                  return (
+                    <div key={index} className="flex justify-start">
+                      <div className="bg-gray-200 rounded-lg p-3 flex items-center max-w-[80%]">
+                        <div className="animate-pulse flex space-x-1">
+                          <div className="h-2 w-2 bg-gray-500 rounded-full"></div>
+                          <div className="h-2 w-2 bg-gray-500 rounded-full"></div>
+                          <div className="h-2 w-2 bg-gray-500 rounded-full"></div>
+                        </div>
+                        <span className="ml-2">{message.content}</span>
+                      </div>
+                    </div>
+                  );
+                }
+                
+                return null;
+              })}
+              
+              {/* 当前正在执行 */}
+              {executing && (
+                <div className="flex justify-start">
                   <div className="bg-gray-200 rounded-lg p-3 flex items-center max-w-[80%]">
                     <div className="animate-pulse flex space-x-1">
                       <div className="h-2 w-2 bg-gray-500 rounded-full"></div>
                       <div className="h-2 w-2 bg-gray-500 rounded-full"></div>
                       <div className="h-2 w-2 bg-gray-500 rounded-full"></div>
                     </div>
-                    <span className="ml-2">{message.content}</span>
+                    <span className="ml-2">工作流正在执行...</span>
                   </div>
                 </div>
-              );
-            }
-            
-            return null;
-          })}
-          <div ref={messagesEndRef} />
-        </div>
-      </ScrollArea>
-      
-      {/* 输入区域 */}
-      <CardFooter className="border-t p-4 pb-1 max-h-[18%]">
-        <div className="flex w-full space-x-2">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="请输入内容..."
-            className="flex-1 min-h-[60px] resize-none"
-            disabled={executing}
-          />
-          
-          {executing ? (
-            <Button variant="destructive" onClick={handleCancel} className="shrink-0">
-              <StopCircle className="h-5 w-5" />
-            </Button>
-          ) : (
-            <Button onClick={handleSubmit} className="shrink-0">
-              <Send className="h-5 w-5" />
-            </Button>
+              )}
+              
+              {/* 错误提示 */}
+              {error && !messages.find(m => m.role === 'error' && m.content === error) && (
+                <div className="flex justify-start">
+                  <Alert variant="destructive" className="max-w-[80%]">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                </div>
+              )}
+              
+              <div ref={messagesEndRef} />
+            </div>
           )}
-        </div>
-      </CardFooter>
-    </Card>
+        </ScrollArea>
+        
+        {/* 输入区域 */}
+        <CardFooter className="border-t p-4 pb-2 max-h-[18%]">
+          <div className="flex w-full space-x-2">
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={recordConversation ? "输入内容并记录对话..." : "输入内容..."}
+              className="flex-1 min-h-[60px] resize-none"
+              disabled={executing || loadingConversation}
+            />
+            
+            {executing ? (
+              <Button variant="destructive" onClick={handleCancel} className="shrink-0">
+                <StopCircle className="h-5 w-5" />
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleSubmit} 
+                className="shrink-0"
+                disabled={loadingConversation}
+              >
+                <Send className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
+          
+          {/* 对话状态提示 */}
+          {!recordConversation && (
+            <div className="text-xs text-amber-500 mt-1">
+              注意: 对话记录功能已关闭，对话内容不会被保存
+            </div>
+          )}
+        </CardFooter>
+      </Card>
+    </div>
   );
 };
 

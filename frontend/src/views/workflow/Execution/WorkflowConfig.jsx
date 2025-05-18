@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, Save, Check } from 'lucide-react';
+import { Settings, Save, Check, Info } from 'lucide-react';
 import { 
   Sheet, 
   SheetTrigger, 
@@ -16,6 +16,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from "sonner";
+import { Switch } from '@/components/ui/switch';
+import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Textarea } from '@/components/ui/textarea';
 
 /**
  * @component WorkflowConfig
@@ -26,9 +30,11 @@ const WorkflowConfig = ({
   setExecutionOptions,
   workflow
 }) => {
-  // 临时存储配置，确认后才应用
-  const [tempOptions, setTempOptions] = useState({...executionOptions});
-  const [isSaving, setIsSaving] = useState(false);
+  // 显示高级配置弹窗的状态
+  const [open, setOpen] = useState(false);
+  
+  // 本地修改临时存储
+  const [localOptions, setLocalOptions] = useState({ ...executionOptions });
   
   // 从localStorage加载配置
   useEffect(() => {
@@ -40,7 +46,7 @@ const WorkflowConfig = ({
           // 更新父组件状态
           setExecutionOptions(parsedOptions);
           // 更新本地临时状态
-          setTempOptions(parsedOptions);
+          setLocalOptions(parsedOptions);
         }
       } catch (error) {
         console.error('加载工作流配置失败:', error);
@@ -48,157 +54,149 @@ const WorkflowConfig = ({
     }
   }, [workflow?.id, setExecutionOptions]);
   
-  // 打开时初始化临时配置
-  const handleOpenChange = (open) => {
-    if (open) {
-      setTempOptions({...executionOptions});
-    }
+  // 更新执行选项
+  const updateOption = (key, value) => {
+    setLocalOptions(prev => ({ ...prev, [key]: value }));
   };
   
-  // 保存配置
-  const handleSave = () => {
-    setIsSaving(true);
-    
-    // 更新父组件状态
-    setExecutionOptions(tempOptions);
-    
-    // 保存到localStorage
-    if (workflow?.id) {
-      try {
-        localStorage.setItem(`workflow_config_${workflow.id}`, JSON.stringify(tempOptions));
-      } catch (error) {
-        console.error('保存工作流配置失败:', error);
-      }
-    }
-    
-    // 显示保存成功效果
-    setTimeout(() => {
-      setIsSaving(false);
-    }, 1000);
+  // 应用所有配置
+  const applyConfig = () => {
+    setExecutionOptions(localOptions);
+    setOpen(false);
   };
   
   return (
-    <Sheet onOpenChange={handleOpenChange}>
-      <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="bg-white hover:bg-gray-100">
-          <Settings className="h-5 w-5" />
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline">
+          <Settings className="h-4 w-4 mr-2" />
+          执行配置
         </Button>
-      </SheetTrigger>
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>工作流配置</SheetTitle>
-          <SheetDescription>
-            配置工作流"{workflow?.name || '未命名工作流'}"的执行选项
-          </SheetDescription>
-        </SheetHeader>
-        
-        <ScrollArea className="mt-6 h-[calc(100vh-180px)] px-4">
-          <div className="space-y-6 pl-2">
-            <div className="space-y-2">
-              <Label htmlFor="timeout-ms">超时时间 (毫秒)</Label>
-              <Input
-                id="timeout-ms"
-                type="number"
-                value={tempOptions.timeout}
-                onChange={(e) => setTempOptions({
-                  ...tempOptions,
-                  timeout: parseInt(e.target.value) || 60000
-                })}
-                min="1000"
-                step="1000"
-              />
-              <p className="text-xs text-gray-500">工作流执行的最长时间，超过将自动中断</p>
-            </div>
-
-            <Separator />
+      </PopoverTrigger>
+      <PopoverContent className="w-[400px] p-5">
+        <div className="space-y-5">
+          <div>
+            <h3 className="font-medium text-sm mb-2 flex items-center">
+              基本配置
+            </h3>
             
-            <div className="space-y-4">
-              <Label>执行选项</Label>
-              
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="debug-mode"
-                  checked={tempOptions.debug}
-                  onCheckedChange={(checked) => setTempOptions({
-                    ...tempOptions,
-                    debug: checked
-                  })}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="validateStartEnd" className="cursor-pointer">校验首尾节点</Label>
+                  <div className="relative group">
+                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    <span className="absolute -top-2 left-full ml-2 w-48 rounded bg-gray-800 px-2 py-1 text-xs text-gray-100 opacity-0 transition-opacity group-hover:opacity-100 z-10">
+                      校验工作流必须以开始节点和结束节点作为首尾
+                    </span>
+                  </div>
+                </div>
+                <Switch
+                  id="validateStartEnd"
+                  checked={localOptions.validateStartEnd}
+                  onCheckedChange={value => updateOption('validateStartEnd', value)}
                 />
-                <Label htmlFor="debug-mode" className="text-sm font-medium">
-                  调试模式
-                </Label>
               </div>
-              <p className="text-xs text-gray-500 ml-6">启用调试模式会记录更详细的执行过程</p>
               
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="validate-start-end"
-                  checked={tempOptions.validateStartEnd}
-                  onCheckedChange={(checked) => setTempOptions({
-                    ...tempOptions,
-                    validateStartEnd: checked
-                  })}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="timeout" className="cursor-pointer">超时时间 (毫秒)</Label>
+                  <div className="relative group">
+                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    <span className="absolute -top-2 left-full ml-2 w-48 rounded bg-gray-800 px-2 py-1 text-xs text-gray-100 opacity-0 transition-opacity group-hover:opacity-100 z-10">
+                      工作流执行的最大时间限制，超时将中断执行
+                    </span>
+                  </div>
+                </div>
+                <Input
+                  id="timeout"
+                  type="number"
+                  min="1000"
+                  max="300000"
+                  step="1000"
+                  value={localOptions.timeout}
+                  onChange={e => updateOption('timeout', parseInt(e.target.value))}
+                  className="w-28"
                 />
-                <Label htmlFor="validate-start-end" className="text-sm font-medium">
-                  校验工作流首尾节点
-                </Label>
               </div>
-              <p className="text-xs text-gray-500 ml-6">要求首节点为开始节点，尾节点为结束节点</p>
               
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="trace-execution"
-                  checked={tempOptions.traceExecution ?? false}
-                  onCheckedChange={(checked) => setTempOptions({
-                    ...tempOptions,
-                    traceExecution: checked
-                  })}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="debug" className="cursor-pointer">调试模式</Label>
+                  <div className="relative group">
+                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    <span className="absolute -top-2 left-full ml-2 w-48 rounded bg-gray-800 px-2 py-1 text-xs text-gray-100 opacity-0 transition-opacity group-hover:opacity-100 z-10">
+                      开启调试模式，将记录更详细的日志
+                    </span>
+                  </div>
+                </div>
+                <Switch
+                  id="debug"
+                  checked={localOptions.debug}
+                  onCheckedChange={value => updateOption('debug', value)}
                 />
-                <Label htmlFor="trace-execution" className="text-sm font-medium">
-                  追踪执行步骤
-                </Label>
               </div>
-              <p className="text-xs text-gray-500 ml-6">记录每个节点的执行耗时和数据流转</p>
-              
-              <Separator />
-              
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="fail-on-error"
-                  checked={tempOptions.failOnError !== false}
-                  onCheckedChange={(checked) => setTempOptions({
-                    ...tempOptions,
-                    failOnError: checked
-                  })}
-                />
-                <Label htmlFor="fail-on-error" className="text-sm font-medium">
-                  出错时中断执行
-                </Label>
-              </div>
-              <p className="text-xs text-gray-500 ml-6">节点执行出错时停止工作流，否则尝试继续执行</p>
             </div>
           </div>
-        </ScrollArea>
-        
-        <SheetFooter className="pt-4 mt-2 border-t">
-          <Button 
-            onClick={handleSave} 
-            className="w-full" 
-            disabled={isSaving}
-          >
-            {isSaving ? (
-              <>
-                <Check className="h-4 w-4 mr-2 text-green-500" /> 已保存
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" /> 保存配置
-              </>
-            )}
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+          
+          <Separator className="my-4" />
+          
+          <div>
+            <h3 className="font-medium text-sm mb-2 flex items-center">
+              对话选项
+            </h3>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="recordConversation" className="cursor-pointer">记录对话</Label>
+                  <div className="relative group">
+                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    <span className="absolute -top-2 left-full ml-2 w-48 rounded bg-gray-800 px-2 py-1 text-xs text-gray-100 opacity-0 transition-opacity group-hover:opacity-100 z-10">
+                      将工作流输入输出保存为对话记录
+                    </span>
+                  </div>
+                </div>
+                <Switch
+                  id="recordConversation"
+                  checked={localOptions.recordConversation}
+                  onCheckedChange={value => updateOption('recordConversation', value)}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="recordNodeExecution" className="cursor-pointer">记录节点执行</Label>
+                  <div className="relative group">
+                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    <span className="absolute -top-2 left-full ml-2 w-48 rounded bg-gray-800 px-2 py-1 text-xs text-gray-100 opacity-0 transition-opacity group-hover:opacity-100 z-10">
+                      记录每个节点的执行状态和结果
+                    </span>
+                  </div>
+                </div>
+                <Switch
+                  id="recordNodeExecution"
+                  checked={localOptions.recordNodeExecution}
+                  onCheckedChange={value => updateOption('recordNodeExecution', value)}
+                  disabled={!localOptions.recordConversation}
+                />
+              </div>
+            </div>
+          </div>
+          
+          <Separator className="my-4" />
+          
+          <div className="pt-2 flex justify-between">
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              取消
+            </Button>
+            <Button onClick={applyConfig}>
+              应用配置
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 };
 

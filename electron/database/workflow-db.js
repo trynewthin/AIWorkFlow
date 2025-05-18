@@ -29,6 +29,8 @@ class WorkflowDb extends ModuleDbBase {
     this.workflowTable = 'workflow';
     this.nodeTable = 'workflow_node';
     this.workflowUserTable = 'workflow_user'; // 添加工作流用户关联表名
+    this.conversationTable = 'conversation'; // 添加对话轮次表名
+    this.messageTable = 'conversation_message'; // 添加对话内容表名
     
     // 初始化表结构
     this._initTable();
@@ -80,6 +82,30 @@ class WorkflowDb extends ModuleDbBase {
         );
       `;
       this.db.exec(workflowUserTableSql);
+      
+      // 创建对话轮次表
+      const conversationTableSql = `
+        CREATE TABLE IF NOT EXISTS ${this.conversationTable} (
+          id TEXT PRIMARY KEY,
+          workflow_id TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (workflow_id) REFERENCES ${this.workflowTable}(id) ON DELETE CASCADE
+        );
+      `;
+      this.db.exec(conversationTableSql);
+      
+      // 创建对话内容表
+      const messageTableSql = `
+        CREATE TABLE IF NOT EXISTS ${this.messageTable} (
+          id TEXT PRIMARY KEY,
+          conversation_id TEXT NOT NULL,
+          content TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (conversation_id) REFERENCES ${this.conversationTable}(id) ON DELETE CASCADE
+        );
+      `;
+      this.db.exec(messageTableSql);
       
       logger.info(`[WorkflowDb] 工作流相关表结构初始化完成`);
     } catch (error) {
@@ -678,6 +704,249 @@ class WorkflowDb extends ModuleDbBase {
       return result.count > 0;
     } catch (error) {
       logger.error(`[WorkflowDb] 检查工作流所有权失败: ${error.message}`);
+      throw error;
+    }
+  }
+
+  // ===== 对话轮次相关操作 =====
+
+  /**
+   * @method createConversation
+   * @description 创建新对话轮次
+   * @param {Object} conversation 对话轮次数据
+   * @param {string} [conversation.id] 可选的自定义ID，不提供则自动生成
+   * @param {string} conversation.workflow_id 工作流ID
+   * @returns {string} 对话轮次ID
+   */
+  async createConversation({ id, workflow_id }) {
+    try {
+      // 检查工作流是否存在
+      const workflow = await this.getWorkflow(workflow_id);
+      if (!workflow) {
+        throw new Error(`工作流不存在: ${workflow_id}`);
+      }
+      
+      const conversationId = id || randomUUID();
+      const stmt = this.db.prepare(
+        `INSERT INTO ${this.conversationTable} (id, workflow_id) VALUES (?, ?)`
+      );
+      
+      stmt.run(conversationId, workflow_id);
+      
+      logger.info(`[WorkflowDb] 创建对话轮次成功: ${conversationId}`);
+      return conversationId;
+    } catch (error) {
+      logger.error(`[WorkflowDb] 创建对话轮次失败: ${error.message}`);
+      throw error;
+    }
+  }
+  
+  /**
+   * @method getConversation
+   * @description 获取对话轮次信息
+   * @param {string} id 对话轮次ID
+   * @returns {Object|null} 对话轮次信息，不存在则返回 null
+   */
+  async getConversation(id) {
+    try {
+      const stmt = this.db.prepare(
+        `SELECT * FROM ${this.conversationTable} WHERE id = ?`
+      );
+      
+      const conversation = stmt.get(id);
+      
+      return conversation || null;
+    } catch (error) {
+      logger.error(`[WorkflowDb] 获取对话轮次失败: ${error.message}`);
+      throw error;
+    }
+  }
+  
+  /**
+   * @method getWorkflowConversations
+   * @description 获取工作流的所有对话轮次
+   * @param {string} workflowId 工作流ID
+   * @returns {Array<Object>} 对话轮次列表，按创建时间降序排列
+   */
+  async getWorkflowConversations(workflowId) {
+    try {
+      const stmt = this.db.prepare(
+        `SELECT * FROM ${this.conversationTable} WHERE workflow_id = ? ORDER BY created_at DESC`
+      );
+      
+      const conversations = stmt.all(workflowId);
+      
+      return conversations;
+    } catch (error) {
+      logger.error(`[WorkflowDb] 获取工作流对话轮次失败: ${error.message}`);
+      throw error;
+    }
+  }
+  
+  /**
+   * @method deleteConversation
+   * @description 删除对话轮次及其所有消息
+   * @param {string} id 对话轮次ID
+   * @returns {boolean} 删除成功返回 true，对话轮次不存在返回 false
+   */
+  async deleteConversation(id) {
+    try {
+      const conversation = await this.getConversation(id);
+      if (!conversation) {
+        logger.warn(`[WorkflowDb] 删除对话轮次失败: 对话轮次不存在 ${id}`);
+        return false;
+      }
+      
+      // 由于设置了外键级联删除，删除对话轮次时会自动删除所有关联消息
+      const stmt = this.db.prepare(
+        `DELETE FROM ${this.conversationTable} WHERE id = ?`
+      );
+      
+      const result = stmt.run(id);
+      
+      logger.info(`[WorkflowDb] 删除对话轮次成功: ${id}`);
+      return result.changes > 0;
+    } catch (error) {
+      logger.error(`[WorkflowDb] 删除对话轮次失败: ${error.message}`);
+      throw error;
+    }
+  }
+  
+  // ===== 对话内容相关操作 =====
+  
+  /**
+   * @method addMessage
+   * @description 添加对话消息
+   * @param {Object} message 消息数据
+   * @param {string} [message.id] 可选的自定义ID，不提供则自动生成
+   * @param {string} message.conversation_id 对话轮次ID
+   * @param {string} message.content 消息内容
+   * @returns {string} 消息ID
+   */
+  async addMessage({ id, conversation_id, content }) {
+    try {
+      // 检查对话轮次是否存在
+      const conversation = await this.getConversation(conversation_id);
+      if (!conversation) {
+        throw new Error(`对话轮次不存在: ${conversation_id}`);
+      }
+      
+      const messageId = id || randomUUID();
+      const stmt = this.db.prepare(
+        `INSERT INTO ${this.messageTable} (id, conversation_id, content) VALUES (?, ?, ?)`
+      );
+      
+      stmt.run(messageId, conversation_id, content);
+      
+      // 更新对话轮次的最后更新时间
+      const updateStmt = this.db.prepare(
+        `UPDATE ${this.conversationTable} SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`
+      );
+      updateStmt.run(conversation_id);
+      
+      logger.info(`[WorkflowDb] 添加对话消息成功: ${messageId}`);
+      return messageId;
+    } catch (error) {
+      logger.error(`[WorkflowDb] 添加对话消息失败: ${error.message}`);
+      throw error;
+    }
+  }
+  
+  /**
+   * @method getMessage
+   * @description 获取消息信息
+   * @param {string} id 消息ID
+   * @returns {Object|null} 消息信息，不存在则返回 null
+   */
+  async getMessage(id) {
+    try {
+      const stmt = this.db.prepare(
+        `SELECT * FROM ${this.messageTable} WHERE id = ?`
+      );
+      
+      const message = stmt.get(id);
+      
+      return message || null;
+    } catch (error) {
+      logger.error(`[WorkflowDb] 获取消息失败: ${error.message}`);
+      throw error;
+    }
+  }
+  
+  /**
+   * @method getConversationMessages
+   * @description 获取对话轮次的所有消息
+   * @param {string} conversationId 对话轮次ID
+   * @returns {Array<Object>} 消息列表，按创建时间升序排列
+   */
+  async getConversationMessages(conversationId) {
+    try {
+      const stmt = this.db.prepare(
+        `SELECT * FROM ${this.messageTable} WHERE conversation_id = ? ORDER BY created_at ASC`
+      );
+      
+      const messages = stmt.all(conversationId);
+      
+      return messages;
+    } catch (error) {
+      logger.error(`[WorkflowDb] 获取对话消息列表失败: ${error.message}`);
+      throw error;
+    }
+  }
+  
+  /**
+   * @method updateMessage
+   * @description 更新消息内容
+   * @param {string} id 消息ID
+   * @param {string} content 新的消息内容
+   * @returns {boolean} 更新成功返回 true，消息不存在返回 false
+   */
+  async updateMessage(id, content) {
+    try {
+      const message = await this.getMessage(id);
+      if (!message) {
+        logger.warn(`[WorkflowDb] 更新消息失败: 消息不存在 ${id}`);
+        return false;
+      }
+      
+      const stmt = this.db.prepare(
+        `UPDATE ${this.messageTable} SET content = ? WHERE id = ?`
+      );
+      
+      const result = stmt.run(content, id);
+      
+      logger.info(`[WorkflowDb] 更新消息成功: ${id}`);
+      return result.changes > 0;
+    } catch (error) {
+      logger.error(`[WorkflowDb] 更新消息失败: ${error.message}`);
+      throw error;
+    }
+  }
+  
+  /**
+   * @method deleteMessage
+   * @description 删除消息
+   * @param {string} id 消息ID
+   * @returns {boolean} 删除成功返回 true，消息不存在返回 false
+   */
+  async deleteMessage(id) {
+    try {
+      const message = await this.getMessage(id);
+      if (!message) {
+        logger.warn(`[WorkflowDb] 删除消息失败: 消息不存在 ${id}`);
+        return false;
+      }
+      
+      const stmt = this.db.prepare(
+        `DELETE FROM ${this.messageTable} WHERE id = ?`
+      );
+      
+      const result = stmt.run(id);
+      
+      logger.info(`[WorkflowDb] 删除消息成功: ${id}`);
+      return result.changes > 0;
+    } catch (error) {
+      logger.error(`[WorkflowDb] 删除消息失败: ${error.message}`);
       throw error;
     }
   }

@@ -5,7 +5,9 @@
 
 const { logger } = require('ee-core/log');
 const { getWorkflowService } = require('../services/WorkflowService');
+const { getConversationService } = require('../services/ConversationService'); // 导入对话服务
 const workflowService = getWorkflowService(); // 获取服务实例
+const conversationService = getConversationService(); // 获取对话服务实例
 const { getUserDb } = require('../../database'); // 导入用户数据库服务
 
 const { getDefaultFlowConfig, getDefaultWorkConfig } = require('../../coreconfigs/services');
@@ -279,6 +281,9 @@ class WorkflowController {
       // 设置默认的执行选项，validateStartEnd控制是否校验首尾节点
       const executionOptions = {
         validateStartEnd: true, // 默认启用首尾节点校验
+        recordConversation: false, // 默认不记录对话
+        recordNodeExecution: false, // 默认不记录节点执行过程
+        recordIntermediateResults: false, // 默认不记录中间结果
         ...options
       };
       
@@ -432,6 +437,234 @@ class WorkflowController {
     } catch (error) {
       logger.error(`[WorkflowController] 获取工作流所有者失败: ${error.message}`);
       return { code: 500, message: `获取工作流所有者失败: ${error.message}`, success: false };
+    }
+  }
+
+  /**
+   * 创建工作流对话轮次
+   */
+  async createWorkflowConversation(params) {
+    try {
+      const { workflowId } = params;
+      
+      if (!workflowId) {
+        return { code: 400, message: '工作流ID不能为空', success: false };
+      }
+      
+      const conversationId = await workflowService.createWorkflowConversation(workflowId);
+      return { code: 200, data: { conversationId }, success: true };
+    } catch (error) {
+      logger.error(`[WorkflowController] 创建工作流对话轮次失败: ${error.message}`);
+      return { code: 500, message: `创建工作流对话轮次失败: ${error.message}`, success: false };
+    }
+  }
+  
+  /**
+   * 获取工作流当前关联的对话轮次
+   */
+  async getWorkflowCurrentConversation(params) {
+    try {
+      const { workflowId } = params;
+      
+      if (!workflowId) {
+        return { code: 400, message: '工作流ID不能为空', success: false };
+      }
+      
+      const conversationId = await workflowService.getWorkflowCurrentConversation(workflowId);
+      
+      if (!conversationId) {
+        return { code: 404, message: '工作流未关联对话轮次', success: false };
+      }
+      
+      return { code: 200, data: { conversationId }, success: true };
+    } catch (error) {
+      logger.error(`[WorkflowController] 获取工作流当前对话轮次失败: ${error.message}`);
+      return { code: 500, message: `获取工作流当前对话轮次失败: ${error.message}`, success: false };
+    }
+  }
+  
+  /**
+   * 获取工作流的所有对话轮次
+   */
+  async getWorkflowConversations(params) {
+    try {
+      const { workflowId } = params;
+      
+      if (!workflowId) {
+        return { code: 400, message: '工作流ID不能为空', success: false };
+      }
+      
+      const conversations = await workflowService.getWorkflowConversations(workflowId);
+      return { code: 200, data: conversations, success: true };
+    } catch (error) {
+      logger.error(`[WorkflowController] 获取工作流对话轮次列表失败: ${error.message}`);
+      return { code: 500, message: `获取工作流对话轮次列表失败: ${error.message}`, success: false };
+    }
+  }
+  
+  /**
+   * 获取对话消息历史
+   */
+  async getConversationMessages(params) {
+    try {
+      const { conversationId } = params;
+      
+      if (!conversationId) {
+        return { code: 400, message: '对话轮次ID不能为空', success: false };
+      }
+      
+      const messages = await conversationService.getConversationMessages(conversationId);
+      return { code: 200, data: messages, success: true };
+    } catch (error) {
+      logger.error(`[WorkflowController] 获取对话消息历史失败: ${error.message}`);
+      return { code: 500, message: `获取对话消息历史失败: ${error.message}`, success: false };
+    }
+  }
+  
+  /**
+   * 添加用户消息到对话
+   */
+  async addUserMessage(params) {
+    try {
+      const { conversationId, content } = params;
+      
+      if (!conversationId) {
+        return { code: 400, message: '对话轮次ID不能为空', success: false };
+      }
+      
+      if (!content) {
+        return { code: 400, message: '消息内容不能为空', success: false };
+      }
+      
+      const messageId = await conversationService.addUserMessage(conversationId, content);
+      return { code: 200, data: { messageId }, success: true };
+    } catch (error) {
+      logger.error(`[WorkflowController] 添加用户消息失败: ${error.message}`);
+      return { code: 500, message: `添加用户消息失败: ${error.message}`, success: false };
+    }
+  }
+  
+  /**
+   * 添加AI消息到对话
+   */
+  async addAIMessage(params) {
+    try {
+      const { conversationId, content } = params;
+      
+      if (!conversationId) {
+        return { code: 400, message: '对话轮次ID不能为空', success: false };
+      }
+      
+      if (!content) {
+        return { code: 400, message: '消息内容不能为空', success: false };
+      }
+      
+      const messageId = await conversationService.addAIMessage(conversationId, content);
+      return { code: 200, data: { messageId }, success: true };
+    } catch (error) {
+      logger.error(`[WorkflowController] 添加AI消息失败: ${error.message}`);
+      return { code: 500, message: `添加AI消息失败: ${error.message}`, success: false };
+    }
+  }
+  
+  /**
+   * 删除对话轮次
+   */
+  async deleteConversation(params) {
+    try {
+      const { conversationId } = params;
+      
+      if (!conversationId) {
+        return { code: 400, message: '对话轮次ID不能为空', success: false };
+      }
+      
+      const result = await conversationService.deleteConversation(conversationId);
+      
+      if (!result) {
+        return { code: 404, message: '对话轮次不存在', success: false };
+      }
+      
+      return { code: 200, data: true, success: true };
+    } catch (error) {
+      logger.error(`[WorkflowController] 删除对话轮次失败: ${error.message}`);
+      return { code: 500, message: `删除对话轮次失败: ${error.message}`, success: false };
+    }
+  }
+  
+  /**
+   * 获取对话统计信息
+   */
+  async getConversationStats(params) {
+    try {
+      const { conversationId } = params;
+      
+      if (!conversationId) {
+        return { code: 400, message: '对话轮次ID不能为空', success: false };
+      }
+      
+      const stats = await conversationService.getConversationStats(conversationId);
+      return { code: 200, data: stats, success: true };
+    } catch (error) {
+      logger.error(`[WorkflowController] 获取对话统计信息失败: ${error.message}`);
+      return { code: 500, message: `获取对话统计信息失败: ${error.message}`, success: false };
+    }
+  }
+  
+  /**
+   * 导出对话历史为JSON
+   */
+  async exportConversationAsJson(params) {
+    try {
+      const { conversationId } = params;
+      
+      if (!conversationId) {
+        return { code: 400, message: '对话轮次ID不能为空', success: false };
+      }
+      
+      const jsonData = await conversationService.exportConversationAsJson(conversationId);
+      return { code: 200, data: jsonData, success: true };
+    } catch (error) {
+      logger.error(`[WorkflowController] 导出对话历史失败: ${error.message}`);
+      return { code: 500, message: `导出对话历史失败: ${error.message}`, success: false };
+    }
+  }
+  
+  /**
+   * 执行工作流并记录对话（便捷方法）
+   */
+  async executeWorkflowWithConversation(params) {
+    try {
+      const { workflowId, input, conversationId, recordNodeExecution = false } = params;
+      
+      if (!workflowId) {
+        return { code: 400, message: '工作流ID不能为空', success: false };
+      }
+      
+      // 准备执行选项
+      const executionOptions = {
+        validateStartEnd: true,
+        recordConversation: true,
+        conversationId: conversationId, // 如果为空，自动使用工作流关联的当前对话ID或创建新对话
+        recordNodeExecution: recordNodeExecution,
+        recordIntermediateResults: false
+      };
+      
+      const result = await workflowService.executeWorkflow(workflowId, input, executionOptions);
+      
+      // 获取使用的对话ID
+      const usedConversationId = executionOptions.conversationId;
+      
+      return { 
+        code: 200, 
+        data: {
+          result: result.toJSON(),
+          conversationId: usedConversationId
+        }, 
+        success: true 
+      };
+    } catch (error) {
+      logger.error(`[WorkflowController] 执行工作流并记录对话失败: ${error.message}`);
+      return { code: 500, message: `执行工作流并记录对话失败: ${error.message}`, success: false };
     }
   }
 }

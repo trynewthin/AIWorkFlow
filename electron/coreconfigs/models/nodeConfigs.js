@@ -101,6 +101,39 @@ const nodeConfigurations = {
       pipelineType: PipelineType.TEXT,
     }
   },
+  [NodeKey.MEMORY]: {
+    classConfig: {
+      id: 'memory',
+      name: '对话记忆节点',
+      type: 'processor',
+      tag: 'memory',
+      description: '加载指定轮次历史消息并与当前消息拼接，使用LLM生成回复',
+      version: '1.0.0',
+      supportedInputPipelines: [PipelineType.TEXT],
+      supportedOutputPipelines: [PipelineType.TEXT]
+    },
+    defaultFlowConfig: {
+      nodeName: '对话记忆节点',
+      status: Status.IDLE,
+      position: { x: 0, y: 0 },
+      dialogueId: 'default',     // 对话ID，用于区分不同对话
+      historyRounds: 5           // 历史消息轮次，从工作配置移到流配置
+    },
+    defaultWorkConfig: {
+      // 消息格式配置
+      messageFormat: 'standard',  // 消息格式化方式
+      roleMappings: {             // 角色映射配置
+        user: '用户',
+        assistant: '助手',
+        system: '系统'
+      },
+      
+      // 聊天模型配置
+      model: 'deepseek-v3',      // 默认使用的LLM模型
+      systemPrompt: '你是一个友好的助手，请基于历史对话记忆回答用户问题。', // 系统提示词
+      temperature: 0.7           // 温度参数
+    }
+  },
   [NodeKey.MERGE]: {
     classConfig: {
       id: 'merge',

@@ -31,7 +31,10 @@ class WorkflowExecutor {
       maxSteps: 100,   // 最大执行步数，防止无限循环
       timeout: 30000,  // 执行超时时间 (毫秒)
       failOnError: true, // 出错时是否中断执行
-      validateStartEnd: true // 是否校验首尾节点类型
+      validateStartEnd: true, // 是否校验首尾节点类型
+      recordConversation: false, // 是否记录对话
+      recordNodeExecution: false, // 是否记录节点执行过程
+      recordIntermediateResults: false // 是否记录中间结果
     };
   }
 
@@ -66,6 +69,10 @@ class WorkflowExecutor {
    * @param {string} workflowId 工作流ID
    * @param {Pipeline|Object} input 输入数据，Pipeline实例或原始数据
    * @param {Object} [executionOptions={}] 执行选项
+   * @param {boolean} [executionOptions.recordConversation=false] 是否记录对话
+   * @param {string} [executionOptions.conversationId] 对话轮次ID
+   * @param {boolean} [executionOptions.recordNodeExecution=false] 是否记录节点执行过程
+   * @param {boolean} [executionOptions.recordIntermediateResults=false] 是否记录中间结果
    * @returns {Promise<Pipeline>} 执行结果
    */
   async execute(workflowId, input, executionOptions = {}) {
@@ -105,12 +112,30 @@ class WorkflowExecutor {
       
       logger.info(`[WorkflowExecutor] 开始执行工作流: ${workflowId}, 节点数量: ${nodes.length}`);
 
+      // 获取对话服务（如果需要记录对话）
+      let conversationService = null;
+      if (config.recordConversation && config.conversationId) {
+        try {
+          conversationService = require('../../workflow/services/ConversationService').getConversationService();
+        } catch (error) {
+          logger.warn(`[WorkflowExecutor] 无法加载对话服务: ${error.message}`);
+        }
+      }
+
       // 执行每个节点
       for (let i = 0; i < nodes.length && i < config.maxSteps; i++) {
         const node = nodes[i];
         
         try {
           logger.info(`[WorkflowExecutor] 执行节点: ${node.id} (${node.type}), 顺序: ${node.order_index}`);
+          
+          // 记录节点执行开始
+          if (conversationService && config.recordNodeExecution) {
+            await conversationService.addSystemMessage(
+              config.conversationId, 
+              `开始执行节点: ${node.type} (${node.id})`
+            );
+          }
           
           // 创建并初始化节点实例
           const nodeInstance = await this.nodeFactory.createNode(
@@ -122,12 +147,37 @@ class WorkflowExecutor {
           // 执行节点
           const outputPipeline = await nodeInstance.process(currentPipeline);
           
+          // 记录中间结果
+          if (conversationService && config.recordIntermediateResults) {
+            const outputContent = this._formatPipelineForLogging(outputPipeline);
+            await conversationService.addSystemMessage(
+              config.conversationId, 
+              `节点 ${node.id} (${node.type}) 输出:\n${outputContent}`
+            );
+          }
+          
           // 更新当前管道
           currentPipeline = outputPipeline;
+          
+          // 记录节点执行完成
+          if (conversationService && config.recordNodeExecution) {
+            await conversationService.addSystemMessage(
+              config.conversationId, 
+              `节点 ${node.id} (${node.type}) 执行完成`
+            );
+          }
           
           logger.info(`[WorkflowExecutor] 节点 ${node.id} 执行完成`);
         } catch (error) {
           logger.error(`[WorkflowExecutor] 节点 ${node.id} 执行失败: ${error.message}`);
+          
+          // 记录错误
+          if (conversationService) {
+            await conversationService.addSystemMessage(
+              config.conversationId, 
+              `节点 ${node.id} (${node.type}) 执行错误: ${error.message}`
+            );
+          }
           
           if (config.failOnError) {
             throw new Error(`工作流执行中断于节点 ${node.id}: ${error.message}`);
@@ -160,6 +210,36 @@ class WorkflowExecutor {
     }
 
     return Pipeline.of(PipelineType.CUSTOM, DataType.ANY, input);
+  }
+  
+  /**
+   * @private
+   * @method _formatPipelineForLogging
+   * @description 格式化Pipeline对象用于日志记录
+   * @param {Pipeline} pipeline Pipeline对象
+   * @returns {string} 格式化后的字符串
+   */
+  _formatPipelineForLogging(pipeline) {
+    try {
+      if (!pipeline) {
+        return '[空管道]';
+      }
+      
+      let result = `管道类型: ${pipeline.type}, 数据类型: ${pipeline.dataType}\n`;
+      
+      if (pipeline.data === undefined || pipeline.data === null) {
+        result += '数据: null';
+      } else if (typeof pipeline.data === 'object') {
+        result += `数据:\n${JSON.stringify(pipeline.data, null, 2)}`;
+      } else {
+        result += `数据: ${pipeline.data}`;
+      }
+      
+      return result;
+    } catch (error) {
+      logger.warn(`[WorkflowExecutor] 格式化Pipeline失败: ${error.message}`);
+      return '[无法格式化的Pipeline]';
+    }
   }
 }
 

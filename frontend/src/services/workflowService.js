@@ -369,4 +369,287 @@ export async function getWorkflowOwner(workflowId) {
     console.error(`IPC call to ${apiRoutes.getWorkflowOwner} for id ${workflowId} failed:`, error);
     throw error;
   }
+}
+
+/**
+ * @async
+ * @function createWorkflowConversation
+ * @description 为工作流创建新的对话轮次
+ * @param {string} workflowId - 工作流ID
+ * @returns {Promise<string>} 创建的对话轮次ID
+ * @throws {Error} IPC调用失败或后端业务逻辑错误时
+ */
+export async function createWorkflowConversation(workflowId) {
+  try {
+    const result = await ipc.invoke(apiRoutes.createWorkflowConversation, { workflowId });
+    if (result && result.success) {
+      return result.data.conversationId;
+    } else {
+      const errorMessage = result ? result.message : '创建对话轮次失败';
+      console.error('createWorkflowConversation service error:', errorMessage, 'Raw result:', result);
+      throw new Error(errorMessage);
+    }
+  } catch (error) {
+    console.error(`IPC call to ${apiRoutes.createWorkflowConversation} for workflow ${workflowId} failed:`, error);
+    throw error;
+  }
+}
+
+/**
+ * @async
+ * @function getWorkflowCurrentConversation
+ * @description 获取工作流当前关联的对话轮次ID
+ * @param {string} workflowId - 工作流ID
+ * @returns {Promise<string|null>} 对话轮次ID，若工作流未关联对话则返回null
+ * @throws {Error} IPC调用失败或后端业务逻辑错误时
+ */
+export async function getWorkflowCurrentConversation(workflowId) {
+  try {
+    const result = await ipc.invoke(apiRoutes.getWorkflowCurrentConversation, { workflowId });
+    if (result && result.success) {
+      return result.data.conversationId;
+    } else if (result && result.code === 404) {
+      // 工作流未关联对话轮次
+      return null;
+    } else {
+      const errorMessage = result ? result.message : '获取当前对话轮次失败';
+      console.error('getWorkflowCurrentConversation service error:', errorMessage, 'Raw result:', result);
+      throw new Error(errorMessage);
+    }
+  } catch (error) {
+    console.error(`IPC call to ${apiRoutes.getWorkflowCurrentConversation} for workflow ${workflowId} failed:`, error);
+    throw error;
+  }
+}
+
+/**
+ * @async
+ * @function getWorkflowConversations
+ * @description 获取工作流的所有对话轮次
+ * @param {string} workflowId - 工作流ID
+ * @returns {Promise<Array<Object>>} 对话轮次列表
+ * @throws {Error} IPC调用失败或后端业务逻辑错误时
+ */
+export async function getWorkflowConversations(workflowId) {
+  try {
+    const result = await ipc.invoke(apiRoutes.getWorkflowConversations, { workflowId });
+    if (result && result.success) {
+      return result.data;
+    } else {
+      const errorMessage = result ? result.message : '获取对话轮次列表失败';
+      console.error('getWorkflowConversations service error:', errorMessage, 'Raw result:', result);
+      throw new Error(errorMessage);
+    }
+  } catch (error) {
+    console.error(`IPC call to ${apiRoutes.getWorkflowConversations} for workflow ${workflowId} failed:`, error);
+    throw error;
+  }
+}
+
+/**
+ * @async
+ * @function getConversationMessages
+ * @description 获取对话消息历史
+ * @param {string} conversationId - 对话轮次ID
+ * @returns {Promise<Array<Object>>} 消息列表
+ * @throws {Error} IPC调用失败或后端业务逻辑错误时
+ */
+export async function getConversationMessages(conversationId) {
+  try {
+    const result = await ipc.invoke(apiRoutes.getConversationMessages, { conversationId });
+    if (result && result.success) {
+      return result.data;
+    } else {
+      const errorMessage = result ? result.message : '获取对话消息失败';
+      console.error('getConversationMessages service error:', errorMessage, 'Raw result:', result);
+      throw new Error(errorMessage);
+    }
+  } catch (error) {
+    console.error(`IPC call to ${apiRoutes.getConversationMessages} for conversation ${conversationId} failed:`, error);
+    throw error;
+  }
+}
+
+/**
+ * @async
+ * @function addUserMessage
+ * @description 添加用户消息到对话
+ * @param {string} conversationId - 对话轮次ID
+ * @param {string} content - 消息内容
+ * @returns {Promise<string>} 消息ID
+ * @throws {Error} IPC调用失败或后端业务逻辑错误时
+ */
+export async function addUserMessage(conversationId, content) {
+  try {
+    const result = await ipc.invoke(apiRoutes.addUserMessage, { conversationId, content });
+    if (result && result.success) {
+      return result.data.messageId;
+    } else {
+      const errorMessage = result ? result.message : '添加用户消息失败';
+      console.error('addUserMessage service error:', errorMessage, 'Raw result:', result);
+      throw new Error(errorMessage);
+    }
+  } catch (error) {
+    console.error(`IPC call to ${apiRoutes.addUserMessage} for conversation ${conversationId} failed:`, error);
+    throw error;
+  }
+}
+
+/**
+ * @async
+ * @function addAIMessage
+ * @description 添加AI消息到对话
+ * @param {string} conversationId - 对话轮次ID
+ * @param {string} content - 消息内容
+ * @returns {Promise<string>} 消息ID
+ * @throws {Error} IPC调用失败或后端业务逻辑错误时
+ */
+export async function addAIMessage(conversationId, content) {
+  try {
+    const result = await ipc.invoke(apiRoutes.addAIMessage, { conversationId, content });
+    if (result && result.success) {
+      return result.data.messageId;
+    } else {
+      const errorMessage = result ? result.message : '添加AI消息失败';
+      console.error('addAIMessage service error:', errorMessage, 'Raw result:', result);
+      throw new Error(errorMessage);
+    }
+  } catch (error) {
+    console.error(`IPC call to ${apiRoutes.addAIMessage} for conversation ${conversationId} failed:`, error);
+    throw error;
+  }
+}
+
+/**
+ * @async
+ * @function deleteConversation
+ * @description 删除对话轮次及其所有消息
+ * @param {string} conversationId - 对话轮次ID
+ * @returns {Promise<boolean>} 删除成功则返回true
+ * @throws {Error} IPC调用失败或后端业务逻辑错误时
+ */
+export async function deleteConversation(conversationId) {
+  try {
+    const result = await ipc.invoke(apiRoutes.deleteConversation, { conversationId });
+    if (result && result.success) {
+      return result.data; // 通常是 true
+    } else {
+      const errorMessage = result ? result.message : '删除对话轮次失败';
+      console.error('deleteConversation service error:', errorMessage, 'Raw result:', result);
+      throw new Error(errorMessage);
+    }
+  } catch (error) {
+    console.error(`IPC call to ${apiRoutes.deleteConversation} for conversation ${conversationId} failed:`, error);
+    throw error;
+  }
+}
+
+/**
+ * @async
+ * @function getConversationStats
+ * @description 获取对话统计信息
+ * @param {string} conversationId - 对话轮次ID
+ * @returns {Promise<Object>} 统计信息对象
+ * @throws {Error} IPC调用失败或后端业务逻辑错误时
+ */
+export async function getConversationStats(conversationId) {
+  try {
+    const result = await ipc.invoke(apiRoutes.getConversationStats, { conversationId });
+    if (result && result.success) {
+      return result.data;
+    } else {
+      const errorMessage = result ? result.message : '获取对话统计信息失败';
+      console.error('getConversationStats service error:', errorMessage, 'Raw result:', result);
+      throw new Error(errorMessage);
+    }
+  } catch (error) {
+    console.error(`IPC call to ${apiRoutes.getConversationStats} for conversation ${conversationId} failed:`, error);
+    throw error;
+  }
+}
+
+/**
+ * @async
+ * @function exportConversationAsJson
+ * @description 导出对话历史为JSON格式
+ * @param {string} conversationId - 对话轮次ID
+ * @returns {Promise<string>} JSON格式的对话历史
+ * @throws {Error} IPC调用失败或后端业务逻辑错误时
+ */
+export async function exportConversationAsJson(conversationId) {
+  try {
+    const result = await ipc.invoke(apiRoutes.exportConversationAsJson, { conversationId });
+    if (result && result.success) {
+      return result.data;
+    } else {
+      const errorMessage = result ? result.message : '导出对话历史失败';
+      console.error('exportConversationAsJson service error:', errorMessage, 'Raw result:', result);
+      throw new Error(errorMessage);
+    }
+  } catch (error) {
+    console.error(`IPC call to ${apiRoutes.exportConversationAsJson} for conversation ${conversationId} failed:`, error);
+    throw error;
+  }
+}
+
+/**
+ * @async
+ * @function executeWorkflowWithConversation
+ * @description 执行工作流并记录对话
+ * @param {string} workflowId - 工作流ID
+ * @param {Object} input - 输入数据
+ * @param {Object} options - 执行选项
+ * @param {string} [options.conversationId] - 可选的对话轮次ID，不提供则使用工作流当前对话或创建新对话
+ * @param {boolean} [options.recordNodeExecution=false] - 是否记录节点执行过程
+ * @returns {Promise<{result: Object, conversationId: string}>} 执行结果和使用的对话ID
+ * @throws {Error} IPC调用失败或后端业务逻辑错误时
+ */
+export async function executeWorkflowWithConversation(workflowId, input, options = {}) {
+  try {
+    const { conversationId, recordNodeExecution = false } = options;
+    
+    const params = {
+      workflowId,
+      input,
+      conversationId,
+      recordNodeExecution
+    };
+    
+    const result = await ipc.invoke(apiRoutes.executeWorkflowWithConversation, params);
+    if (result && result.success) {
+      return result.data;
+    } else {
+      const errorMessage = result ? result.message : '执行工作流并记录对话失败';
+      console.error('executeWorkflowWithConversation service error:', errorMessage, 'Raw result:', result);
+      throw new Error(errorMessage);
+    }
+  } catch (error) {
+    console.error(`IPC call to ${apiRoutes.executeWorkflowWithConversation} for workflow ${workflowId} failed:`, error);
+    throw error;
+  }
+}
+
+/**
+ * @async
+ * @function getOrCreateConversation
+ * @description 获取工作流当前对话，如果不存在则创建新对话
+ * @param {string} workflowId - 工作流ID
+ * @returns {Promise<string>} 对话轮次ID
+ * @throws {Error} IPC调用失败或后端业务逻辑错误时
+ */
+export async function getOrCreateConversation(workflowId) {
+  try {
+    // 尝试获取当前对话
+    let conversationId = await getWorkflowCurrentConversation(workflowId);
+    
+    // 如果不存在，创建新对话
+    if (!conversationId) {
+      conversationId = await createWorkflowConversation(workflowId);
+    }
+    
+    return conversationId;
+  } catch (error) {
+    console.error(`Failed to get or create conversation for workflow ${workflowId}:`, error);
+    throw error;
+  }
 } 

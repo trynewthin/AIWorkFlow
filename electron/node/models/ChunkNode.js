@@ -4,7 +4,7 @@
  */
 const { RecursiveCharacterTextSplitter } = require("langchain/text_splitter");
 const { DataType, PipelineType } = require('../../coreconfigs/models/pipelineTypes');
-const BaseNode = require('./BaseNode');
+const BaseNode = require('./baseNode');
 const { Status } = require('../../coreconfigs/models/enums');
 const Pipeline = require('../../pipeline/Pipeline');
 

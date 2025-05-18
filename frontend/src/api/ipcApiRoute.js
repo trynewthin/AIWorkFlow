@@ -35,6 +35,17 @@ const ipcApiRoute = {
   checkWorkflowOwnership: 'controller/workflow/checkWorkflowOwnership',
   transferWorkflowOwnership: 'controller/workflow/transferWorkflowOwnership',
   getWorkflowOwner: 'controller/workflow/getWorkflowOwner',
+  // 工作流对话相关接口
+  createWorkflowConversation: 'controller/workflow/createWorkflowConversation',
+  getWorkflowCurrentConversation: 'controller/workflow/getWorkflowCurrentConversation',
+  getWorkflowConversations: 'controller/workflow/getWorkflowConversations',
+  getConversationMessages: 'controller/workflow/getConversationMessages',
+  addUserMessage: 'controller/workflow/addUserMessage',
+  addAIMessage: 'controller/workflow/addAIMessage',
+  deleteConversation: 'controller/workflow/deleteConversation',
+  getConversationStats: 'controller/workflow/getConversationStats',
+  exportConversationAsJson: 'controller/workflow/exportConversationAsJson',
+  executeWorkflowWithConversation: 'controller/workflow/executeWorkflowWithConversation',
   // 配置相关接口
   getConfigNodeTypes: 'controller/config/getNodeTypes',
   getNodeConfigByType: 'controller/config/getNodeConfigByType',
