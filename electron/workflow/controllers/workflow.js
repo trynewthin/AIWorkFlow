@@ -270,13 +270,19 @@ class WorkflowController {
    */
   async executeWorkflow(params) {
     try {
-      const { workflowId, input, options } = params;
+      const { workflowId, input, options = {} } = params;
       
       if (!workflowId) {
         return { code: 400, message: '工作流ID不能为空', success: false };
       }
       
-      const result = await workflowService.executeWorkflow(workflowId, input, options);
+      // 设置默认的执行选项，validateStartEnd控制是否校验首尾节点
+      const executionOptions = {
+        validateStartEnd: true, // 默认启用首尾节点校验
+        ...options
+      };
+      
+      const result = await workflowService.executeWorkflow(workflowId, input, executionOptions);
       return { code: 200, data: result.toJSON(), success: true }; // 假设Pipeline有toJSON方法
     } catch (error) {
       logger.error(`[WorkflowController] 执行工作流失败: ${error.message}`);

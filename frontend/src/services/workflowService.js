@@ -250,7 +250,11 @@ export async function getNodeTypes() {
  * @description 执行指定ID的工作流
  * @param {string} workflowId - 要执行的工作流ID
  * @param {object} input - 工作流执行所需的输入数据（e.g., { text: '...' }）
- * @param {object} [options] - 可选的执行选项，如 { debug: boolean, timeout: number }
+ * @param {object} [options] - 可选的执行选项
+ * @param {boolean} [options.validateStartEnd=true] - 是否校验工作流首尾节点类型，true表示需要校验首节点为StartNode且尾节点为EndNode
+ * @param {boolean} [options.failOnError] - 节点执行失败时是否终止整个工作流
+ * @param {number} [options.timeout] - 执行超时时间（毫秒）
+ * @param {number} [options.maxSteps] - 最大执行步数
  * @returns {Promise<any>} 工作流执行结果
  * @throws {Error} IPC调用失败或后端业务逻辑错误时
  */

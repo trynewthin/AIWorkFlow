@@ -87,10 +87,10 @@ const nodeConfigurations = {
       name: '结束节点',
       type: 'utility',
       tag: 'end',
-      description: '将管道转换为具体输出',
+      description: '结束节点，目标是将管道中的数据透传。',
       version: '1.0.0',
-      supportedInputPipelines: [PipelineType.CHAT],
-      supportedOutputPipelines: [PipelineType.CUSTOM]
+      supportedInputPipelines: [PipelineType.ALL],
+      supportedOutputPipelines: []
     },
     defaultFlowConfig: {
       nodeName: '结束处理节点',
@@ -98,8 +98,7 @@ const nodeConfigurations = {
       position: { x: 0, y: 0 }
     },
     defaultWorkConfig: {
-      pipelineType: PipelineType.ALL,
-      dataType: DataType.TEXT
+      pipelineType: PipelineType.TEXT,
     }
   },
   [NodeKey.MERGE]: {

@@ -25,7 +25,8 @@ function WorkflowExecution() {
   const [error, setError] = useState(null);
   const [executionOptions, setExecutionOptions] = useState({
     debug: false,
-    timeout: 60000
+    timeout: 60000,
+    validateStartEnd: true
   });
 
   // 路由参数和导航
@@ -178,6 +179,24 @@ function WorkflowExecution() {
                 <Label htmlFor="debug-mode" className="text-sm font-medium">
                   调试模式
                 </Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="validate-start-end"
+                  checked={executionOptions.validateStartEnd}
+                  onCheckedChange={(checked) => setExecutionOptions({
+                    ...executionOptions,
+                    validateStartEnd: checked
+                  })}
+                  disabled={executing}
+                />
+                <Label htmlFor="validate-start-end" className="text-sm font-medium">
+                  校验工作流首尾节点
+                </Label>
+                <div className="text-xs text-gray-500 ml-2">
+                  (要求首节点为开始节点，尾节点为结束节点)
+                </div>
               </div>
               
               <div className="space-y-2">

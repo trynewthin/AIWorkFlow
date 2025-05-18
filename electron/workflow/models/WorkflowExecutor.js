@@ -8,6 +8,7 @@ const Pipeline = require('../../pipeline/Pipeline'); // Adjusted path
 const { getNodeFactory } = require('../../node/services/NodeFactory'); // Adjusted path
 const { getWorkflowManager } = require('./WorkflowManager'); // Will be in the same 'models' directory
 const { DataType, PipelineType } = require('../../coreconfigs'); // 指向 electron/core/configs/index.js
+const { NodeKey } = require('../../coreconfigs/models/enums'); // 添加导入 NodeKey 枚举
 
 /**
  * @class WorkflowExecutor
@@ -29,8 +30,34 @@ class WorkflowExecutor {
     this.defaultConfig = {
       maxSteps: 100,   // 最大执行步数，防止无限循环
       timeout: 30000,  // 执行超时时间 (毫秒)
-      failOnError: true // 出错时是否中断执行
+      failOnError: true, // 出错时是否中断执行
+      validateStartEnd: true // 是否校验首尾节点类型
     };
+  }
+
+  /**
+   * @method validateWorkflowNodes
+   * @description 校验工作流节点，确保第一个节点是开始节点，最后一个节点是结束节点
+   * @param {Array} nodes - 排序后的节点列表
+   * @throws {Error} 如果校验不通过，抛出错误
+   */
+  validateWorkflowNodes(nodes) {
+    if (!nodes || nodes.length < 2) {
+      throw new Error('工作流必须至少包含开始节点和结束节点');
+    }
+
+    const firstNode = nodes[0];
+    const lastNode = nodes[nodes.length - 1];
+
+    // 检查第一个节点是否为开始节点
+    if (firstNode.type.toLowerCase() !== NodeKey.START.toLowerCase()) {
+      throw new Error(`工作流必须以开始节点(${NodeKey.START})开始，当前首节点类型: ${firstNode.type}`);
+    }
+
+    // 检查最后一个节点是否为结束节点
+    if (lastNode.type.toLowerCase() !== NodeKey.END.toLowerCase()) {
+      throw new Error(`工作流必须以结束节点(${NodeKey.END})结束，当前尾节点类型: ${lastNode.type}`);
+    }
   }
 
   /**
@@ -61,6 +88,16 @@ class WorkflowExecutor {
       if (nodes.length === 0) {
         logger.warn(`[WorkflowExecutor] 工作流 ${workflowId} 没有节点`);
         return this._createInitialPipeline(input);
+      }
+
+      // 校验工作流节点
+      if (config.validateStartEnd) {
+        try {
+          this.validateWorkflowNodes(nodes);
+        } catch (error) {
+          logger.error(`[WorkflowExecutor] 工作流 ${workflowId} 校验失败: ${error.message}`);
+          throw error;
+        }
       }
 
       // 初始化管道
