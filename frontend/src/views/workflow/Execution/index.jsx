@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { workflowService } from '../../../services';
 import ButtonHeader from '@/components/header/ButtonHeader';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from "sonner";
 import SimpleMode from './SimpleMode';
 import ExpertMode from './ExpertMode';
 import WorkflowConfig from './WorkflowConfig';
@@ -58,6 +58,7 @@ function WorkflowExecution() {
         }
       } catch (err) {
         setError('加载工作流发生通信错误：' + err.message);
+        toast.error('加载工作流发生通信错误：' + err.message);
         setWorkflow(null);
         console.error('加载工作流发生通信错误', err);
       } finally {
@@ -69,6 +70,7 @@ function WorkflowExecution() {
       loadWorkflow();
     } else {
       setError('未提供工作流 ID');
+      toast.error('未提供工作流 ID');
       setLoading(false);
       setWorkflow(null);
     }
@@ -114,6 +116,7 @@ function WorkflowExecution() {
       setResult(result);
     } catch (err) {
       setError('执行失败：' + err.message);
+      toast.error('执行失败：' + err.message);
       console.error('工作流执行失败', err);
     } finally {
       setExecuting(false);
@@ -136,23 +139,6 @@ function WorkflowExecution() {
     return (
       <div className="container mx-auto p-4">
         <div className="text-center py-8">正在加载工作流数据...</div>
-      </div>
-    );
-  }
-
-  // 渲染错误状态
-  if (error && !executing) {
-    return (
-      <div className="container mx-auto p-4">
-        <Alert variant="destructive" className="mb-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-        <Button 
-          onClick={goToEditPage}
-          variant="outline"
-        >
-          返回编辑页面
-        </Button>
       </div>
     );
   }

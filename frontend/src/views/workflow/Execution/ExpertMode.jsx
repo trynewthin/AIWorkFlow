@@ -117,7 +117,14 @@ const ExpertMode = ({
         </CardHeader>
         <CardContent className="space-y-4">
           {/* 错误提示 (执行期间的错误) */}
-          {error && executing && ( // 只在执行中且有错误时显示此特定错误
+          {error && executing && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          {/* 非执行期间的错误也显示 */}
+          {error && !executing && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
