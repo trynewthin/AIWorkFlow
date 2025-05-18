@@ -103,7 +103,6 @@ function WorkflowEditor() {
           setSelectedNode(updatedNode);
         }
       }
-      alert('节点配置已保存');
     } catch (err) {
       setError('更新节点失败：' + err.message);
       console.error('更新节点失败', err);
