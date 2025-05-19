@@ -218,9 +218,23 @@ const NodeGuide = () => {
         </Card>
       </div>
       
-      <div className="mt-8 flex justify-end">
-        <Button disabled variant="outline" className="mr-2">上一节</Button>
-        <Button disabled variant="outline">下一节</Button>
+      <div className="mt-8 flex justify-between">
+        <Button asChild variant="outline">
+          <Link to="/docs">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+              <path d="m15 18-6-6 6-6"></path>
+            </svg>
+            返回文档中心
+          </Link>
+        </Button>
+        <Button asChild>
+          <Link to="/docs/knowledge" className="flex items-center gap-2">
+            <span>知识库管理教程</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m9 18 6-6-6-6"></path>
+            </svg>
+          </Link>
+        </Button>
       </div>
     </div>
   );

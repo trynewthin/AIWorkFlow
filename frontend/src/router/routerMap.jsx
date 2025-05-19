@@ -4,6 +4,8 @@ import Knowledge from '../views/knowledge/knowledge';
 import KnowledgeDetail from '../views/knowledge/Detail';
 import DocsPage from '../views/odocs';
 import NodeGuide from '../views/odocs/nodeGuide';
+import KnowledgeGuide from '../views/odocs/knowledgeGuide';
+import LangChainGuide from '../views/odocs/langchainGuide';
 import WorkflowList from '../views/workflow/WorkflowList';
 import WorkflowEditor from '../views/workflow/Editor';
 import WorkflowExecution from '../views/workflow/Execution';
@@ -61,6 +63,18 @@ const routerMap = [
         element: <NodeGuide />,
         name: 'NodeGuide',
         meta: { title: '节点使用教程', requiresAuth: true },
+      },
+      {
+        path: 'docs/knowledge',
+        element: <KnowledgeGuide />,
+        name: 'KnowledgeGuide',
+        meta: { title: '知识库管理教程', requiresAuth: true },
+      },
+      {
+        path: 'docs/langchain',
+        element: <LangChainGuide />,
+        name: 'LangChainGuide',
+        meta: { title: 'LangChain开发教程', requiresAuth: true },
       },
       {
         path: 'workflow',
