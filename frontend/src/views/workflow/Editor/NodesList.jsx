@@ -114,7 +114,7 @@ export function WorkflowNodes({
                 >
                   <div className="flex justify-between items-center">
                     <div className="flex items-center">
-                      <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mr-3">
+                      <div className="w-8 h-8 bg-gray-100 text-gray-600 rounded-lg flex items-center justify-center mr-3">
                         <span className="font-medium">{index + 1}</span>
                       </div>
                       <div>

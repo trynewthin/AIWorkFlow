@@ -311,6 +311,33 @@ function WorkflowExecution() {
     setExecuting(false);
   };
 
+  // 刷新对话列表
+  const handleConversationsChanged = async (updatedList = null, options = {}) => {
+    if (updatedList) {
+      // 如果提供了更新后的列表，直接使用
+      setConversations(updatedList);
+      
+      // 如果需要重置当前对话（例如当前对话被删除且没有其他对话）
+      if (options.resetCurrentConversation) {
+        setConversationId(null);
+        setActiveConversation(null);
+        // 添加一条欢迎消息
+        if (workflow) {
+          setConversationMessages([
+            { 
+              role: 'system', 
+              content: `欢迎使用工作流"${workflow.name || '未命名工作流'}"，请输入内容开始执行。`,
+              time: new Date()
+            }
+          ]);
+        }
+      }
+    } else {
+      // 否则从服务器重新加载对话列表
+      await loadWorkflowConversations(workflow.id);
+    }
+  };
+
   // 渲染加载状态
   if (loading) {
     return (
@@ -362,6 +389,7 @@ function WorkflowExecution() {
           loadingConversation={loadingConversation}
           recordConversation={executionOptions.recordConversation}
           showMessageTime={false}
+          onConversationsChanged={handleConversationsChanged}
         />
       ) : (
         <ExpertMode

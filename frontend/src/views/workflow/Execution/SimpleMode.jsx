@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, StopCircle, Send, MessageSquare, Plus, RefreshCw, Clock } from 'lucide-react';
+import { Play, StopCircle, Send, MessageSquare, Plus, RefreshCw, Clock, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,6 +8,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { toast } from "sonner";
+import { 
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog";
+import { deleteConversation } from '@/services/workflowService';
 
 // 添加CSS动画样式
 const bouncingDotsStyle = `
@@ -42,7 +54,8 @@ const SimpleMode = ({
   switchConversation,
   loadingConversation,
   recordConversation,
-  showMessageTime = true // 是否显示消息时间，默认显示
+  showMessageTime = true, // 是否显示消息时间，默认显示
+  onConversationsChanged, // 对话列表变化后的回调函数
 }) => {
   // 用于滚动到底部的引用
   const scrollRef = useRef(null);
@@ -50,6 +63,11 @@ const SimpleMode = ({
   
   // 侧边栏状态
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // 删除对话相关状态
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState(null);
+  const [deletingConversation, setDeletingConversation] = useState(false);
   
   // 提交用户输入
   const handleSubmit = () => {
@@ -123,6 +141,67 @@ const SimpleMode = ({
     }
   };
   
+  // 打开删除对话确认框
+  const handleDeleteConversation = (e, conversation) => {
+    e.stopPropagation(); // 阻止事件冒泡，避免触发对话切换
+    setConversationToDelete(conversation);
+    setDeleteDialogOpen(true);
+  };
+  
+  // 确认删除对话
+  const confirmDeleteConversation = async () => {
+    if (!conversationToDelete) return;
+    
+    try {
+      setDeletingConversation(true);
+      
+      // 调用删除API
+      await deleteConversation(conversationToDelete.id);
+      
+      // 更新状态，从列表中移除已删除的对话
+      const updatedConversations = conversations.filter(c => c.id !== conversationToDelete.id);
+      
+      // 如果删除的是当前对话
+      if (conversationId === conversationToDelete.id) {
+        if (updatedConversations.length > 0) {
+          // 如果还有其他对话，切换到第一个对话
+          switchConversation(updatedConversations[0].id);
+        } else {
+          // 如果没有其他对话，清空当前消息
+          setMessages([
+            { 
+              role: 'system', 
+              content: `欢迎使用工作流"${workflow?.name || '未命名工作流'}"，请输入内容开始执行。`,
+              time: new Date()
+            }
+          ]);
+          // 注意：不能直接设置conversationId为null，因为它是由父组件管理的
+          // 而是通过onConversationsChanged回调通知父组件，并传递一个标记
+          if (typeof onConversationsChanged === 'function') {
+            onConversationsChanged(updatedConversations, { resetCurrentConversation: true });
+          }
+        }
+      } else {
+        // 通知父组件会话列表已更改
+        if (typeof onConversationsChanged === 'function') {
+          onConversationsChanged(updatedConversations);
+        }
+      }
+      
+      // 关闭删除对话框
+      setDeleteDialogOpen(false);
+      setConversationToDelete(null);
+      
+      // 显示成功提示
+      toast.success('对话已成功删除');
+    } catch (error) {
+      console.error('删除对话失败:', error);
+      toast.error('删除对话失败: ' + error.message);
+    } finally {
+      setDeletingConversation(false);
+    }
+  };
+  
   return (
     <div className="flex h-[calc(100vh-190px)] mt-4">
       {/* 对话历史侧边栏 */}
@@ -151,11 +230,21 @@ const SimpleMode = ({
                     )}
                     onClick={() => switchConversation(conversation.id)}
                   >
-                    <div className="flex items-center">
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      <span className="text-sm font-medium truncate flex-1">
-                        {format(new Date(conversation.created_at), 'MM-dd HH:mm')}
-                      </span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center flex-1 min-w-0">
+                        <MessageSquare className="h-4 w-4 mr-2 flex-shrink-0" />
+                        <span className="text-sm font-medium truncate">
+                          {format(new Date(conversation.created_at), 'MM-dd HH:mm')}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 opacity-50 hover:opacity-100 flex-shrink-0"
+                        onClick={(e) => handleDeleteConversation(e, conversation)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
                     <p className="text-xs text-gray-500 mt-1 truncate">
                       {conversation.id === conversationId ? '当前对话' : getConversationPreview(conversation)}
@@ -366,6 +455,31 @@ const SimpleMode = ({
           )}
         </CardFooter>
       </Card>
+      
+      {/* 删除对话确认框 */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>确认删除对话</DialogTitle>
+            <DialogDescription>
+              您确定要删除此对话吗？此操作无法撤销，对话中的所有消息将永久删除。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deletingConversation}>
+              取消
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={confirmDeleteConversation}
+              disabled={deletingConversation}
+              className={deletingConversation ? "opacity-50 cursor-not-allowed" : ""}
+            >
+              {deletingConversation ? "删除中..." : "确认删除"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
