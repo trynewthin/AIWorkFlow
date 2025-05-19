@@ -112,32 +112,20 @@ const SimpleMode = ({
     return '无消息';
   };
   
-  // 格式化时间，使用中国时区
+  // 格式化时间，使用中国时区(UTC+8)
   const formatTimeWithTimezone = (dateString) => {
     try {
       // 创建日期对象
       const date = new Date(dateString);
       
-      // 获取中国时区(UTC+8)的时间
-      const options = { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-        timeZone: 'Asia/Shanghai'
-      };
+      // 转换为中国时区(UTC+8)
+      const chinaTime = new Date(date.getTime() + 8 * 60 * 60 * 1000);
       
-      return new Intl.DateTimeFormat('zh-CN', options).format(date);
+      // 使用固定的格式避免时区问题
+      return format(chinaTime, 'HH:mm:ss');
     } catch (error) {
-      // 使用简单的格式化作为备用方案
-      try {
-        const date = new Date(dateString);
-        // 手动添加8小时到UTC时间（中国时区UTC+8）
-        const utcPlusEight = new Date(date.getTime() + 8 * 60 * 60 * 1000);
-        return format(utcPlusEight, 'HH:mm:ss');
-      } catch (fallbackError) {
-        return dateString;
-      }
+      console.error('时间格式化错误:', error);
+      return dateString || '未知时间';
     }
   };
   
