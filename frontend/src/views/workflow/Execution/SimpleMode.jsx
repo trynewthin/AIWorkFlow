@@ -158,6 +158,9 @@ const SimpleMode = ({
       // 调用删除API
       await deleteConversation(conversationToDelete.id);
       
+      // 提取工作流ID以重新获取会话列表
+      const workflowId = workflow?.id;
+      
       // 更新状态，从列表中移除已删除的对话
       const updatedConversations = conversations.filter(c => c.id !== conversationToDelete.id);
       
@@ -185,6 +188,27 @@ const SimpleMode = ({
         // 通知父组件会话列表已更改
         if (typeof onConversationsChanged === 'function') {
           onConversationsChanged(updatedConversations);
+        }
+      }
+      
+      // 如果有工作流ID，重新获取最新的对话列表
+      if (workflowId) {
+        try {
+          // 导入getWorkflowConversations函数，如果尚未导入
+          const { getWorkflowConversations } = await import('@/services/workflowService');
+          
+          // 获取最新的对话列表
+          const refreshedConversations = await getWorkflowConversations(workflowId);
+          
+          // 更新对话列表
+          if (typeof onConversationsChanged === 'function') {
+            onConversationsChanged(refreshedConversations);
+          }
+          
+          console.log('对话列表已重新加载:', refreshedConversations);
+        } catch (refreshError) {
+          console.error('重新加载对话列表失败:', refreshError);
+          // 此错误不影响删除操作的成功状态
         }
       }
       

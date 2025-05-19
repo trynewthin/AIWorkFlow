@@ -305,6 +305,11 @@ class KnowledgeService {
     try {
       console.log(`文档删除成功，准备重建HNSW索引...`);
       
+      // 确保节点已初始化后再重建索引
+      if (!this.chunkNode.isInitialized() || !this.embeddingNode.isInitialized()) {
+        await this.initService();
+      }
+      
       // 重新获取所有分块和嵌入
       const result = await this.kbDb.getAllChunksWithEmbeddings();
       if (!result || !result.documents || result.documents.length === 0) {
