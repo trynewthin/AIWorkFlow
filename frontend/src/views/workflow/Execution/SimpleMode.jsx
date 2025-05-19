@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, StopCircle, Send, MessageSquare, Plus, RefreshCw } from 'lucide-react';
+import { Play, StopCircle, Send, MessageSquare, Plus, RefreshCw, Clock } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,6 +8,19 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+
+// 添加CSS动画样式
+const bouncingDotsStyle = `
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    25% { transform: translateY(-5px); }
+    50% { transform: translateY(0); }
+    75% { transform: translateY(5px); }
+  }
+  .dot-1 { animation: bounce 1s infinite 0s; }
+  .dot-2 { animation: bounce 1s infinite 0.2s; }
+  .dot-3 { animation: bounce 1s infinite 0.4s; }
+`;
 
 /**
  * @component SimpleMode
@@ -29,7 +42,7 @@ const SimpleMode = ({
   switchConversation,
   loadingConversation,
   recordConversation,
-  showMessageTime = false // 是否显示消息时间，默认不显示
+  showMessageTime = true // 是否显示消息时间，默认显示
 }) => {
   // 用于滚动到底部的引用
   const scrollRef = useRef(null);
@@ -89,9 +102,6 @@ const SimpleMode = ({
       
       // 获取中国时区(UTC+8)的时间
       const options = { 
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
         hour: '2-digit', 
         minute: '2-digit',
         second: '2-digit',
@@ -106,7 +116,7 @@ const SimpleMode = ({
         const date = new Date(dateString);
         // 手动添加8小时到UTC时间（中国时区UTC+8）
         const utcPlusEight = new Date(date.getTime() + 8 * 60 * 60 * 1000);
-        return format(utcPlusEight, 'yyyy-MM-dd HH:mm:ss');
+        return format(utcPlusEight, 'HH:mm:ss');
       } catch (fallbackError) {
         return dateString;
       }
@@ -117,17 +127,17 @@ const SimpleMode = ({
     <div className="flex h-[calc(100vh-190px)] mt-4">
       {/* 对话历史侧边栏 */}
       {sidebarOpen && (
-        <Card className="w-64 mr-2 flex-shrink-0 flex flex-col h-full overflow-hidden">
-          <CardHeader className="px-3 py-2">
-            <CardTitle className="text-md flex justify-between items-center">
+        <Card className="w-52 mr-2 flex-shrink-0 flex flex-col h-full overflow-hidden">
+          <CardHeader className="px-3 py-1 min-h-0 max-h-[4%]">
+            <CardTitle className="text-sm flex justify-between items-center">
               <span>对话历史</span>
-              <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setSidebarOpen(false)}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </Button>
             </CardTitle>
           </CardHeader>
           <Separator />
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 h-full">
             {conversations.length === 0 ? (
               <div className="p-4 text-center text-gray-500">没有历史对话</div>
             ) : (
@@ -160,35 +170,41 @@ const SimpleMode = ({
       
       {/* 聊天主界面 */}
       <Card className="flex flex-col flex-1">
-        <CardHeader className="px-4 py-2 border-b flex-row justify-between items-center">
-          <div className="flex items-center gap-2">
+        <div className="px-3 py-1 pb-2 border-b flex justify-between items-center min-h-0">
+          <div className="flex items-center space-x-1">
             <Button 
               variant={sidebarOpen ? "secondary" : "outline"} 
               size="sm" 
+              className="h-7 px-2 text-xs"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
-              <MessageSquare className="h-4 w-4 mr-1" />
-              <span className="text-sm">历史</span>
+              <MessageSquare className="h-3.5 w-3.5 mr-1" />
+              <span>历史</span>
             </Button>
             
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-7 w-7 p-0 flex items-center justify-center"
+              onClick={() => window.location.reload()}
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          
+          <div className="flex items-center gap-2">
             {conversationId && (
-              <div className="text-sm text-gray-500">
+              <div className="text-xs text-gray-500">
                 ID: {conversationId.substring(0, 8)}...
               </div>
             )}
           </div>
-          
-          <div className="flex space-x-2">
-            <Button variant="ghost" size="sm" onClick={() => window.location.reload()}>
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardHeader>
+        </div>
         
         {/* 聊天历史区域 */}
         <ScrollArea 
           ref={scrollRef} 
-          className="flex-1 py-1 px-4 overflow-y-auto"
+          className="flex-1 py-0 px-4 overflow-y-auto"
         >
           {loadingConversation ? (
             <div className="flex justify-center my-4">
@@ -227,13 +243,14 @@ const SimpleMode = ({
                   
                   return (
                     <div key={index} className="flex justify-end">
-                      <div className="bg-blue-500 text-white rounded-lg p-3 max-w-[80%]">
-                        {displayContent}
-                        {showMessageTime && (
-                          <div className="text-right mt-1 text-xs opacity-70">
-                            {formatTimeWithTimezone(message.time)}
-                          </div>
-                        )}
+                      <div className="flex flex-col items-end">
+                        <div className="bg-black text-white rounded-lg p-3 max-w-[80%] border border-gray-600">
+                          {displayContent}
+                        </div>
+                        <div className="flex items-center mt-1 mr-1 text-xs text-gray-500">
+                          <Clock className="w-3 h-3 mr-1 opacity-80" />
+                          <span>{formatTimeWithTimezone(message.time)}</span>
+                        </div>
                       </div>
                     </div>
                   );
@@ -242,15 +259,16 @@ const SimpleMode = ({
                 if (message.role === 'assistant') {
                   return (
                     <div key={index} className="flex justify-start">
-                      <div className="bg-gray-200 rounded-lg p-3 max-w-[80%]">
-                        <pre className="whitespace-pre-wrap font-sans text-sm">
-                          {message.content}
-                        </pre>
-                        {showMessageTime && (
-                          <div className="text-left mt-1 text-xs text-gray-500">
-                            {formatTimeWithTimezone(message.time)}
-                          </div>
-                        )}
+                      <div className="flex flex-col items-start">
+                        <div className="bg-white text-black rounded-lg p-3 max-w-[80%] border border-black">
+                          <pre className="whitespace-pre-wrap font-sans text-sm">
+                            {message.content}
+                          </pre>
+                        </div>
+                        <div className="flex items-center mt-1 ml-1 text-xs text-gray-500">
+                          <Clock className="w-3 h-3 mr-1 opacity-80" />
+                          <span>{formatTimeWithTimezone(message.time)}</span>
+                        </div>
                       </div>
                     </div>
                   );
@@ -286,14 +304,15 @@ const SimpleMode = ({
               
               {/* 当前正在执行 */}
               {executing && (
-                <div className="flex justify-start">
-                  <div className="bg-gray-200 rounded-lg p-3 flex items-center max-w-[80%]">
-                    <div className="animate-pulse flex space-x-1">
-                      <div className="h-2 w-2 bg-gray-500 rounded-full"></div>
-                      <div className="h-2 w-2 bg-gray-500 rounded-full"></div>
-                      <div className="h-2 w-2 bg-gray-500 rounded-full"></div>
+                <div className="flex justify-center w-full my-4">
+                  <div className="flex items-center">
+                    <style>{bouncingDotsStyle}</style>
+                    <div className="flex space-x-1 mr-3">
+                      <div className="h-3 w-3 bg-black rounded-full dot-1"></div>
+                      <div className="h-3 w-3 bg-black rounded-full dot-2"></div>
+                      <div className="h-3 w-3 bg-black rounded-full dot-3"></div>
                     </div>
-                    <span className="ml-2">工作流正在执行...</span>
+                    <span className="text-sm font-medium text-gray-700">工作流正在执行...</span>
                   </div>
                 </div>
               )}

@@ -327,9 +327,7 @@ function WorkflowExecution() {
           <Tabs value={mode} onValueChange={setMode}>
             <TabsList className="grid w-64 grid-cols-2">
               <TabsTrigger value="simple">对话模式</TabsTrigger>
-              {/*
               <TabsTrigger value="expert">专家模式</TabsTrigger>
-              */}
             </TabsList>
           </Tabs>
         </div>
@@ -375,6 +373,9 @@ function WorkflowExecution() {
           handleExecute={handleExecute}
           handleCancel={handleCancel}
           workflow={workflow}
+          executionOptions={executionOptions}
+          setExecutionOptions={setExecutionOptions}
+          conversationId={conversationId}
         />
       )}
     </div>

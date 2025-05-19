@@ -8,9 +8,20 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Editor } from '@monaco-editor/react';
+import { Editor, loader } from '@monaco-editor/react';
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
+
+// 配置Monaco编辑器，适配Electron环境
+loader.config({
+  monaco: monaco => {
+    // 这里可以添加Monaco实例初始化后的配置
+  },
+  // 不使用URLs，改为内置CDN
+  urls: {
+    // 不指定URLs，让Monaco组件内部处理
+  }
+});
 
 /**
  * @component ExpertMode
@@ -24,7 +35,11 @@ const ExpertMode = ({
   result,
   handleExecute,
   handleCancel,
-  executionOptions,
+  executionOptions = {
+    recordConversation: false,
+    recordNodeExecution: false,
+    timeout: 60000
+  },
   setExecutionOptions,
   workflow,
   conversationId
@@ -125,48 +140,15 @@ const ExpertMode = ({
     }
   };
   
-  // 渲染输出结果
-  const renderResult = () => {
-    if (error) {
-      return (
-        <Alert variant="destructive" className="mt-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      );
-    }
-    
-    if (!result) {
-      return <div className="text-center py-8 text-gray-500">执行工作流后查看结果</div>;
-    }
-    
-    const resultStr = typeof result === 'object' ? JSON.stringify(result, null, 2) : result.toString();
-    
-    return (
-      <div className="mt-2 relative">
-        <Editor 
-          height="400px"
-          language="json"
-          theme="vs-dark"
-          value={resultStr}
-          options={{
-            ...editorOptions,
-            readOnly: true
-          }}
-        />
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="absolute top-2 right-2 bg-gray-800 text-white opacity-80 hover:opacity-100"
-          onClick={copyToClipboard}
-        >
-          {copySuccess ? '已复制!' : <Copy size={14} />}
-        </Button>
-      </div>
-    );
-  };
-  
   // 显示执行信息
   const renderExecutionInfo = () => {
+    // 确保executionOptions存在，使用默认空对象防止错误
+    const options = executionOptions || {
+      recordConversation: false,
+      recordNodeExecution: false,
+      timeout: 60000
+    };
+    
     return (
       <div className="space-y-2 p-3 border rounded-md bg-gray-50 mt-4 text-sm">
         <div className="grid grid-cols-2 gap-2">
@@ -180,35 +162,39 @@ const ExpertMode = ({
         <Separator className="my-1" />
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <span className="font-semibold">记录对话:</span> {executionOptions.recordConversation ? '是' : '否'}
+            <span className="font-semibold">记录对话:</span> {options.recordConversation ? '是' : '否'}
           </div>
           <div>
-            <span className="font-semibold">记录节点执行:</span> {executionOptions.recordNodeExecution ? '是' : '否'}
+            <span className="font-semibold">记录节点执行:</span> {options.recordNodeExecution ? '是' : '否'}
           </div>
         </div>
         <div>
-          <span className="font-semibold">超时设置:</span> {executionOptions.timeout} 毫秒
+          <span className="font-semibold">超时设置:</span> {options.timeout} 毫秒
         </div>
       </div>
     );
   };
   
   return (
-    <Card className="flex flex-col h-[calc(100vh-190px)] mt-4">
-      <CardHeader className="px-6 py-4 border-b">
-        <CardTitle className="text-lg">专家模式执行</CardTitle>
+    <Card className="flex flex-col h-[calc(100vh-190px)] mt-2">
+      <CardHeader className="px-6 pb-2 border-b h-max-[10%]">
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-lg">专家模式执行</CardTitle>
+          <Tabs value={viewTab} onValueChange={setViewTab}>
+            <TabsList>
+              <TabsTrigger value="input">输入</TabsTrigger>
+              <TabsTrigger value="output">输出</TabsTrigger>
+              <TabsTrigger value="info">执行信息</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </CardHeader>
       
       <CardContent className="flex-1 p-4 overflow-auto">
-        <Tabs value={viewTab} onValueChange={setViewTab} className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="input">输入</TabsTrigger>
-            <TabsTrigger value="output">输出</TabsTrigger>
-            <TabsTrigger value="info">执行信息</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="input" className="space-y-4">
-            <div className="flex justify-end mb-2">
+        {/* 输入标签页内容 */}
+        {viewTab === 'input' && (
+          <div className="space-y-4">
+            <div className="flex justify-end">
               <div className="border rounded-md overflow-hidden">
                 <Button 
                   variant={inputFormat === 'text' ? 'secondary' : 'ghost'}
@@ -233,27 +219,49 @@ const ExpertMode = ({
               </Alert>
             )}
             
-            <Editor 
-              height="350px"
-              language={inputFormat === 'json' ? 'json' : 'plaintext'}
-              theme="vs"
+            <Textarea
+              className="min-h-[100px] font-mono text-sm"
               value={localInput}
-              onChange={setLocalInput}
-              options={editorOptions}
+              onChange={(e) => setLocalInput(e.target.value)}
+              placeholder={inputFormat === 'json' ? '{"text": "在此输入JSON"}' : '在此输入文本'}
             />
-          </TabsContent>
-          
-          <TabsContent value="output">
-            {renderResult()}
-          </TabsContent>
-          
-          <TabsContent value="info">
-            {renderExecutionInfo()}
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
+        
+        {/* 输出标签页内容 */}
+        {viewTab === 'output' && (
+          <div>
+            {error ? (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : !result ? (
+              <div className="text-center py-8 text-gray-500">执行工作流后查看结果</div>
+            ) : (
+              <div className="relative">
+                <Textarea
+                  className="min-h-[400px] font-mono text-sm p-4"
+                  value={typeof result === 'object' ? JSON.stringify(result, null, 2) : result.toString()}
+                  readOnly
+                />
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="absolute top-2 right-2 bg-gray-800 text-white opacity-80 hover:opacity-100"
+                  onClick={copyToClipboard}
+                >
+                  {copySuccess ? '已复制!' : <Copy size={14} />}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* 执行信息标签页内容 */}
+        {viewTab === 'info' && renderExecutionInfo()}
       </CardContent>
       
-      <CardFooter className="border-t p-4">
+      <CardFooter className="border-t px-4">
         <div className="flex w-full justify-between">
           <div>
             {executionOptions.recordConversation && (
