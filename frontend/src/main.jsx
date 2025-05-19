@@ -1,6 +1,6 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import React, { StrictMode } from 'react'
+import { createHashRouter, RouterProvider } from 'react-router-dom'
+import ReactDOM from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import routerMap from './router/routerMap.jsx'
@@ -25,7 +25,7 @@ routerMap.forEach(route => {
 });
 
 // 构建最终路由配置
-const router = createBrowserRouter([
+const router = createHashRouter([
   {
     path: '/',
     element: <App />,
@@ -43,7 +43,9 @@ const router = createBrowserRouter([
   }
 ]);
 
-createRoot(document.getElementById('root')).render(
+console.log('routerMap:', routerMap)
+
+ReactDOM.createRoot(document.getElementById('root')).render(
   <StrictMode>
     <RouterProvider router={router} />
   </StrictMode>,

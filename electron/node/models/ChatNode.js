@@ -6,7 +6,7 @@ const { DataType, PipelineType } = require('../../coreconfigs/models/pipelineTyp
 const { ChatOpenAI } = require('@langchain/openai');
 // 导入 LangChain 消息类
 const { SystemMessage, HumanMessage } = require('@langchain/core/messages');
-const BaseNode = require('./baseNode');
+const BaseNode = require('./BaseNode');
 const Pipeline = require('../../pipeline/Pipeline');
 const { RetrievalPipeTools } = require('../../pipeline/tools');
 

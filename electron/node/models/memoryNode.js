@@ -3,7 +3,7 @@
  * @description 对话记忆节点，用于获取历史消息并与新消息拼接后进行对话生成
  */
 
-const BaseNode = require('./baseNode');
+const BaseNode = require('./BaseNode');
 const Pipeline = require('../../pipeline/Pipeline');
 const { DataType, PipelineType } = require('../../coreconfigs/models/pipelineTypes');
 const { ChatOpenAI } = require('@langchain/openai');

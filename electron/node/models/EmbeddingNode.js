@@ -5,7 +5,7 @@
 
 const { OpenAIEmbeddings } = require("@langchain/openai");
 const { DataType, PipelineType } = require('../../coreconfigs/models/pipelineTypes');
-const BaseNode = require('./baseNode');
+const BaseNode = require('./BaseNode');
 const Pipeline = require('../../pipeline/Pipeline');
 const { Status } = require('../../coreconfigs/models/enums');
 

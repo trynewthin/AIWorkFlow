@@ -1,6 +1,6 @@
 {
-  "productName": "ee",
-  "appId": "com.electron.ee",
+  "productName": "AIWorkflow",
+  "appId": "com.electron.AIWorkflow",
   "copyright": "© 2025 duola Technology Co., Ltd.",
   "directories": {
     "output": "out"

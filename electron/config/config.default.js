@@ -21,7 +21,7 @@ module.exports = () => {
     openDevTools: false,
     singleLock: true,
     windowsOption: {
-      title: 'electron-egg',
+      title: 'AIWorkflow',
       width: 980,
       height: 650,
       minWidth: 400,

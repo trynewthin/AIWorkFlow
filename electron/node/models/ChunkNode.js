@@ -2,9 +2,9 @@
  * @file electron/model/nodes/ChunkNode.js
  * @description 文本分块节点，使用LangChain JS进行文本分块
  */
-const { RecursiveCharacterTextSplitter } = require("langchain/text_splitter");
+const { RecursiveCharacterTextSplitter } = require("@langchain/textsplitters");
 const { DataType, PipelineType } = require('../../coreconfigs/models/pipelineTypes');
-const BaseNode = require('./baseNode');
+const BaseNode = require('./BaseNode');
 const { Status } = require('../../coreconfigs/models/enums');
 const Pipeline = require('../../pipeline/Pipeline');
 

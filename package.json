@@ -1,5 +1,5 @@
 {
-  "name": "ee",
+  "name": "AIWorkflow",
   "version": "4.1.0",
   "description": "A fast, desktop software development framework",
   "main": "./public/electron/main.js",
@@ -38,7 +38,10 @@
     "jest": "^29.7.0"
   },
   "dependencies": {
-    "@langchain/community": "^0.3.42",
+    "@langchain/community": "^0.3.43",
+    "@langchain/core": "^0.3.56",
+    "@langchain/openai": "^0.5.10",
+    "@langchain/textsplitters": "^0.1.0",
     "@radix-ui/react-tabs": "^1.1.11",
     "@radix-ui/react-toast": "^1.2.13",
     "autoprefixer": "^10.4.21",

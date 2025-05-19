@@ -4,7 +4,7 @@
  */
 const { getHNSWDb } = require('../../database'); // KnowledgeDb 不再由此节点直接查询文档内容
 const { DataType, PipelineType } = require('../../coreconfigs/models/pipelineTypes');
-const BaseNode = require('./baseNode');
+const BaseNode = require('./BaseNode');
 const Pipeline = require('../../pipeline').Pipeline;
 const { Status } = require('../../coreconfigs');
 const { Document } = require('@langchain/core/documents');

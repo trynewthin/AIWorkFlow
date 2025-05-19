@@ -3,7 +3,7 @@
  * @class EndNode
  * @description 结束节点：负责将接收到的管道数据原封不动地传出去。
  */
-const BaseNode = require('./baseNode');
+const BaseNode = require('./BaseNode');
 const Pipeline = require('../../pipeline/Pipeline');
 const { PipelineType } = require('../../coreconfigs/models/pipelineTypes');
 
