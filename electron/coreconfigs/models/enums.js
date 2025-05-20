@@ -29,7 +29,8 @@ const NodeKey = {
   MERGE: 'MergeNode',
   PROMPT: 'PromptNode',
   SEARCH: 'SearchNode',
-  START: 'StartNode'
+  START: 'StartNode',
+  WEBCHAT: 'WebChatNode'
 };
 
 module.exports = {

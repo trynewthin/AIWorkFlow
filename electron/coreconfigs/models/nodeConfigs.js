@@ -223,6 +223,29 @@ const nodeConfigurations = {
       pipelineType: PipelineType.TEXT,
       dataType: DataType.TEXT
     }
+  },
+  [NodeKey.WEBCHAT]: {
+    classConfig: {
+      id: 'webchat',
+      name: '联网对话节点',
+      type: 'model',
+      tag: 'webchat',
+      description: '基于联网搜索的对话生成节点，使用LangChain JS',
+      version: '1.0.0',
+      supportedInputPipelines: [PipelineType.TEXT, PipelineType.RETRIEVAL],
+      supportedOutputPipelines: [PipelineType.TEXT]
+    },
+    defaultFlowConfig: {
+      nodeName: '联网对话节点',
+      status: Status.IDLE,
+      position: { x: 0, y: 0 }
+    },
+    defaultWorkConfig: {
+      model: 'qwen-plus',
+      systemPrompt: '你是一个能联网搜索的智能助手，请基于最新信息回答用户问题。',
+      temperature: 0.7,
+      searchEnabled: true // 启用搜索功能
+    }
   }
 };
 
