@@ -1,10 +1,14 @@
 {
   "name": "AIWorkflow",
   "version": "4.1.0",
-  "description": "A fast, desktop software development framework",
+  "description": "AI workflow platform with knowledge management and pipeline automation",
   "main": "./public/electron/main.js",
   "scripts": {
     "dev": "ee-bin dev",
+    "dev:enhanced": "node tools/dev-server.js",
+    "dev:watch": "ee-bin dev --watch",
+    "dev:hot": "nodemon --config electron/config/nodemon.json electron/main.js",
+    "fix:encoding": "node tools/fix-encoding.js",
     "build": "npm run build-frontend && npm run build-electron && ee-bin encrypt",
     "start": "ee-bin start",
     "dev-frontend": "ee-bin dev --serve=frontend",
@@ -22,39 +26,40 @@
   },
   "repository": "https://github.com/dromara/electron-egg.git",
   "keywords": [
-    "Electron",
-    "electron-egg",
-    "ElectronEgg"
+    "AI",
+    "workflow",
+    "knowledge-management", 
+    "pipeline",
+    "electron-app"
   ],
-  "author": "哆啦好梦, Inc <530353222@qq.com>",
+  "author": "AIWorkflow Team",
   "license": "Apache",
   "devDependencies": {
     "@electron/rebuild": "^3.7.2",
     "@types/node": "^20.17.46",
+    "autoprefixer": "^10.4.21",
+    "class-variance-authority": "^0.7.1",
     "debug": "^4.4.0",
     "ee-bin": "^4.1.7",
     "electron": "^31.7.6",
     "electron-builder": "^25.1.8",
-    "jest": "^29.7.0"
+    "iconv-lite": "^0.6.3",
+    "jest": "^29.7.0",
+    "jschardet": "^3.1.4",
+    "node-gyp": "^11.2.0",
+    "nodemon": "^3.1.10"
   },
   "dependencies": {
     "@langchain/community": "^0.3.43",
     "@langchain/core": "^0.3.56",
     "@langchain/openai": "^0.5.10",
     "@langchain/textsplitters": "^0.1.0",
-    "@radix-ui/react-tabs": "^1.1.11",
-    "@radix-ui/react-toast": "^1.2.13",
-    "autoprefixer": "^10.4.21",
     "better-sqlite3": "^11.9.1",
-    "class-variance-authority": "^0.7.1",
     "dotenv": "^16.5.0",
     "ee-core": "^4.1.4",
     "electron-updater": "^6.3.8",
     "hnswlib-node": "^3.0.0",
     "langchain": "^0.3.24",
-    "lucide-react": "^0.510.0",
-    "node-gyp": "^11.2.0",
-    "openai": "^4.97.0",
-    "vue-flow": "^0.3.0"
+    "openai": "^4.97.0"
   }
 }

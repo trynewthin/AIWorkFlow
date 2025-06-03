@@ -1,0 +1,29 @@
+{
+  "watch": [
+    "electron/controller/",
+    "electron/services/",
+    "electron/config/",
+    "electron/database/",
+    "electron/workflow/",
+    "electron/knowledge/",
+    "electron/pipeline/",
+    "electron/node/",
+    "electron/users/",
+    "electron/upload/"
+  ],
+  "ext": "js,json",
+  "ignore": [
+    "node_modules/",
+    "logs/",
+    "electron/upload/*",
+    "data/",
+    "out/",
+    "build/"
+  ],
+  "delay": 1000,
+  "verbose": true,
+  "restartable": "rs",
+  "env": {
+    "NODE_ENV": "development"
+  }
+} 

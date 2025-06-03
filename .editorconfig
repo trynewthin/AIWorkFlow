@@ -1,0 +1,22 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{js,json,md}]
+charset = utf-8
+
+[*.{bat,cmd}]
+charset = utf-8
+end_of_line = crlf
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[package.json]
+indent_size = 2 
