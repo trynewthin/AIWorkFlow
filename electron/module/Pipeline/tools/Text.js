@@ -1,5 +1,5 @@
 /**
- * @file electron/pipeline/tools/Text.js
+ * @file electron/module/Pipeline/tools/Text.js
  * @description 文本处理工具类
  */
 

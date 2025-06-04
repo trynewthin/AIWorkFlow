@@ -4,7 +4,7 @@
  */
 
 const { DataType, PipelineType } = require('../../coreconfigs/models/pipelineTypes');
-const Pipeline = require('../../pipeline/Pipeline');
+const Pipeline = require('../Pipeline');
 
 class RetrievalPipeTools {
 

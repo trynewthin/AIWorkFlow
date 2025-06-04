@@ -2,6 +2,6 @@
 'use strict';
 
 // 引入用户控制器
-const { UnifiedUserController } = require('../users/controllers');
+const { UnifiedUserController } = require('../module/users/controllers');
 
 module.exports = UnifiedUserController; 

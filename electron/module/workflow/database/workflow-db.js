@@ -6,7 +6,7 @@
  */
 
 const { randomUUID } = require('crypto');
-const { ModuleDbBase } = require('../../core/basemoduledb');
+const { ModuleDbBase } = require('../../../core/basemoduledb');
 const { logger } = require('ee-core/log');
 
 /**

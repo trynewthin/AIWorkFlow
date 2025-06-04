@@ -4,7 +4,7 @@
  */
 
 const BaseNode = require('./BaseNode');
-const Pipeline = require('../../pipeline/Pipeline');
+const Pipeline = require('../../Pipeline/Pipeline');
 const { DataType, PipelineType } = require('../../coreconfigs/models/pipelineTypes');
 const { ChatOpenAI } = require('@langchain/openai');
 const { SystemMessage, HumanMessage, AIMessage } = require('@langchain/core/messages');

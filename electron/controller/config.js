@@ -6,6 +6,6 @@
 'use strict';
 
 // 引入并导出核心配置控制器
-const CoreConfigsController = require('../coreconfigs/controllers');
+const CoreConfigsController = require('../module/coreconfigs/controllers');
 
 module.exports = CoreConfigsController; 

@@ -2,6 +2,6 @@
 'use strict';
 
 // 引入子目录中的 UploadController
-const WorkflowController = require('../workflow').WorkflowController;
+const WorkflowController = require('../module/workflow').WorkflowController;
 
 module.exports = WorkflowController; 

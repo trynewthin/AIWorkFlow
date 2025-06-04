@@ -3,7 +3,7 @@
 const { getKnowledgeDb, getHNSWDb } = require('../database');
 const ChunkNode = require('../../node/models/ChunkNode');
 const EmbeddingNode = require('../../node/models/EmbeddingNode');
-const Pipeline = require('../../pipeline/Pipeline');
+const Pipeline = require('../../Pipeline/Pipeline');
 const { DataType, PipelineType } = require('../../coreconfigs/models/pipelineTypes');
 const { randomUUID } = require('crypto');
 const { Document } = require('@langchain/core/documents');

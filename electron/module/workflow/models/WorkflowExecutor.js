@@ -4,7 +4,7 @@
  */
 
 const { logger } = require('ee-core/log');
-const Pipeline = require('../../pipeline/Pipeline'); // Adjusted path
+const Pipeline = require('../../Pipeline/Pipeline'); // Adjusted path
 const { getNodeFactory } = require('../../node/services/NodeFactory'); // Adjusted path
 const { getWorkflowManager } = require('./WorkflowManager'); // Will be in the same 'models' directory
 const { DataType, PipelineType } = require('../../coreconfigs'); // 指向 electron/core/configs/index.js
@@ -116,7 +116,7 @@ class WorkflowExecutor {
       let conversationService = null;
       if (config.recordConversation && config.conversationId) {
         try {
-          conversationService = require('../../workflow/services/ConversationService').getConversationService();
+          conversationService = require('../services/ConversationService').getConversationService();
         } catch (error) {
           logger.warn(`[WorkflowExecutor] 无法加载对话服务: ${error.message}`);
         }
