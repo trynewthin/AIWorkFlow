@@ -5,10 +5,10 @@
   "main": "./public/electron/main.js",
   "scripts": {
     "dev": "ee-bin dev",
-    "dev:enhanced": "node tools/dev-server.js",
+    "dev:enhanced": "node .tools/dev-server.js",
     "dev:watch": "ee-bin dev --watch",
-    "dev:hot": "nodemon --config electron/config/nodemon.json electron/main.js",
-    "fix:encoding": "node tools/fix-encoding.js",
+    "dev:hot": "nodemon --config ./nodemon.json electron/main.js",
+    "fix:encoding": "node .tools/fix-encoding.js",
     "build": "npm run build-frontend && npm run build-electron && ee-bin encrypt",
     "start": "ee-bin start",
     "dev-frontend": "ee-bin dev --serve=frontend",
@@ -60,6 +60,7 @@
     "electron-updater": "^6.3.8",
     "hnswlib-node": "^3.0.0",
     "langchain": "^0.3.24",
-    "openai": "^4.97.0"
+    "openai": "^4.97.0",
+    "nodemailer": "^6.9.8"
   }
 }

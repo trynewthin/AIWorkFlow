@@ -26,4 +26,3 @@ eggApp.run();
 // 在应用启动并完成初始化后获取数据库服务实例
 const userDb = getUserDb();
 const knowledgeDb = getKnowledgeDb();
-

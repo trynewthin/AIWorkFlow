@@ -23,8 +23,18 @@ console.log('📁 工作目录:', process.cwd());
 console.log('🔥 热重载已启用');
 console.log('🔤 编码设置: UTF-8');
 
+// 全局变量管理应用进程和重启状态
+let appProcess = null;
+let isRestarting = false;
+let restartTimeout = null;
+
 // 启动主应用
 const startApp = () => {
+  // 如果已有进程在运行，先终止它
+  if (appProcess && !appProcess.killed) {
+    appProcess.kill('SIGTERM');
+  }
+
   // Windows 下先设置代码页为 UTF-8
   const commands = [];
   if (process.platform === 'win32') {
@@ -32,7 +42,7 @@ const startApp = () => {
   }
   commands.push('npm run dev');
   
-  const appProcess = spawn('cmd', ['/c', commands.join(' && ')], {
+  appProcess = spawn('cmd', ['/c', commands.join(' && ')], {
     stdio: 'inherit',
     shell: true,
     cwd: path.resolve(__dirname, '..'), // 回到项目根目录
@@ -49,36 +59,72 @@ const startApp = () => {
   });
 
   appProcess.on('exit', (code) => {
-    if (code !== 0) {
-      console.log(`⚠️  应用退出，代码: ${code}`);
+    if (code !== 0 && !isRestarting) {
+      console.log(`⚠️  应用异常退出，代码: ${code}`);
       console.log('🔄 尝试重新启动...');
       setTimeout(startApp, 2000);
     }
   });
 
+  console.log(`🎯 应用已启动，进程ID: ${appProcess.pid}`);
   return appProcess;
+};
+
+// 重启应用
+const restartApp = () => {
+  if (isRestarting) return;
+  
+  isRestarting = true;
+  console.log('🔄 正在重启应用...');
+  
+  // 清除之前的重启计时器
+  if (restartTimeout) {
+    clearTimeout(restartTimeout);
+  }
+  
+  // 延迟重启，避免频繁重启
+  restartTimeout = setTimeout(() => {
+    if (appProcess && !appProcess.killed) {
+      appProcess.kill('SIGTERM');
+      // 等待进程结束后重启
+      appProcess.on('exit', () => {
+        console.log('✅ 旧进程已终止，启动新进程...');
+        startApp();
+        isRestarting = false;
+      });
+    } else {
+      startApp();
+      isRestarting = false;
+    }
+  }, 1000);
 };
 
 // 监听文件变化
 const setupFileWatcher = () => {
   const projectRoot = path.resolve(__dirname, '..');
   const watchPaths = [
-    'electron/controller',
-    'electron/services', 
-    'electron/config',
-    'electron/database',
-    'electron/workflow',
-    'electron/knowledge',
-    'electron/pipeline',
-    'electron/node'
+    'electron'
   ];
 
+  // 监听主文件
+  const mainJSPath = path.join(projectRoot, 'electron/main.js');
+  if (fs.existsSync(mainJSPath)) {
+    fs.watchFile(mainJSPath, { interval: 1000 }, (curr, prev) => {
+      if (curr.mtime !== prev.mtime) {
+        console.log('🔄 检测到主文件变化: electron/main.js');
+        restartApp();
+      }
+    });
+  }
+
+  // 监听其他目录
   watchPaths.forEach(watchPath => {
     const fullPath = path.join(projectRoot, watchPath);
     if (fs.existsSync(fullPath)) {
       fs.watch(fullPath, { recursive: true }, (eventType, filename) => {
-        if (filename && filename.endsWith('.js')) {
+        if (filename && (filename.endsWith('.js') || filename.endsWith('.json'))) {
           console.log(`🔄 检测到文件变化: ${path.join(watchPath, filename)}`);
+          restartApp();
         }
       });
     }
@@ -86,15 +132,26 @@ const setupFileWatcher = () => {
 };
 
 // 处理进程退出
-process.on('SIGINT', () => {
+const gracefulShutdown = () => {
   console.log('\n👋 正在关闭开发服务器...');
-  process.exit(0);
-});
+  isRestarting = false;
+  
+  if (restartTimeout) {
+    clearTimeout(restartTimeout);
+  }
+  
+  if (appProcess && !appProcess.killed) {
+    appProcess.kill('SIGTERM');
+    appProcess.on('exit', () => {
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
+};
 
-process.on('SIGTERM', () => {
-  console.log('\n👋 正在关闭开发服务器...');
-  process.exit(0);
-});
+process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', gracefulShutdown);
 
 // 启动开发环境
 console.log('⚡ 正在设置文件监听...');
