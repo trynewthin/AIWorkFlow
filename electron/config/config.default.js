@@ -4,15 +4,9 @@ const path = require('path');
 const { getBaseDir } = require('ee-core/ps');
 
 /**
- * @description IPC 路由分模块配置
+ * @description IPC 路由统一配置
  */
-const connectionRoutes = require('./api/connection');
-const knowledgeRoutes = require('./api/knowledge');
-const uploadRoutes = require('./api/upload');
-const configRoutes = require('./api/config');
-const workflowRoutes = require('./api/workflow');
-const userRoutes = require('./api/user');
-const mcpRoutes = require('./api/mcp');
+const ipcApiRoutes = require('../api');
 
 /**
  * 默认配置
@@ -78,14 +72,6 @@ module.exports = () => {
       channelSeparator: '/',
     },
     /* IPC通信路由 */
-    ipcRoutes: {
-      ...connectionRoutes,
-      ...knowledgeRoutes,
-      ...uploadRoutes,
-      ...configRoutes,
-      ...workflowRoutes,
-      ...userRoutes,
-      ...mcpRoutes
-    }
+    ipcRoutes: ipcApiRoutes
   }
 }

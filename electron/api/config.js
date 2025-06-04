@@ -1,5 +1,5 @@
 /**
- * @file electron/config/api/config.js
+ * @file electron/api/config.js
  * @description IPC 路由：配置相关接口
  */
 module.exports = {

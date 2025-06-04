@@ -1,5 +1,5 @@
 /**
- * @file electron/config/api/upload.js
+ * @file electron/api/upload.js
  * @description IPC 路由：文件上传相关接口
  */
 module.exports = {

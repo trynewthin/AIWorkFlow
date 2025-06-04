@@ -11,10 +11,5 @@ pnpm-lock.yaml
 docs
 
 .cursor
-memory-bank
-
-public
-
-cmd/*
-
+public/dist
 build/*

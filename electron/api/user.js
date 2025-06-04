@@ -1,10 +1,8 @@
-'use strict';
-
 /**
- * 用户模块API路由配置
+ * @file electron/api/user.js
+ * @description IPC 路由：用户相关接口
  */
 module.exports = {
-  // 用户身份验证相关接口
   'controller/user/register': {
     controller: 'user',
     desc: '用户注册'

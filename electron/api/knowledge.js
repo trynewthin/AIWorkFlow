@@ -1,5 +1,5 @@
 /**
- * @file electron/config/api/knowledge.js
+ * @file electron/api/knowledge.js
  * @description IPC 路由：知识库相关接口
  */
 module.exports = {

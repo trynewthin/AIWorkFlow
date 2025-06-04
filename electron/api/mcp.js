@@ -1,5 +1,5 @@
 /**
- * @file electron/config/api/mcp.js
+ * @file electron/api/mcp.js
  * @description IPC 路由：MCP服务相关接口
  */
 module.exports = {

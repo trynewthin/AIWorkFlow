@@ -1,5 +1,5 @@
 /**
- * @file electron/config/api/workflow.js
+ * @file electron/api/workflow.js
  * @description IPC 路由：工作流相关接口
  */
 module.exports = {
