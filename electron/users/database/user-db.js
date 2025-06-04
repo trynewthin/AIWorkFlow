@@ -1,6 +1,6 @@
 'use strict';
 
-const { ModuleDbBase } = require('./module-db-base');
+const { ModuleDbBase } = require('../../core/module-db-base');
 
 /**
  * 用户数据库服务
@@ -205,7 +205,7 @@ class UserDb extends ModuleDbBase {
   }
 
   /**
-   * 根据ID获取密钥
+   * 根据密钥ID获取密钥信息
    * @param {number} keyId 
    * @returns {Object|null} 密钥信息
    */
@@ -217,9 +217,9 @@ class UserDb extends ModuleDbBase {
   }
 
   /**
-   * 根据密钥值获取密钥信息
+   * 根据密钥值获取密钥信息（用于验证）
    * @param {string} keyValue 
-   * @returns {Object|null} 密钥信息
+   * @returns {Object|null} 密钥信息，包含关联的用户ID
    */
   async getKeyByValue(keyValue) {
     const stmt = this.db.prepare(
@@ -229,7 +229,7 @@ class UserDb extends ModuleDbBase {
   }
 
   /**
-   * 更新密钥
+   * 更新密钥值
    * @param {number} keyId 
    * @param {string} newKeyValue 
    * @returns {number} 更新的记录数
@@ -243,7 +243,7 @@ class UserDb extends ModuleDbBase {
   }
 
   /**
-   * 删除密钥
+   * 删除指定密钥
    * @param {number} keyId 
    * @returns {number} 删除的记录数
    */
@@ -269,10 +269,16 @@ class UserDb extends ModuleDbBase {
   }
 }
 
-UserDb.toString = () => '[class UserDb]';
+/**
+ * 获取用户数据库实例
+ * @param {Object} [options] 配置选项
+ * @returns {UserDb}
+ */
+function getUserDb(options) {
+  return UserDb.getInstance(options);
+}
 
-// 导出类和便捷的单例获取方法
 module.exports = {
   UserDb,
-  getUserDb: (options) => UserDb.getInstance(options)
+  getUserDb
 }; 

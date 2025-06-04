@@ -8,7 +8,7 @@ const { getWorkflowService } = require('../services/WorkflowService');
 const { getConversationService } = require('../services/ConversationService'); // 导入对话服务
 const workflowService = getWorkflowService(); // 获取服务实例
 const conversationService = getConversationService(); // 获取对话服务实例
-const { getUserDb } = require('../../database'); // 导入用户数据库服务
+const { getUserDb } = require('../../users/database'); // 导入用户数据库服务
 
 const { getDefaultFlowConfig, getDefaultWorkConfig } = require('../../coreconfigs/services');
 

@@ -1,6 +1,6 @@
 'use strict';
 
-const { ModuleDbBase } = require('./module-db-base');
+const { ModuleDbBase } = require('../../core/module-db-base');
 
 /**
  * 知识库数据库服务

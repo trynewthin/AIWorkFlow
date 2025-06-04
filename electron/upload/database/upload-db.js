@@ -3,7 +3,7 @@
 const path = require('path');
 const fs = require('fs');
 const { getDataDir } = require('ee-core/ps');
-const { ModuleDbBase } = require('./module-db-base');
+const { ModuleDbBase } = require('../../core/module-db-base');
 const { randomUUID } = require('crypto');
 
 /**

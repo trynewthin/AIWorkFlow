@@ -1,6 +1,6 @@
 'use strict';
 
-const { getUploadDb } = require('../../database');
+const { getUploadDb } = require('../database');
 
 /**
  * 上传文件服务

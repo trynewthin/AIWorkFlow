@@ -6,7 +6,7 @@
  */
 
 const { randomUUID } = require('crypto');
-const { ModuleDbBase } = require('./module-db-base');
+const { ModuleDbBase } = require('../../core/module-db-base');
 const { logger } = require('ee-core/log');
 
 /**
@@ -203,21 +203,15 @@ class WorkflowDb extends ModuleDbBase {
    * @method updateWorkflow
    * @description 更新工作流信息
    * @param {string} id 工作流ID
-   * @param {Object} data 需要更新的字段
+   * @param {Object} data 更新数据
    * @param {string} [data.name] 工作流名称
    * @param {string} [data.description] 工作流描述
    * @param {Object} [data.config] 工作流配置
-   * @param {string} [data.entry_node_id] 入口节点ID (为多向流预留)
-   * @returns {boolean} 更新成功返回 true，工作流不存在返回 false
+   * @param {string} [data.entry_node_id] 入口节点ID
+   * @returns {number} 更新的记录数
    */
   async updateWorkflow(id, data = {}) {
     try {
-      const workflow = await this.getWorkflow(id);
-      if (!workflow) {
-        logger.warn(`[WorkflowDb] 更新工作流失败: 工作流不存在 ${id}`);
-        return false;
-      }
-      
       const updateFields = [];
       const updateValues = [];
       
@@ -241,21 +235,19 @@ class WorkflowDb extends ModuleDbBase {
         updateValues.push(data.entry_node_id);
       }
       
-      // 更新时间戳
-      updateFields.push('updated_at = CURRENT_TIMESTAMP');
-      
       if (updateFields.length === 0) {
-        return true; // 没有字段需要更新
+        return 0;
       }
       
-      updateValues.push(id); // WHERE id = ?
+      updateFields.push('updated_at = CURRENT_TIMESTAMP');
+      updateValues.push(id);
       
       const sql = `UPDATE ${this.workflowTable} SET ${updateFields.join(', ')} WHERE id = ?`;
       const stmt = this.db.prepare(sql);
-      const result = stmt.run(...updateValues);
+      const info = stmt.run(...updateValues);
       
       logger.info(`[WorkflowDb] 更新工作流成功: ${id}`);
-      return result.changes > 0;
+      return info.changes;
     } catch (error) {
       logger.error(`[WorkflowDb] 更新工作流失败: ${error.message}`);
       throw error;
@@ -264,76 +256,50 @@ class WorkflowDb extends ModuleDbBase {
   
   /**
    * @method deleteWorkflow
-   * @description 删除工作流及其所有节点
+   * @description 删除工作流
    * @param {string} id 工作流ID
-   * @returns {boolean} 删除成功返回 true，工作流不存在返回 false
+   * @returns {number} 删除的记录数
    */
   async deleteWorkflow(id) {
     try {
-      const workflow = await this.getWorkflow(id);
-      if (!workflow) {
-        logger.warn(`[WorkflowDb] 删除工作流失败: 工作流不存在 ${id}`);
-        return false;
-      }
-      
-      // 由于设置了外键级联删除，删除工作流时会自动删除所有关联节点和用户关联记录
       const stmt = this.db.prepare(
         `DELETE FROM ${this.workflowTable} WHERE id = ?`
       );
       
-      const result = stmt.run(id);
+      const info = stmt.run(id);
       
-      logger.info(`[WorkflowDb] 删除工作流成功: ${id}`);
-      return result.changes > 0;
+      if (info.changes > 0) {
+        logger.info(`[WorkflowDb] 删除工作流成功: ${id}`);
+      } else {
+        logger.warn(`[WorkflowDb] 工作流不存在: ${id}`);
+      }
+      
+      return info.changes;
     } catch (error) {
       logger.error(`[WorkflowDb] 删除工作流失败: ${error.message}`);
       throw error;
     }
   }
   
+  // ========== 节点相关操作 ==========
+  
   /**
    * @method addNode
-   * @description 向工作流添加节点
+   * @description 添加工作流节点
    * @param {Object} node 节点数据
-   * @param {string} [node.id] 可选的自定义节点ID，不提供则自动生成
+   * @param {string} [node.id] 可选的自定义ID，不提供则自动生成
    * @param {string} node.workflow_id 工作流ID
    * @param {string} node.type 节点类型
-   * @param {Object} [node.flow_config={}] 节点流程级配置
-   * @param {Object} [node.work_config={}] 节点运行时配置
-   * @param {number} [node.order_index] 节点顺序索引，不提供则添加到末尾
+   * @param {Object} [node.flow_config={}] 流程配置
+   * @param {Object} [node.work_config={}] 工作配置
+   * @param {number} node.order_index 节点顺序索引
    * @returns {string} 节点ID
    */
   async addNode({ id, workflow_id, type, flow_config = {}, work_config = {}, order_index }) {
     try {
-      // 检查工作流是否存在
-      const workflow = await this.getWorkflow(workflow_id);
-      if (!workflow) {
-        throw new Error(`工作流不存在: ${workflow_id}`);
-      }
-      
       const nodeId = id || randomUUID();
-      
-      // 如果未指定顺序，则查询当前最大顺序并加1
-      let nodeOrderIndex = order_index;
-      if (nodeOrderIndex === undefined) {
-        const maxOrderStmt = this.db.prepare(
-          `SELECT MAX(order_index) as max_order FROM ${this.nodeTable} WHERE workflow_id = ?`
-        );
-        const result = maxOrderStmt.get(workflow_id);
-        nodeOrderIndex = (result.max_order !== null ? result.max_order : -1) + 1;
-      } else {
-        // 如果指定了顺序，则需要将该位置及之后的节点顺序向后移动
-        const updateOrderStmt = this.db.prepare(
-          `UPDATE ${this.nodeTable} SET order_index = order_index + 1 
-           WHERE workflow_id = ? AND order_index >= ?`
-        );
-        updateOrderStmt.run(workflow_id, nodeOrderIndex);
-      }
-      
-      // 插入新节点
       const stmt = this.db.prepare(
-        `INSERT INTO ${this.nodeTable} (id, workflow_id, type, flow_config, work_config, order_index) 
-         VALUES (?, ?, ?, ?, ?, ?)`
+        `INSERT INTO ${this.nodeTable} (id, workflow_id, type, flow_config, work_config, order_index) VALUES (?, ?, ?, ?, ?, ?)`
       );
       
       stmt.run(
@@ -342,10 +308,10 @@ class WorkflowDb extends ModuleDbBase {
         type,
         JSON.stringify(flow_config),
         JSON.stringify(work_config),
-        nodeOrderIndex
+        order_index
       );
       
-      logger.info(`[WorkflowDb] 添加节点成功: ${nodeId} 到工作流 ${workflow_id}, 顺序: ${nodeOrderIndex}`);
+      logger.info(`[WorkflowDb] 添加节点成功: ${nodeId}`);
       return nodeId;
     } catch (error) {
       logger.error(`[WorkflowDb] 添加节点失败: ${error.message}`);
@@ -386,12 +352,12 @@ class WorkflowDb extends ModuleDbBase {
    * @method getWorkflowNodes
    * @description 获取工作流的所有节点
    * @param {string} workflowId 工作流ID
-   * @returns {Array<Object>} 节点列表，按 order_index 升序排列
+   * @returns {Array<Object>} 节点列表
    */
   async getWorkflowNodes(workflowId) {
     try {
       const stmt = this.db.prepare(
-        `SELECT * FROM ${this.nodeTable} WHERE workflow_id = ? ORDER BY order_index ASC`
+        `SELECT * FROM ${this.nodeTable} WHERE workflow_id = ? ORDER BY order_index`
       );
       
       const nodes = stmt.all(workflowId);
@@ -413,21 +379,22 @@ class WorkflowDb extends ModuleDbBase {
    * @method updateNode
    * @description 更新节点信息
    * @param {string} id 节点ID
-   * @param {Object} data 需要更新的字段
-   * @param {Object} [data.flow_config] 节点流程级配置
-   * @param {Object} [data.work_config] 节点运行时配置
-   * @returns {boolean} 更新成功返回 true，节点不存在返回 false
+   * @param {Object} data 更新数据
+   * @param {string} [data.type] 节点类型
+   * @param {Object} [data.flow_config] 流程配置
+   * @param {Object} [data.work_config] 工作配置
+   * @param {number} [data.order_index] 节点顺序索引
+   * @returns {number} 更新的记录数
    */
   async updateNode(id, data = {}) {
     try {
-      const node = await this.getNode(id);
-      if (!node) {
-        logger.warn(`[WorkflowDb] 更新节点失败: 节点不存在 ${id}`);
-        return false;
-      }
-      
       const updateFields = [];
       const updateValues = [];
+      
+      if (data.type !== undefined) {
+        updateFields.push('type = ?');
+        updateValues.push(data.type);
+      }
       
       if (data.flow_config !== undefined) {
         updateFields.push('flow_config = ?');
@@ -439,18 +406,23 @@ class WorkflowDb extends ModuleDbBase {
         updateValues.push(JSON.stringify(data.work_config));
       }
       
-      if (updateFields.length === 0) {
-        return true; // 没有字段需要更新
+      if (data.order_index !== undefined) {
+        updateFields.push('order_index = ?');
+        updateValues.push(data.order_index);
       }
       
-      updateValues.push(id); // WHERE id = ?
+      if (updateFields.length === 0) {
+        return 0;
+      }
+      
+      updateValues.push(id);
       
       const sql = `UPDATE ${this.nodeTable} SET ${updateFields.join(', ')} WHERE id = ?`;
       const stmt = this.db.prepare(sql);
-      const result = stmt.run(...updateValues);
+      const info = stmt.run(...updateValues);
       
       logger.info(`[WorkflowDb] 更新节点成功: ${id}`);
-      return result.changes > 0;
+      return info.changes;
     } catch (error) {
       logger.error(`[WorkflowDb] 更新节点失败: ${error.message}`);
       throw error;
@@ -459,47 +431,25 @@ class WorkflowDb extends ModuleDbBase {
   
   /**
    * @method deleteNode
-   * @description 删除节点并调整其他节点的顺序
+   * @description 删除节点
    * @param {string} id 节点ID
-   * @returns {boolean} 删除成功返回 true，节点不存在返回 false
+   * @returns {number} 删除的记录数
    */
   async deleteNode(id) {
     try {
-      const node = await this.getNode(id);
-      if (!node) {
-        logger.warn(`[WorkflowDb] 删除节点失败: 节点不存在 ${id}`);
-        return false;
-      }
+      const stmt = this.db.prepare(
+        `DELETE FROM ${this.nodeTable} WHERE id = ?`
+      );
       
-      const { workflow_id, order_index } = node;
+      const info = stmt.run(id);
       
-      // 开始事务
-      this.db.prepare('BEGIN TRANSACTION').run();
-      
-      try {
-        // 删除节点
-        const deleteStmt = this.db.prepare(
-          `DELETE FROM ${this.nodeTable} WHERE id = ?`
-        );
-        deleteStmt.run(id);
-        
-        // 调整后续节点的顺序
-        const updateOrderStmt = this.db.prepare(
-          `UPDATE ${this.nodeTable} SET order_index = order_index - 1 
-           WHERE workflow_id = ? AND order_index > ?`
-        );
-        updateOrderStmt.run(workflow_id, order_index);
-        
-        // 提交事务
-        this.db.prepare('COMMIT').run();
-        
+      if (info.changes > 0) {
         logger.info(`[WorkflowDb] 删除节点成功: ${id}`);
-        return true;
-      } catch (error) {
-        // 回滚事务
-        this.db.prepare('ROLLBACK').run();
-        throw error;
+      } else {
+        logger.warn(`[WorkflowDb] 节点不存在: ${id}`);
       }
+      
+      return info.changes;
     } catch (error) {
       logger.error(`[WorkflowDb] 删除节点失败: ${error.message}`);
       throw error;
@@ -508,131 +458,118 @@ class WorkflowDb extends ModuleDbBase {
   
   /**
    * @method moveNode
-   * @description 移动节点到新的位置
-   * @param {string} id 节点ID
-   * @param {number} newIndex 新的顺序索引
-   * @returns {boolean} 移动成功返回 true，节点不存在返回 false
+   * @description 移动节点位置
+   * @param {string} id 节点ID  
+   * @param {number} newIndex 新的位置索引
+   * @returns {number} 更新的记录数
    */
   async moveNode(id, newIndex) {
     try {
+      // 获取节点信息
       const node = await this.getNode(id);
       if (!node) {
-        logger.warn(`[WorkflowDb] 移动节点失败: 节点不存在 ${id}`);
-        return false;
+        throw new Error(`节点不存在: ${id}`);
       }
       
-      const { workflow_id, order_index: oldIndex } = node;
+      const oldIndex = node.order_index;
+      const workflowId = node.workflow_id;
       
+      // 如果位置没有变化，直接返回
       if (oldIndex === newIndex) {
-        return true; // 位置未变，无需操作
+        return 0;
       }
       
-      // 开始事务
-      this.db.prepare('BEGIN TRANSACTION').run();
-      
-      try {
-        if (newIndex > oldIndex) {
-          // 向后移动：将中间节点的顺序向前移动一位
+      // 使用事务处理
+      const transaction = this.db.transaction(() => {
+        if (oldIndex < newIndex) {
+          // 向后移动：将中间的节点前移
           const updateStmt = this.db.prepare(
             `UPDATE ${this.nodeTable} SET order_index = order_index - 1 
              WHERE workflow_id = ? AND order_index > ? AND order_index <= ?`
           );
-          updateStmt.run(workflow_id, oldIndex, newIndex);
+          updateStmt.run(workflowId, oldIndex, newIndex);
         } else {
-          // 向前移动：将中间节点的顺序向后移动一位
+          // 向前移动：将中间的节点后移
           const updateStmt = this.db.prepare(
             `UPDATE ${this.nodeTable} SET order_index = order_index + 1 
              WHERE workflow_id = ? AND order_index >= ? AND order_index < ?`
           );
-          updateStmt.run(workflow_id, newIndex, oldIndex);
+          updateStmt.run(workflowId, newIndex, oldIndex);
         }
         
-        // 更新当前节点的顺序
-        const nodeUpdateStmt = this.db.prepare(
+        // 更新目标节点的位置
+        const moveStmt = this.db.prepare(
           `UPDATE ${this.nodeTable} SET order_index = ? WHERE id = ?`
         );
-        nodeUpdateStmt.run(newIndex, id);
-        
-        // 提交事务
-        this.db.prepare('COMMIT').run();
-        
-        logger.info(`[WorkflowDb] 移动节点成功: ${id} 从 ${oldIndex} 到 ${newIndex}`);
-        return true;
-      } catch (error) {
-        // 回滚事务
-        this.db.prepare('ROLLBACK').run();
-        throw error;
-      }
+        moveStmt.run(newIndex, id);
+      });
+      
+      transaction();
+      
+      logger.info(`[WorkflowDb] 移动节点成功: ${id} 从 ${oldIndex} 到 ${newIndex}`);
+      return 1;
     } catch (error) {
       logger.error(`[WorkflowDb] 移动节点失败: ${error.message}`);
       throw error;
     }
   }
-
-  // ===== 工作流用户关联相关操作 =====
-
+  
+  // ========== 工作流用户关联相关操作 ==========
+  
   /**
    * @method addWorkflowUserRelation
-   * @description 添加工作流与用户的关联
+   * @description 添加工作流用户关联
    * @param {string} workflowId 工作流ID
    * @param {number} userId 用户ID
-   * @returns {number} 新插入关联记录的ID
+   * @returns {number} 新插入记录的ID
    */
   async addWorkflowUserRelation(workflowId, userId) {
     try {
-      // 检查工作流是否存在
-      const workflow = await this.getWorkflow(workflowId);
-      if (!workflow) {
-        throw new Error(`工作流不存在: ${workflowId}`);
-      }
-
       // 检查关联是否已存在
-      const existStmt = this.db.prepare(
+      const existingStmt = this.db.prepare(
         `SELECT id FROM ${this.workflowUserTable} WHERE workflow_id = ? AND user_id = ?`
       );
-      const existRelation = existStmt.get(workflowId, userId);
+      const existing = existingStmt.get(workflowId, userId);
       
-      // 如果关联已存在，直接返回关联ID
-      if (existRelation) {
-        return existRelation.id;
+      if (existing) {
+        logger.warn(`[WorkflowDb] 工作流用户关联已存在: workflow=${workflowId}, user=${userId}`);
+        return existing.id;
       }
       
-      // 创建新关联
       const stmt = this.db.prepare(
         `INSERT INTO ${this.workflowUserTable} (workflow_id, user_id) VALUES (?, ?)`
       );
       
       const info = stmt.run(workflowId, userId);
       
-      logger.info(`[WorkflowDb] 添加工作流用户关联成功: 工作流 ${workflowId}, 用户 ${userId}`);
+      logger.info(`[WorkflowDb] 添加工作流用户关联成功: workflow=${workflowId}, user=${userId}`);
       return info.lastInsertRowid;
     } catch (error) {
       logger.error(`[WorkflowDb] 添加工作流用户关联失败: ${error.message}`);
       throw error;
     }
   }
-
+  
   /**
    * @method getWorkflowUser
-   * @description 获取工作流所属用户
+   * @description 获取工作流关联的用户
    * @param {string} workflowId 工作流ID
-   * @returns {number|null} 用户ID，不存在则返回null
+   * @returns {Object|null} 用户信息
    */
   async getWorkflowUser(workflowId) {
     try {
       const stmt = this.db.prepare(
-        `SELECT user_id FROM ${this.workflowUserTable} WHERE workflow_id = ? LIMIT 1`
+        `SELECT * FROM ${this.workflowUserTable} WHERE workflow_id = ?`
       );
       
       const relation = stmt.get(workflowId);
-      
-      return relation ? relation.user_id : null;
+      return relation || null;
     } catch (error) {
-      logger.error(`[WorkflowDb] 获取工作流所属用户失败: ${error.message}`);
+      logger.error(`[WorkflowDb] 获取工作流用户关联失败: ${error.message}`);
       throw error;
     }
   }
-
+  
   /**
    * @method getUserWorkflows
    * @description 获取用户的所有工作流
@@ -642,9 +579,9 @@ class WorkflowDb extends ModuleDbBase {
   async getUserWorkflows(userId) {
     try {
       const stmt = this.db.prepare(
-        `SELECT w.* FROM ${this.workflowTable} w
-         INNER JOIN ${this.workflowUserTable} wu ON w.id = wu.workflow_id
-         WHERE wu.user_id = ?
+        `SELECT w.* FROM ${this.workflowTable} w 
+         JOIN ${this.workflowUserTable} wu ON w.id = wu.workflow_id 
+         WHERE wu.user_id = ? 
          ORDER BY w.created_at DESC`
       );
       
@@ -657,17 +594,17 @@ class WorkflowDb extends ModuleDbBase {
       
       return workflows;
     } catch (error) {
-      logger.error(`[WorkflowDb] 获取用户工作流列表失败: ${error.message}`);
+      logger.error(`[WorkflowDb] 获取用户工作流失败: ${error.message}`);
       throw error;
     }
   }
-
+  
   /**
    * @method deleteWorkflowUserRelation
-   * @description 删除工作流与用户的关联
+   * @description 删除工作流用户关联
    * @param {string} workflowId 工作流ID
    * @param {number} userId 用户ID
-   * @returns {boolean} 删除成功返回true
+   * @returns {number} 删除的记录数
    */
   async deleteWorkflowUserRelation(workflowId, userId) {
     try {
@@ -675,16 +612,19 @@ class WorkflowDb extends ModuleDbBase {
         `DELETE FROM ${this.workflowUserTable} WHERE workflow_id = ? AND user_id = ?`
       );
       
-      const result = stmt.run(workflowId, userId);
+      const info = stmt.run(workflowId, userId);
       
-      logger.info(`[WorkflowDb] 删除工作流用户关联成功: 工作流 ${workflowId}, 用户 ${userId}`);
-      return result.changes > 0;
+      if (info.changes > 0) {
+        logger.info(`[WorkflowDb] 删除工作流用户关联成功: workflow=${workflowId}, user=${userId}`);
+      }
+      
+      return info.changes;
     } catch (error) {
       logger.error(`[WorkflowDb] 删除工作流用户关联失败: ${error.message}`);
       throw error;
     }
   }
-
+  
   /**
    * @method isWorkflowOwner
    * @description 检查用户是否为工作流的所有者
@@ -700,32 +640,25 @@ class WorkflowDb extends ModuleDbBase {
       );
       
       const result = stmt.get(workflowId, userId);
-      
       return result.count > 0;
     } catch (error) {
-      logger.error(`[WorkflowDb] 检查工作流所有权失败: ${error.message}`);
+      logger.error(`[WorkflowDb] 检查工作流所有者失败: ${error.message}`);
       throw error;
     }
   }
-
-  // ===== 对话轮次相关操作 =====
-
+  
+  // ========== 对话相关操作 ==========
+  
   /**
    * @method createConversation
-   * @description 创建新对话轮次
-   * @param {Object} conversation 对话轮次数据
+   * @description 创建新对话
+   * @param {Object} conversation 对话数据
    * @param {string} [conversation.id] 可选的自定义ID，不提供则自动生成
    * @param {string} conversation.workflow_id 工作流ID
-   * @returns {string} 对话轮次ID
+   * @returns {string} 对话ID
    */
   async createConversation({ id, workflow_id }) {
     try {
-      // 检查工作流是否存在
-      const workflow = await this.getWorkflow(workflow_id);
-      if (!workflow) {
-        throw new Error(`工作流不存在: ${workflow_id}`);
-      }
-      
       const conversationId = id || randomUUID();
       const stmt = this.db.prepare(
         `INSERT INTO ${this.conversationTable} (id, workflow_id) VALUES (?, ?)`
@@ -733,19 +666,19 @@ class WorkflowDb extends ModuleDbBase {
       
       stmt.run(conversationId, workflow_id);
       
-      logger.info(`[WorkflowDb] 创建对话轮次成功: ${conversationId}`);
+      logger.info(`[WorkflowDb] 创建对话成功: ${conversationId}`);
       return conversationId;
     } catch (error) {
-      logger.error(`[WorkflowDb] 创建对话轮次失败: ${error.message}`);
+      logger.error(`[WorkflowDb] 创建对话失败: ${error.message}`);
       throw error;
     }
   }
   
   /**
    * @method getConversation
-   * @description 获取对话轮次信息
-   * @param {string} id 对话轮次ID
-   * @returns {Object|null} 对话轮次信息，不存在则返回 null
+   * @description 获取对话信息
+   * @param {string} id 对话ID
+   * @returns {Object|null} 对话信息，不存在则返回 null
    */
   async getConversation(id) {
     try {
@@ -753,20 +686,18 @@ class WorkflowDb extends ModuleDbBase {
         `SELECT * FROM ${this.conversationTable} WHERE id = ?`
       );
       
-      const conversation = stmt.get(id);
-      
-      return conversation || null;
+      return stmt.get(id) || null;
     } catch (error) {
-      logger.error(`[WorkflowDb] 获取对话轮次失败: ${error.message}`);
+      logger.error(`[WorkflowDb] 获取对话失败: ${error.message}`);
       throw error;
     }
   }
   
   /**
    * @method getWorkflowConversations
-   * @description 获取工作流的所有对话轮次
+   * @description 获取工作流的所有对话
    * @param {string} workflowId 工作流ID
-   * @returns {Array<Object>} 对话轮次列表，按创建时间降序排列
+   * @returns {Array<Object>} 对话列表
    */
   async getWorkflowConversations(workflowId) {
     try {
@@ -774,63 +705,53 @@ class WorkflowDb extends ModuleDbBase {
         `SELECT * FROM ${this.conversationTable} WHERE workflow_id = ? ORDER BY created_at DESC`
       );
       
-      const conversations = stmt.all(workflowId);
-      
-      return conversations;
+      return stmt.all(workflowId);
     } catch (error) {
-      logger.error(`[WorkflowDb] 获取工作流对话轮次失败: ${error.message}`);
+      logger.error(`[WorkflowDb] 获取工作流对话失败: ${error.message}`);
       throw error;
     }
   }
   
   /**
    * @method deleteConversation
-   * @description 删除对话轮次及其所有消息
-   * @param {string} id 对话轮次ID
-   * @returns {boolean} 删除成功返回 true，对话轮次不存在返回 false
+   * @description 删除对话
+   * @param {string} id 对话ID
+   * @returns {number} 删除的记录数
    */
   async deleteConversation(id) {
     try {
-      const conversation = await this.getConversation(id);
-      if (!conversation) {
-        logger.warn(`[WorkflowDb] 删除对话轮次失败: 对话轮次不存在 ${id}`);
-        return false;
-      }
-      
-      // 由于设置了外键级联删除，删除对话轮次时会自动删除所有关联消息
       const stmt = this.db.prepare(
         `DELETE FROM ${this.conversationTable} WHERE id = ?`
       );
       
-      const result = stmt.run(id);
+      const info = stmt.run(id);
       
-      logger.info(`[WorkflowDb] 删除对话轮次成功: ${id}`);
-      return result.changes > 0;
+      if (info.changes > 0) {
+        logger.info(`[WorkflowDb] 删除对话成功: ${id}`);
+      } else {
+        logger.warn(`[WorkflowDb] 对话不存在: ${id}`);
+      }
+      
+      return info.changes;
     } catch (error) {
-      logger.error(`[WorkflowDb] 删除对话轮次失败: ${error.message}`);
+      logger.error(`[WorkflowDb] 删除对话失败: ${error.message}`);
       throw error;
     }
   }
   
-  // ===== 对话内容相关操作 =====
+  // ========== 消息相关操作 ==========
   
   /**
    * @method addMessage
-   * @description 添加对话消息
+   * @description 添加消息
    * @param {Object} message 消息数据
    * @param {string} [message.id] 可选的自定义ID，不提供则自动生成
-   * @param {string} message.conversation_id 对话轮次ID
+   * @param {string} message.conversation_id 对话ID
    * @param {string} message.content 消息内容
    * @returns {string} 消息ID
    */
   async addMessage({ id, conversation_id, content }) {
     try {
-      // 检查对话轮次是否存在
-      const conversation = await this.getConversation(conversation_id);
-      if (!conversation) {
-        throw new Error(`对话轮次不存在: ${conversation_id}`);
-      }
-      
       const messageId = id || randomUUID();
       const stmt = this.db.prepare(
         `INSERT INTO ${this.messageTable} (id, conversation_id, content) VALUES (?, ?, ?)`
@@ -838,16 +759,16 @@ class WorkflowDb extends ModuleDbBase {
       
       stmt.run(messageId, conversation_id, content);
       
-      // 更新对话轮次的最后更新时间
-      const updateStmt = this.db.prepare(
+      // 更新对话的更新时间
+      const updateConversationStmt = this.db.prepare(
         `UPDATE ${this.conversationTable} SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`
       );
-      updateStmt.run(conversation_id);
+      updateConversationStmt.run(conversation_id);
       
-      logger.info(`[WorkflowDb] 添加对话消息成功: ${messageId}`);
+      logger.info(`[WorkflowDb] 添加消息成功: ${messageId}`);
       return messageId;
     } catch (error) {
-      logger.error(`[WorkflowDb] 添加对话消息失败: ${error.message}`);
+      logger.error(`[WorkflowDb] 添加消息失败: ${error.message}`);
       throw error;
     }
   }
@@ -864,9 +785,7 @@ class WorkflowDb extends ModuleDbBase {
         `SELECT * FROM ${this.messageTable} WHERE id = ?`
       );
       
-      const message = stmt.get(id);
-      
-      return message || null;
+      return stmt.get(id) || null;
     } catch (error) {
       logger.error(`[WorkflowDb] 获取消息失败: ${error.message}`);
       throw error;
@@ -875,9 +794,9 @@ class WorkflowDb extends ModuleDbBase {
   
   /**
    * @method getConversationMessages
-   * @description 获取对话轮次的所有消息
-   * @param {string} conversationId 对话轮次ID
-   * @returns {Array<Object>} 消息列表，按创建时间升序排列
+   * @description 获取对话的所有消息
+   * @param {string} conversationId 对话ID
+   * @returns {Array<Object>} 消息列表
    */
   async getConversationMessages(conversationId) {
     try {
@@ -885,11 +804,9 @@ class WorkflowDb extends ModuleDbBase {
         `SELECT * FROM ${this.messageTable} WHERE conversation_id = ? ORDER BY created_at ASC`
       );
       
-      const messages = stmt.all(conversationId);
-      
-      return messages;
+      return stmt.all(conversationId);
     } catch (error) {
-      logger.error(`[WorkflowDb] 获取对话消息列表失败: ${error.message}`);
+      logger.error(`[WorkflowDb] 获取对话消息失败: ${error.message}`);
       throw error;
     }
   }
@@ -899,24 +816,23 @@ class WorkflowDb extends ModuleDbBase {
    * @description 更新消息内容
    * @param {string} id 消息ID
    * @param {string} content 新的消息内容
-   * @returns {boolean} 更新成功返回 true，消息不存在返回 false
+   * @returns {number} 更新的记录数
    */
   async updateMessage(id, content) {
     try {
-      const message = await this.getMessage(id);
-      if (!message) {
-        logger.warn(`[WorkflowDb] 更新消息失败: 消息不存在 ${id}`);
-        return false;
-      }
-      
       const stmt = this.db.prepare(
         `UPDATE ${this.messageTable} SET content = ? WHERE id = ?`
       );
       
-      const result = stmt.run(content, id);
+      const info = stmt.run(content, id);
       
-      logger.info(`[WorkflowDb] 更新消息成功: ${id}`);
-      return result.changes > 0;
+      if (info.changes > 0) {
+        logger.info(`[WorkflowDb] 更新消息成功: ${id}`);
+      } else {
+        logger.warn(`[WorkflowDb] 消息不存在: ${id}`);
+      }
+      
+      return info.changes;
     } catch (error) {
       logger.error(`[WorkflowDb] 更新消息失败: ${error.message}`);
       throw error;
@@ -927,24 +843,23 @@ class WorkflowDb extends ModuleDbBase {
    * @method deleteMessage
    * @description 删除消息
    * @param {string} id 消息ID
-   * @returns {boolean} 删除成功返回 true，消息不存在返回 false
+   * @returns {number} 删除的记录数
    */
   async deleteMessage(id) {
     try {
-      const message = await this.getMessage(id);
-      if (!message) {
-        logger.warn(`[WorkflowDb] 删除消息失败: 消息不存在 ${id}`);
-        return false;
-      }
-      
       const stmt = this.db.prepare(
         `DELETE FROM ${this.messageTable} WHERE id = ?`
       );
       
-      const result = stmt.run(id);
+      const info = stmt.run(id);
       
-      logger.info(`[WorkflowDb] 删除消息成功: ${id}`);
-      return result.changes > 0;
+      if (info.changes > 0) {
+        logger.info(`[WorkflowDb] 删除消息成功: ${id}`);
+      } else {
+        logger.warn(`[WorkflowDb] 消息不存在: ${id}`);
+      }
+      
+      return info.changes;
     } catch (error) {
       logger.error(`[WorkflowDb] 删除消息失败: ${error.message}`);
       throw error;
@@ -952,25 +867,17 @@ class WorkflowDb extends ModuleDbBase {
   }
 }
 
-// 静态类名
 WorkflowDb.toString = () => '[class WorkflowDb]';
 
-// 单例实例
-let instance = null;
-
 /**
- * 获取工作流数据库服务的单例
+ * 获取工作流数据库实例
  * @param {Object} [options] 配置选项
- * @returns {WorkflowDb} 工作流数据库服务实例
+ * @returns {WorkflowDb}
  */
 function getWorkflowDb(options = {}) {
-  if (!instance) {
-    instance = new WorkflowDb(options);
-  }
-  return instance;
+  return WorkflowDb.getInstance(options);
 }
 
-// 导出类和便捷的单例获取方法
 module.exports = {
   WorkflowDb,
   getWorkflowDb

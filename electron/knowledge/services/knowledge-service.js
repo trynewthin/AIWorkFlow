@@ -1,6 +1,6 @@
 'use strict';
 
-const { getKnowledgeDb, getHNSWDb } = require('../../database');
+const { getKnowledgeDb, getHNSWDb } = require('../database');
 const ChunkNode = require('../../node/models/ChunkNode');
 const EmbeddingNode = require('../../node/models/EmbeddingNode');
 const Pipeline = require('../../pipeline/Pipeline');

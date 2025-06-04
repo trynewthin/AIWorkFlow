@@ -6,7 +6,7 @@
 const { getWorkflowManager } = require('../models/WorkflowManager'); // Adjusted path, assuming getWorkflowManager is exported
 const { getWorkflowExecutor } = require('../models/WorkflowExecutor');
 const { getNodeFactory } = require('../../node/services/NodeFactory'); // Adjusted path
-const { getUserDb } = require('../../database'); // 导入用户数据库服务
+const { getUserDb } = require('../../users/database'); // 导入用户数据库服务
 const { getConversationService } = require('./ConversationService'); // 导入对话服务
 const { logger } = require('ee-core/log');
 

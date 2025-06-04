@@ -1,7 +1,7 @@
 'use strict';
 
 const crypto = require('crypto');
-const { getUserDb } = require('../../database');
+const { getUserDb } = require('../database');
 const { logger } = require('ee-core/log');
 
 /**

@@ -4,8 +4,8 @@
  * @description 工作流对话记录服务，提供对话轮次和消息的管理功能
  */
 
-const { getWorkflowDb } = require('../../database/workflow-db');
-const { getUserDb } = require('../../database');
+const { getWorkflowDb } = require('../database');
+const { getUserDb } = require('../../users/database');
 const { logger } = require('ee-core/log');
 const { randomUUID } = require('crypto');
 
