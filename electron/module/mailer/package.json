@@ -1,0 +1,72 @@
+{
+  "name": "mailer-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP邮件服务器 - 将邮件模块功能暴露为Model Context Protocol服务",
+  "main": "mcp-server.js",
+  "type": "commonjs",
+  "bin": {
+    "mailer-mcp-server": "./mcp-server.js"
+  },
+  "scripts": {
+    "start": "node mcp-server.js",
+    "dev": "nodemon mcp-server.js",
+    "test": "node test-mcp.js",
+    "install-global": "npm install -g .",
+    "build": "echo '构建完成'",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "email",
+    "mailer",
+    "claude",
+    "ai-tools"
+  ],
+  "author": "AIWorkflow Team",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "zod": "^3.23.8",
+    "nodemailer": "^6.10.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/aiworkflow.git",
+    "directory": "electron/module/mailer"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/aiworkflow/issues"
+  },
+  "homepage": "https://github.com/your-org/aiworkflow#readme",
+  "mcp": {
+    "server": {
+      "name": "电子邮件服务",
+      "description": "提供完整的电子邮件发送和管理功能",
+      "version": "1.0.0",
+      "tools": [
+        "send_reminder_email",
+        "send_text_email", 
+        "send_html_email",
+        "send_system_notification",
+        "test_email_connection",
+        "get_email_service_status",
+        "validate_email_address"
+      ]
+    }
+  },
+  "files": [
+    "mcp-server.js",
+    "index.js",
+    "controllers/",
+    "services/",
+    "models/",
+    "README.md"
+  ]
+} 

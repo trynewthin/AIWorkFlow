@@ -12,6 +12,7 @@ const uploadRoutes = require('./api/upload');
 const configRoutes = require('./api/config');
 const workflowRoutes = require('./api/workflow');
 const userRoutes = require('./api/user');
+const mcpRoutes = require('./api/mcp');
 
 /**
  * 默认配置
@@ -83,7 +84,8 @@ module.exports = () => {
       ...uploadRoutes,
       ...configRoutes,
       ...workflowRoutes,
-      ...userRoutes
+      ...userRoutes,
+      ...mcpRoutes
     }
   }
 }

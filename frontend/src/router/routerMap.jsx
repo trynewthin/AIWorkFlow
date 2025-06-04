@@ -9,6 +9,7 @@ import LangChainGuide from '../views/odocs/langchainGuide';
 import WorkflowList from '../views/workflow/WorkflowList';
 import WorkflowEditor from '../views/workflow/Editor';
 import WorkflowExecution from '../views/workflow/Execution';
+import MCPManagement from '../views/mcp';
 import LoginPage from '../views/login';
 import UserPage from '../views/user';
 
@@ -99,6 +100,12 @@ const routerMap = [
         element: <UserPage />,
         name: 'UserPage',
         meta: { title: '用户中心', requiresAuth: true },
+      },
+      {
+        path: 'mcp',
+        element: <MCPManagement />,
+        name: 'MCPManagement',
+        meta: { title: 'MCP管理中心', requiresAuth: true },
       },
     ]
   },

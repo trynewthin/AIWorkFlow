@@ -66,7 +66,20 @@ const ipcApiRoute = {
   userGetCurrentUserKeys: 'controller/user/getCurrentUserKeys',
   userUpdateKey: 'controller/user/updateKey',
   userDeleteKey: 'controller/user/deleteKey',
-  userVerifyKey: 'controller/user/verifyKey'
+  userVerifyKey: 'controller/user/verifyKey',
+  // MCP服务相关接口
+  mcpInitialize: 'controller/mcp/initialize',
+  mcpStartService: 'controller/mcp/startService',
+  mcpStopService: 'controller/mcp/stopService',
+  mcpRestartService: 'controller/mcp/restartService',
+  mcpGetServiceStatus: 'controller/mcp/getServiceStatus',
+  mcpGetAvailableModules: 'controller/mcp/getAvailableModules',
+  mcpToggleModule: 'controller/mcp/toggleModule',
+  mcpEnableModule: 'controller/mcp/enableModule',
+  mcpDisableModule: 'controller/mcp/disableModule',
+  mcpGetClaudeConfig: 'controller/mcp/getClaudeConfig',
+  mcpCheckHealth: 'controller/mcp/checkHealth',
+  mcpGetServiceMetrics: 'controller/mcp/getServiceMetrics'
 };
 
 export default ipcApiRoute; 

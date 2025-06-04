@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "mailer": {
+      "command": "node",
+      "args": ["/path/to/your/project/electron/module/mailer/mcp-server.js"],
+      "env": {
+        "EMAIL_SERVICE": "qq",
+        "EMAIL_USERNAME": "your-email@qq.com",
+        "EMAIL_AUTH_CODE": "your-authorization-code",
+        "EMAIL_SENDER_NAME": "系统提醒"
+      }
+    }
+  }
+} 
