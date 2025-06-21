@@ -1,163 +1,191 @@
 /**
- * @file electron/core/baseservice.js
- * @description 服务层基类，提供统一的业务逻辑处理和服务状态管理功能
+ * @file BaseService.js
+ * @description 基础服务类，定义服务层的职责边界和通用方法
  */
-
-'use strict';
-
 const { logger } = require('ee-core/log');
+const { BusinessError, UnauthorizedError, ForbiddenError, NotFoundError } = require('./Validator');
 
 /**
- * 服务层基类
- * 专注于服务层的核心职责：
- * - 统一的业务逻辑处理包装器
- * - 服务状态管理和初始化
- * - 标准化的业务响应格式
+ * 基础服务类
+ * 所有业务服务都应该继承此类
+ * 
+ * 职责边界：
+ * - 只处理业务逻辑，不关心响应格式
+ * - 只抛出业务异常，不构造响应对象
+ * - 专注于数据处理和业务规则验证
  */
 class BaseService {
-  constructor(serviceName = 'BaseService') {
-    this.serviceName = serviceName;
+  constructor() {
     this.logger = logger;
-    this.initialized = false;
-    this.status = 'idle';
   }
 
   /**
-   * 服务初始化方法（子类应重写此方法）
-   * @returns {Promise<void>}
+   * 断言条件为真，否则抛出业务错误
+   * @param {boolean} condition - 条件表达式
+   * @param {string} message - 错误消息
+   * @param {string} [code] - 错误代码
+   * @throws {BusinessError} 条件为假时抛出
    */
-  async initService() {
-    this.logger.info(`[${this.serviceName}] 正在初始化服务...`);
-    this.initialized = true;
-    this.status = 'ready';
-    this.logger.info(`[${this.serviceName}] 服务初始化完成`);
-  }
-
-  /**
-   * 检查服务是否已初始化
-   * @returns {boolean}
-   */
-  isInitialized() {
-    return this.initialized;
-  }
-
-  /**
-   * 获取服务状态
-   * @returns {Object} 服务状态信息
-   */
-  getStatus() {
-    return {
-      serviceName: this.serviceName,
-      initialized: this.initialized,
-      status: this.status,
-      timestamp: new Date().toISOString()
-    };
-  }
-
-  /**
-   * 重置服务状态
-   */
-  reset() {
-    this.logger.info(`[${this.serviceName}] 正在重置服务...`);
-    this.initialized = false;
-    this.status = 'idle';
-    this.logger.info(`[${this.serviceName}] 服务已重置`);
-  }
-
-  /**
-   * 统一的业务处理包装器
-   * 提供自动的错误处理和日志记录
-   * @param {Function} handler 业务处理函数
-   * @param {string} methodName 方法名称
-   * @param {Object} params 参数（用于日志）
-   * @param {Object} options 选项 { skipValidation: boolean }
-   * @returns {Promise<any>} 处理结果
-   */
-  async handleBusinessLogic(handler, methodName = 'unknown', params = {}, options = {}) {
-    const { skipValidation = false } = options;
-    const startTime = Date.now();
-    
-    this.logger.info(`[${this.serviceName}] 开始执行 ${methodName}`, {
-      params: this._sanitizeParams(params),
-      timestamp: new Date().toISOString()
-    });
-
-    try {
-      // 检查服务是否已初始化
-      if (!skipValidation && !this.isInitialized()) {
-        throw new Error(`${this.serviceName} 尚未初始化`);
-      }
-
-      // 执行业务逻辑
-      const result = await handler(params);
-      
-      const duration = Date.now() - startTime;
-      this.logger.info(`[${this.serviceName}] ${methodName} 执行成功`, {
-        duration: `${duration}ms`,
-        hasResult: !!result
-      });
-
-      return result;
-      
-    } catch (error) {
-      const duration = Date.now() - startTime;
-      this.logger.error(`[${this.serviceName}] ${methodName} 执行失败`, {
-        error: error.message,
-        stack: error.stack,
-        duration: `${duration}ms`,
-        params: this._sanitizeParams(params)
-      });
-      throw error;
+  assert(condition, message, code = 'BUSINESS_ERROR') {
+    if (!condition) {
+      throw new BusinessError(message, code);
     }
   }
 
   /**
-   * 返回成功结果的标准格式
-   * @param {any} data 数据
-   * @param {string} message 消息
-   * @returns {Object} 成功结果
+   * 断言资源存在，否则抛出未找到错误
+   * @param {*} resource - 资源对象
+   * @param {string} [message] - 自定义错误消息
+   * @throws {NotFoundError} 资源不存在时抛出
    */
-  success(data = null, message = '操作成功') {
-    return {
-      success: true,
-      data,
-      message,
-      timestamp: new Date().toISOString()
-    };
+  assertExists(resource, message = '资源不存在') {
+    if (!resource) {
+      throw new NotFoundError(message);
+    }
   }
 
   /**
-   * 返回失败结果的标准格式
-   * @param {string} message 错误消息
-   * @param {any} error 错误详情
-   * @returns {Object} 失败结果
+   * 断言用户已登录，否则抛出未授权错误
+   * @param {*} user - 用户对象
+   * @param {string} [message] - 自定义错误消息
+   * @throws {UnauthorizedError} 用户未登录时抛出
    */
-  failure(message = '操作失败', error = null) {
-    return {
-      success: false,
-      message,
-      error: error?.message || error,
-      timestamp: new Date().toISOString()
-    };
+  assertAuthenticated(user, message = '用户未登录') {
+    if (!user) {
+      throw new UnauthorizedError(message);
+    }
   }
 
   /**
-   * 清理敏感参数用于日志记录
-   * @protected
-   * @param {Object} params 参数对象
-   * @returns {Object} 清理后的参数对象
+   * 断言用户有权限，否则抛出禁止访问错误
+   * @param {boolean} hasPermission - 权限检查结果
+   * @param {string} [message] - 自定义错误消息
+   * @throws {ForbiddenError} 无权限时抛出
    */
-  _sanitizeParams(params) {
-    const sensitiveFields = ['password', 'token', 'secret', 'key', 'authCode', 'auth_code', 'accessToken'];
-    const sanitized = { ...params };
-    
-    for (const field of sensitiveFields) {
-      if (sanitized[field]) {
-        sanitized[field] = '***HIDDEN***';
+  assertAuthorized(hasPermission, message = '无权限访问') {
+    if (!hasPermission) {
+      throw new ForbiddenError(message);
+    }
+  }
+
+  /**
+   * 安全地获取属性值，避免null/undefined错误
+   * @param {Object} obj - 对象
+   * @param {string} path - 属性路径，如 'user.profile.name'
+   * @param {*} [defaultValue] - 默认值
+   * @returns {*} 属性值或默认值
+   */
+  safeGet(obj, path, defaultValue = null) {
+    if (!obj || typeof obj !== 'object') {
+      return defaultValue;
+    }
+
+    const keys = path.split('.');
+    let result = obj;
+
+    for (const key of keys) {
+      if (result === null || result === undefined || !(key in result)) {
+        return defaultValue;
+      }
+      result = result[key];
+    }
+
+    return result;
+  }
+
+  /**
+   * 过滤对象属性，只保留指定的字段
+   * @param {Object} obj - 源对象
+   * @param {Array<string>} fields - 要保留的字段列表
+   * @returns {Object} 过滤后的对象
+   */
+  pickFields(obj, fields) {
+    if (!obj || typeof obj !== 'object') {
+      return {};
+    }
+
+    const result = {};
+    for (const field of fields) {
+      if (field in obj) {
+        result[field] = obj[field];
       }
     }
-    
-    return sanitized;
+
+    return result;
+  }
+
+  /**
+   * 排除对象的指定属性
+   * @param {Object} obj - 源对象
+   * @param {Array<string>} fields - 要排除的字段列表
+   * @returns {Object} 处理后的对象
+   */
+  omitFields(obj, fields) {
+    if (!obj || typeof obj !== 'object') {
+      return {};
+    }
+
+    const result = { ...obj };
+    for (const field of fields) {
+      delete result[field];
+    }
+
+    return result;
+  }
+
+  /**
+   * 记录业务操作日志
+   * @param {string} action - 操作名称
+   * @param {Object} [details] - 操作详情
+   * @param {*} [userId] - 用户ID
+   */
+  logAction(action, details = {}, userId = null) {
+    const logData = {
+      action,
+      userId,
+      timestamp: new Date().toISOString(),
+      ...details
+    };
+
+    this.logger.info(`业务操作: ${action}`, logData);
+  }
+
+  /**
+   * 记录业务错误日志
+   * @param {string} action - 操作名称
+   * @param {Error} error - 错误对象
+   * @param {Object} [context] - 错误上下文
+   */
+  logError(action, error, context = {}) {
+    const logData = {
+      action,
+      error: {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      },
+      timestamp: new Date().toISOString(),
+      ...context
+    };
+
+    this.logger.error(`业务错误: ${action}`, logData);
+  }
+
+  /**
+   * 验证业务规则
+   * @param {Array<Function>} rules - 规则函数数组，每个函数应该抛出异常或返回布尔值
+   * @param {Object} [context] - 验证上下文
+   */
+  async validateBusinessRules(rules, context = {}) {
+    for (const rule of rules) {
+      if (typeof rule === 'function') {
+        const result = await rule(context);
+        // 如果规则函数返回false，抛出业务错误
+        if (result === false) {
+          throw new BusinessError('业务规则验证失败');
+        }
+      }
+    }
   }
 }
 
