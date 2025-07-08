@@ -14,7 +14,6 @@ import * as knowledgeServiceFunctions from './knowledgeService';
 import * as configServiceFunctions from './configService';
 import * as uploadServiceFunctions from './uploadService';
 import * as connectionServiceFunctions from './connectionService';
-import * as mcpServiceFunctions from './mcpService';
 
 // 解构导出所有服务函数
 export * from './workflowService';
@@ -23,7 +22,6 @@ export * from './knowledgeService';
 export * from './configService';
 export * from './uploadService';
 export * from './connectionService';
-export * from './mcpService';
 
 // 导出服务对象，便于非解构导入
 export const userService = {
@@ -53,11 +51,6 @@ export const uploadService = {
 // 导出连接服务对象
 export const connectionService = {
   ...connectionServiceFunctions
-};
-
-// 导出MCP服务对象
-export const mcpService = {
-  ...mcpServiceFunctions
 };
 
 // 导出对话相关服务

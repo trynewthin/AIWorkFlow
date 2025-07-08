@@ -3,7 +3,6 @@
 const { logger } = require('ee-core/log');
 const { getConfig } = require('ee-core/config');
 const { getMainWindow } = require('ee-core/electron');
-const { mcpIntegration } = require('../module/mcp/index');
 
 class Lifecycle {
 
@@ -19,25 +18,6 @@ class Lifecycle {
    */
   async electronAppReady() {
     logger.info('[lifecycle] electron-app-ready');
-    
-    // 初始化MCP集成
-    try {
-      logger.info('[lifecycle] 正在初始化MCP集成...');
-      const result = await mcpIntegration.initialize({
-        port: 3000,
-        host: 'localhost',
-        autoStart: false, // 不自动启动，让用户手动控制
-        enabledModules: ['mailer']
-      });
-      
-      if (result.success) {
-        logger.info('[lifecycle] ✅ MCP集成初始化成功');
-      } else {
-        logger.error('[lifecycle] ❌ MCP集成初始化失败:', result.error);
-      }
-    } catch (error) {
-      logger.error('[lifecycle] ❌ MCP初始化异常:', error);
-    }
   }
 
   /**

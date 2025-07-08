@@ -11,7 +11,6 @@ const uploadRoutes = require('./upload');
 const configRoutes = require('./config');
 const workflowRoutes = require('./workflow');
 const userRoutes = require('./user');
-const mcpRoutes = require('./mcp');
 
 /**
  * 合并所有路由配置并导出
@@ -21,6 +20,5 @@ module.exports = {
   ...uploadRoutes,
   ...configRoutes,
   ...workflowRoutes,
-  ...userRoutes,
-  ...mcpRoutes
+  ...userRoutes
 }; 

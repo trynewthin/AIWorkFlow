@@ -74,7 +74,6 @@ const homeConfig = {
       icon: Settings2,
       items: [
         { title: "教程文档", url: "/docs" },
-        { title: "MCP管理中心", url: "/mcp" },
       ],
     },
   ],
